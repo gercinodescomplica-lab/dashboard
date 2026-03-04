@@ -1,0 +1,399 @@
+[
+    {
+        "id": "grc1-bruno",
+        "name": "Bruno",
+        "role": "GRC1",
+        "avatarUrl": "/avatars/bruno.png",
+        "year": 2026,
+        "meta": 125800000,
+        "contratado": 114400000,
+        "forecastFinal": 125948171,
+        "pipeline": {
+            "q1": {
+                "total": 7400000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 4440000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 2960000
+                    }
+                ]
+            },
+            "q2": {
+                "total": 11500000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 6900000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 4600000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "grc2-paulo",
+        "name": "Paulo Rogério",
+        "role": "GRC2",
+        "avatarUrl": "/avatars/paulo.png",
+        "year": 2026,
+        "meta": 103200000,
+        "contratado": 73600000,
+        "forecastFinal": 78660897,
+        "pipeline": {
+            "q1": {
+                "total": 5000000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 3000000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 2000000
+                    }
+                ]
+            },
+            "q2": {
+                "total": 0,
+                "projects": []
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "grc3-barone",
+        "name": "Barone",
+        "role": "GRC3",
+        "avatarUrl": "/avatars/barone.png",
+        "year": 2026,
+        "meta": 96300000,
+        "contratado": 27400000,
+        "forecastFinal": 131046830,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 25000000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 15000000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 10000000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 78600000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 47160000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 31440000
+                    }
+                ]
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "kam4-tomiatto",
+        "name": "Tomiatto",
+        "role": "KAM4",
+        "avatarUrl": "/avatars/tomiatto.png",
+        "year": 2026,
+        "meta": 94040696,
+        "contratado": 57943522,
+        "forecastFinal": 57943522,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 0,
+                "projects": []
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "grc4-beatriz",
+        "name": "Beatriz",
+        "role": "GRC4",
+        "avatarUrl": "/avatars/beatriz.png",
+        "year": 2026,
+        "meta": 59500000,
+        "contratado": 28400000,
+        "forecastFinal": 41301788,
+        "pipeline": {
+            "q1": {
+                "total": 739000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 443400
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 295600
+                    }
+                ]
+            },
+            "q2": {
+                "total": 12100000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 7260000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 4840000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "grcc-debora",
+        "name": "Débora",
+        "role": "GRCC",
+        "avatarUrl": "/avatars/debora.png",
+        "year": 2026,
+        "meta": 48800000,
+        "contratado": 41000000,
+        "forecastFinal": 88643921,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 62600000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 37560000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 25040000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 18100000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 10860000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 7240000
+                    }
+                ]
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "kam1-malde",
+        "name": "Malde",
+        "role": "KAM1",
+        "avatarUrl": "/avatars/malde.png",
+        "year": 2026,
+        "meta": 182700000,
+        "contratado": 105900000,
+        "forecastFinal": 160476193,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 53000000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 31800000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 21200000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 1500000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 900000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 600000
+                    }
+                ]
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "kam2-betone",
+        "name": "Betone",
+        "role": "KAM2",
+        "avatarUrl": "/avatars/betone.png",
+        "year": 2026,
+        "meta": 153600000,
+        "contratado": 143400000,
+        "forecastFinal": 154429979,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 11000000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 6600000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 4400000
+                    }
+                ]
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "kam3-andrea",
+        "name": "Andrea",
+        "role": "KAM3",
+        "avatarUrl": "/avatars/andrea.png",
+        "year": 2026,
+        "meta": 73400000,
+        "contratado": 17800000,
+        "forecastFinal": 30820271,
+        "pipeline": {
+            "q1": {
+                "total": 13000000,
+                "projects": [
+                    {
+                        "name": "Projeto Alpha (Placeholder)",
+                        "value": 7800000
+                    },
+                    {
+                        "name": "Projeto Beta (Placeholder)",
+                        "value": 5200000
+                    }
+                ]
+            },
+            "q2": {
+                "total": 0,
+                "projects": []
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    },
+    {
+        "id": "projeto-triade",
+        "name": "Tríade Digital",
+        "role": "Projetos",
+        "avatarUrl": "/avatars/placeholder.jpg",
+        "year": 2026,
+        "meta": 130000000,
+        "contratado": 0,
+        "forecastFinal": 0,
+        "pipeline": {
+            "q1": {
+                "total": 0,
+                "projects": []
+            },
+            "q2": {
+                "total": 0,
+                "projects": []
+            },
+            "q3": {
+                "total": 0,
+                "projects": []
+            },
+            "q4": {
+                "total": 0,
+                "projects": []
+            }
+        }
+    }
+]
