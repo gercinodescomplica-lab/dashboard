@@ -101,15 +101,18 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
 
     // ── Temperature counts ───────────────────────────────────────────────────
     const tempCounts: Record<Temp, number> = { quente: 0, morno: 0, frio: 0 };
+    const tempValues: Record<Temp, number> = { quente: 0, morno: 0, frio: 0 };
     managers.forEach((m) => {
         (['q1', 'q2', 'q3', 'q4'] as QKey[]).forEach((q) => {
             m.pipeline[q].projects.forEach((p) => {
                 const t = (p.temperature ?? 'morno') as Temp;
                 tempCounts[t] = (tempCounts[t] ?? 0) + 1;
+                tempValues[t] = (tempValues[t] ?? 0) + (p.value || 0);
             });
         });
     });
     const totalProjects = tempCounts.quente + tempCounts.morno + tempCounts.frio || 1;
+    const maxTempValue = Math.max(tempValues.quente, tempValues.morno, tempValues.frio, 1);
 
     // ── Ranking ──────────────────────────────────────────────────────────────
     const ranked = [...managers]
@@ -334,11 +337,14 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                                                 type="button"
                                                 onClick={() => openTempModal(temp)}
                                                 className={`h-full ${meta.bar} hover:brightness-125 active:brightness-90 rounded-full transition-all cursor-pointer`}
-                                                style={{ width: `${(tempCounts[temp] / totalProjects) * 100}%`, minWidth: tempCounts[temp] > 0 ? '40px' : '0' }}
+                                                style={{ width: `${(tempValues[temp] / maxTempValue) * 100}%`, minWidth: tempCounts[temp] > 0 ? '8px' : '0' }}
                                                 title={`Ver ${meta.label.toLowerCase()}s`}
                                             />
                                         </div>
-                                        <span className="text-xs font-bold text-zinc-400 w-6 text-right shrink-0">{tempCounts[temp]}</span>
+                                        <div className="shrink-0 text-right w-40">
+                                            <span className={`text-xs font-bold font-mono ${meta.accent}`}>{formatCurrency(tempValues[temp])}</span>
+                                            <span className="text-xs text-zinc-600 ml-2">{tempCounts[temp]} proj.</span>
+                                        </div>
                                     </div>
                                 );
                             })}
