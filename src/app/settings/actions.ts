@@ -6,7 +6,7 @@ import { Manager } from '@/types/manager';
 import { eq } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 
-// Replace with a safer server-side check
+// Replace with a safer server-side check-1
 export async function verifySettingsKey(key: string) {
     // Basic verification against environment variable
     const correctKey = process.env.SETTINGS_KEY || 'prodam2026';
