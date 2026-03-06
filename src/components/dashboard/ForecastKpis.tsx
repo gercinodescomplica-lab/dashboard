@@ -38,7 +38,7 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                             </TooltipContent>
                         </Tooltip>
                     </div>
-                    <div className="text-xl xl:text-2xl font-bold text-zinc-100 mt-2 truncate" title={formatCurrency(forecastFinal)}>
+                    <div className="text-[clamp(1.1rem,2vw,1.5rem)] xl:text-2xl font-bold text-zinc-100 mt-2 tracking-tighter whitespace-nowrap">
                         {formatCurrency(forecastFinal)}
                     </div>
                 </div>
@@ -60,7 +60,7 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                         </Tooltip>
                     </div>
                     <div className="flex items-baseline gap-2 mt-2 flex-wrap">
-                        <div className="text-xl xl:text-2xl font-bold text-zinc-100 truncate" title={formatPercentage(achievementPercentage)}>
+                        <div className="text-[clamp(1.1rem,2vw,1.5rem)] xl:text-2xl font-bold text-zinc-100 tracking-tighter whitespace-nowrap">
                             {formatPercentage(achievementPercentage)}
                         </div>
                         <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", colorClasses)}>
