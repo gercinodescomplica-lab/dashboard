@@ -21,21 +21,24 @@ interface Props {
 }
 
 export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
-    const [cxItems, setCxItems] = useState<CXItem[]>([]);
-    const [visits, setVisits] = useState<Visit[]>([]);
     const [loadingExtra, setLoadingExtra] = useState(true);
 
     useEffect(() => {
+        if (manager.cx !== undefined && manager.visits !== undefined) {
+            setLoadingExtra(false);
+            return;
+        }
+
         setLoadingExtra(true);
         Promise.all([
             getCXByManager(manager.id),
             getVisitsByManager(manager.id),
         ]).then(([cx, v]) => {
-            setCxItems(cx);
-            setVisits(v);
+            onChange({ ...manager, cx, visits: v });
             setLoadingExtra(false);
         });
-    }, [manager.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleChange = (field: keyof Manager, value: any) => {
         onChange({ ...manager, [field]: value });
@@ -71,9 +74,9 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                     <Button variant="outline" className="border-zinc-800 text-zinc-300 hover:text-white" onClick={() => window.location.reload()}>
                         Cancelar
                     </Button>
-                    <Button onClick={onSave} disabled={isSaving} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
+                    <Button onClick={onSave} disabled={isSaving || loadingExtra} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                        Salvar Info
+                        Salvar Tudo
                     </Button>
                 </div>
             </div>
@@ -163,7 +166,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                 <Loader2 className="w-6 h-6 animate-spin mr-2" /> Carregando visitas...
                             </div>
                         ) : (
-                            <VisitsEditor managerId={manager.id} initialItems={visits} />
+                            <VisitsEditor items={manager.visits || []} onChange={(v) => handleChange('visits', v)} />
                         )}
                     </div>
                 </TabsContent>
@@ -176,7 +179,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                 <Loader2 className="w-6 h-6 animate-spin mr-2" /> Carregando CX...
                             </div>
                         ) : (
-                            <CXEditor managerId={manager.id} initialItems={cxItems} />
+                            <CXEditor items={manager.cx || []} onChange={(cx) => handleChange('cx', cx)} />
                         )}
                     </div>
                 </TabsContent>

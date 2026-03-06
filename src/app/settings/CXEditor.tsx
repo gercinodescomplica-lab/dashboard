@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { CXItem, CXStatus } from '@/types/manager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, Plus, Trash2 } from 'lucide-react';
-import { saveCXData } from './actions';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface CXEditorProps {
-    managerId: string;
-    initialItems: CXItem[];
+    items: CXItem[];
+    onChange: (items: CXItem[]) => void;
 }
 
 const STATUS_OPTIONS: { value: CXStatus; label: string; color: string }[] = [
@@ -27,31 +25,13 @@ const EMPTY_ITEM = (): CXItem => ({
     status: 'pendente',
 });
 
-export function CXEditor({ managerId, initialItems }: CXEditorProps) {
-    const [items, setItems] = useState<CXItem[]>(initialItems);
-    const [isSaving, setIsSaving] = useState(false);
-    const [savedOk, setSavedOk] = useState(false);
-
+export function CXEditor({ items, onChange }: CXEditorProps) {
     const update = (i: number, field: keyof CXItem, value: any) => {
-        setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
+        onChange(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
     };
 
-    const add = () => setItems((prev) => [...prev, EMPTY_ITEM()]);
-    const remove = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
-
-    const handleSave = async () => {
-        setIsSaving(true);
-        setSavedOk(false);
-        try {
-            await saveCXData(managerId, items);
-            setSavedOk(true);
-            setTimeout(() => setSavedOk(false), 3000);
-        } catch (e) {
-            alert('Erro ao salvar CX. Tente novamente.');
-        } finally {
-            setIsSaving(false);
-        }
-    };
+    const add = () => onChange([...items, EMPTY_ITEM()]);
+    const remove = (i: number) => onChange(items.filter((_, idx) => idx !== i));
 
     return (
         <div className="flex flex-col gap-4">
@@ -65,17 +45,6 @@ export function CXEditor({ managerId, initialItems }: CXEditorProps) {
                         onClick={add}
                     >
                         <Plus className="w-4 h-4 mr-1" /> Novo CX
-                    </Button>
-                    <Button
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[100px]"
-                    >
-                        {isSaving
-                            ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                            : <Save className="w-4 h-4 mr-1" />}
-                        {savedOk ? 'Salvo!' : 'Salvar CX'}
                     </Button>
                 </div>
             </div>

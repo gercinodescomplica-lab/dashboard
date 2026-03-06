@@ -1,16 +1,14 @@
 'use client';
 
-import { useState } from 'react';
 import { Visit } from '@/types/manager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Save, Loader2, Plus, Trash2, MapPin, Calendar } from 'lucide-react';
-import { saveVisitsData } from './actions';
+import { Plus, Trash2, MapPin, Calendar } from 'lucide-react';
 
 interface VisitsEditorProps {
-    managerId: string;
-    initialItems: Visit[];
+    items: Visit[];
+    onChange: (items: Visit[]) => void;
 }
 
 const EMPTY_VISIT = (): Visit => ({
@@ -20,30 +18,18 @@ const EMPTY_VISIT = (): Visit => ({
     data: new Date().toISOString().split('T')[0],
 });
 
-export function VisitsEditor({ managerId, initialItems }: VisitsEditorProps) {
-    const [items, setItems] = useState<Visit[]>(initialItems);
-    const [isSaving, setIsSaving] = useState(false);
-    const [savedOk, setSavedOk] = useState(false);
-
+export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
     const update = (i: number, field: keyof Visit, value: any) => {
-        setItems((prev) => prev.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
+        const sortedArray = [...items].sort((a, b) => b.data.localeCompare(a.data));
+        const finalArray = items.map(item => item === sortedArray[i] ? { ...item, [field]: value } : item);
+        onChange(finalArray);
     };
 
-    const add = () => setItems((prev) => [...prev, EMPTY_VISIT()]);
-    const remove = (i: number) => setItems((prev) => prev.filter((_, idx) => idx !== i));
+    const add = () => onChange([...items, EMPTY_VISIT()]);
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        setSavedOk(false);
-        try {
-            await saveVisitsData(managerId, items);
-            setSavedOk(true);
-            setTimeout(() => setSavedOk(false), 3000);
-        } catch (e) {
-            alert('Erro ao salvar visitas. Tente novamente.');
-        } finally {
-            setIsSaving(false);
-        }
+    const remove = (i: number) => {
+        const sortedArray = [...items].sort((a, b) => b.data.localeCompare(a.data));
+        onChange(items.filter(item => item !== sortedArray[i]));
     };
 
     // Sort display by date desc
@@ -61,17 +47,6 @@ export function VisitsEditor({ managerId, initialItems }: VisitsEditorProps) {
                         onClick={add}
                     >
                         <Plus className="w-4 h-4 mr-1" /> Nova Visita
-                    </Button>
-                    <Button
-                        size="sm"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[110px]"
-                    >
-                        {isSaving
-                            ? <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                            : <Save className="w-4 h-4 mr-1" />}
-                        {savedOk ? 'Salvo!' : 'Salvar Visitas'}
                     </Button>
                 </div>
             </div>

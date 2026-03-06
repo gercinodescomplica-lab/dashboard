@@ -5,7 +5,7 @@ import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
 import { Loader2, User, Save, RefreshCw } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
-import { saveManagerData } from './actions';
+import { saveManagerData, saveCXData, saveVisitsData } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export function SettingsDashboard() {
@@ -40,7 +40,11 @@ export function SettingsDashboard() {
         setIsSaving(true);
         setSaveStatus('idle');
         try {
-            await saveManagerData(selectedManager);
+            await Promise.all([
+                saveManagerData(selectedManager),
+                saveCXData(selectedManager.id, selectedManager.cx || []),
+                saveVisitsData(selectedManager.id, selectedManager.visits || []),
+            ]);
             setSaveStatus('success');
             setTimeout(() => setSaveStatus('idle'), 3000);
         } catch (e) {
