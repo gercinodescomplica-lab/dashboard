@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { PipelineData } from '@/types/manager';
 import { formatCurrency } from '@/lib/format';
+import { sumQuarterProjects } from '@/lib/calc';
 import { QuarterProjectsModal } from './QuarterProjectsModal';
 import { Info } from 'lucide-react';
 import {
@@ -12,20 +13,21 @@ import {
 
 interface PipelineBarsProps {
     pipeline: PipelineData;
+    managerName: string;
 }
 
-export function PipelineBars({ pipeline }: PipelineBarsProps) {
-    const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; data: PipelineData['q1'] } | null>(null);
-
-    // Find the maximum quarter value to scale the bars proportionally
-    const maxValue = Math.max(pipeline.q1.total, pipeline.q2.total, pipeline.q3.total, pipeline.q4.total);
+export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
+    const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; projects: PipelineData['q1']['projects']; calculatedTotal: number } | null>(null);
 
     const quarters = [
-        { label: 'Q1', data: pipeline.q1 },
-        { label: 'Q2', data: pipeline.q2 },
-        { label: 'Q3', data: pipeline.q3 },
-        { label: 'Q4', data: pipeline.q4 },
+        { label: 'Q1', projects: pipeline.q1.projects, calculatedTotal: sumQuarterProjects(pipeline.q1.projects) },
+        { label: 'Q2', projects: pipeline.q2.projects, calculatedTotal: sumQuarterProjects(pipeline.q2.projects) },
+        { label: 'Q3', projects: pipeline.q3.projects, calculatedTotal: sumQuarterProjects(pipeline.q3.projects) },
+        { label: 'Q4', projects: pipeline.q4.projects, calculatedTotal: sumQuarterProjects(pipeline.q4.projects) },
     ];
+
+    // Find the maximum quarter value to scale the bars proportionally
+    const maxValue = Math.max(...quarters.map(q => q.calculatedTotal));
 
     return (
         <TooltipProvider>
@@ -43,7 +45,7 @@ export function PipelineBars({ pipeline }: PipelineBarsProps) {
                 </div>
                 <div className="space-y-2.5">
                     {quarters.map((q) => {
-                        const widthPercent = maxValue > 0 ? (q.data.total / maxValue) * 100 : 0;
+                        const widthPercent = maxValue > 0 ? (q.calculatedTotal / maxValue) * 100 : 0;
                         return (
                             <div key={q.label} className="flex items-center gap-3">
                                 <span className="text-xs font-semibold text-zinc-500 w-5">{q.label}</span>
@@ -55,13 +57,13 @@ export function PipelineBars({ pipeline }: PipelineBarsProps) {
                                     >
                                         <div
                                             className="h-full bg-indigo-500/20 rounded-r-sm border-r border-indigo-500 text-indigo-400 flex items-center justify-end px-2 text-xs font-medium transition-all duration-1000 ease-out whitespace-nowrap min-w-[2px]"
-                                            style={{ width: `${q.data.total === 0 ? 0 : Math.max(widthPercent, 2)}%`, opacity: q.data.total === 0 ? 0 : 1 }}
+                                            style={{ width: `${q.calculatedTotal === 0 ? 0 : Math.max(widthPercent, 2)}%`, opacity: q.calculatedTotal === 0 ? 0 : 1 }}
                                         >
-                                            {q.data.total > 0 ? (
-                                                <span className="absolute right-2 opacity-80">{formatCurrency(q.data.total)}</span>
+                                            {q.calculatedTotal > 0 ? (
+                                                <span className="absolute right-2 opacity-80">{formatCurrency(q.calculatedTotal)}</span>
                                             ) : null}
                                         </div>
-                                        {q.data.total === 0 && (
+                                        {q.calculatedTotal === 0 && (
                                             <span className="absolute left-2 text-xs text-zinc-600 top-1/2 -translate-y-1/2">R$ 0</span>
                                         )}
                                     </button>
@@ -76,8 +78,9 @@ export function PipelineBars({ pipeline }: PipelineBarsProps) {
                         isOpen={!!selectedQuarter}
                         onClose={() => setSelectedQuarter(null)}
                         quarterLabel={selectedQuarter.label}
-                        projects={selectedQuarter.data.projects}
-                        totalValue={selectedQuarter.data.total}
+                        projects={selectedQuarter.projects}
+                        totalValue={selectedQuarter.calculatedTotal}
+                        managerName={managerName}
                     />
                 )}
             </div>

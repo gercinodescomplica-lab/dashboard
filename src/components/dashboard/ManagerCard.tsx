@@ -25,7 +25,7 @@ export function ManagerCard({ manager }: ManagerCardProps) {
                     </div>
 
                     <div className="pt-6 border-t border-zinc-900/50">
-                        <PipelineBars pipeline={manager.pipeline} />
+                        <PipelineBars pipeline={manager.pipeline} managerName={manager.name} />
                     </div>
                 </div>
 

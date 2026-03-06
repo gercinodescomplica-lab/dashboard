@@ -28,27 +28,30 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
 
     return (
         <div className="flex flex-col gap-8 h-full">
-            <div className="flex items-center gap-4 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md">
-                <div className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <Building2 className="w-12 h-12 text-zinc-500" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md text-center sm:text-left">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
+                    <Building2 className="w-10 h-10 sm:w-12 sm:h-12 text-zinc-500" />
                 </div>
-                <div>
-                    <h3 className="text-3xl font-bold text-zinc-100">DRM - Visão Geral</h3>
-                    <p className="text-lg font-medium text-zinc-400">Diretoria de Relacionamento e Mercado ({year})</p>
+                <div className="flex-1">
+                    <h3 className="text-2xl sm:text-3xl font-bold text-zinc-100">DRM - Visão Geral</h3>
+                    <p className="text-sm sm:text-lg font-medium text-zinc-400">Diretoria de Relacionamento e Mercado ({year})</p>
                 </div>
 
-                <div className="ml-auto text-right">
-                    <p className="text-sm font-medium text-zinc-400 uppercase tracking-wider mb-1">Meta Global</p>
-                    <p className="text-3xl font-bold text-zinc-100">{formatCurrency(totalMeta)}</p>
+                <div className="mt-4 sm:mt-0 sm:ml-auto w-full sm:w-auto text-center sm:text-right border-t border-zinc-800 sm:border-0 pt-4 sm:pt-0">
+                    <p className="text-xs sm:text-sm font-medium text-zinc-400 uppercase tracking-wider mb-1">Meta Global</p>
+                    <p className="text-xl sm:text-3xl font-bold text-emerald-400 break-all sm:break-normal">{formatCurrency(totalMeta)}</p>
                 </div>
             </div>
 
-            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center overflow-hidden backdrop-blur-md relative">
+            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 flex flex-col items-center justify-center overflow-hidden min-h-[500px] backdrop-blur-md relative">
 
-                <h4 className="absolute top-8 left-8 text-xl font-bold text-zinc-300 tracking-wide z-10">COMPOSIÇÃO DE META</h4>
+                {/* Always visible flow-based title instead of absolute top */}
+                <div className="w-full flex justify-start sm:absolute sm:top-8 sm:left-8 mb-4 sm:mb-0">
+                    <h4 className="text-lg sm:text-xl font-bold text-zinc-300 tracking-wide z-10 w-full text-center sm:text-left">COMPOSIÇÃO DE META</h4>
+                </div>
 
                 {/* Pyramid Container */}
-                <div className="w-full max-w-5xl flex flex-col items-center justify-end h-full pt-16 gap-1 relative z-0">
+                <div className="w-full max-w-5xl flex flex-col items-center justify-end h-full sm:pt-16 gap-1 relative z-0">
 
                     {/* A Contratar (Gaps) Blocks - Stacked on top */}
                     {managersWithGaps.reverse().map((m, index) => {
@@ -108,7 +111,7 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                 </div>
 
                 {/* Legends */}
-                <div className="absolute bottom-6 right-6 flex gap-6 bg-zinc-950/50 px-4 py-2 rounded-lg border border-zinc-800/50 backdrop-blur-md">
+                <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col sm:flex-row gap-2 sm:gap-6 bg-zinc-950/50 px-4 py-2 rounded-lg border border-zinc-800/50 backdrop-blur-md">
                     <div className="flex items-center gap-2">
                         <div className="w-4 h-4 rounded-sm bg-emerald-500/90 border border-emerald-400/50"></div>
                         <span className="text-xs font-semibold text-zinc-300">CONTRATADO</span>

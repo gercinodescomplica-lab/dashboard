@@ -21,9 +21,9 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
 
     return (
         <TooltipProvider>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Forecast KPI */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <TrendingUp className="w-4 h-4 text-zinc-400" />
@@ -38,13 +38,13 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                             </TooltipContent>
                         </Tooltip>
                     </div>
-                    <div className="text-xl sm:text-2xl font-bold text-zinc-100">
+                    <div className="text-lg sm:text-2xl font-bold text-zinc-100 mt-2 break-all sm:break-normal line-clamp-2">
                         {formatCurrency(forecastFinal)}
                     </div>
                 </div>
 
                 {/* Achievement KPI */}
-                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                             <Target className="w-4 h-4 text-zinc-400" />
@@ -59,8 +59,8 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                             </TooltipContent>
                         </Tooltip>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                        <div className="text-xl sm:text-2xl font-bold text-zinc-100">
+                    <div className="flex items-baseline gap-2 mt-2 flex-wrap">
+                        <div className="text-lg sm:text-2xl font-bold text-zinc-100 truncate">
                             {formatPercentage(achievementPercentage)}
                         </div>
                         <span className={cn("text-xs font-medium px-1.5 py-0.5 rounded", colorClasses)}>

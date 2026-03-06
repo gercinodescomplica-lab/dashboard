@@ -10,18 +10,32 @@ export function calculateGap(meta: number, contratado: number): number {
 }
 
 /**
- * Calculates the Achievement Percentage (Forecast / Target * 100)
+ * Sums the total value of an array of projects
  */
-export function calculateAchievementPercentage(forecastFinal: number, meta: number): number {
-    if (meta === 0) return 0;
-    return (forecastFinal / meta) * 100;
+export function sumQuarterProjects(projects: { value: number }[]): number {
+    return projects.reduce((acc, curr) => acc + (curr.value || 0), 0);
 }
 
 /**
  * Calculates the Total Pipeline from all quarters
  */
 export function calculatePipelineTotal(pipeline: Manager['pipeline']): number {
-    return Object.values(pipeline).reduce((acc, curr) => acc + curr, 0);
+    return Object.values(pipeline).reduce((acc, curr) => acc + sumQuarterProjects(curr.projects), 0);
+}
+
+/**
+ * Calculates the Forecast Final (Contracted + Total Pipeline)
+ */
+export function calculateForecastFinal(contratado: number, pipeline: Manager['pipeline']): number {
+    return (contratado || 0) + calculatePipelineTotal(pipeline);
+}
+
+/**
+ * Calculates the Achievement Percentage (Forecast / Target * 100)
+ */
+export function calculateAchievementPercentage(forecastFinal: number, meta: number): number {
+    if (meta === 0) return 0;
+    return (forecastFinal / meta) * 100;
 }
 
 /**

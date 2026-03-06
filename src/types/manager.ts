@@ -1,6 +1,10 @@
+export type OpportunityTemperature = 'quente' | 'morno' | 'frio';
+
 export interface Project {
+  orgao?: string;
   name: string;
   value: number;
+  temperature?: OpportunityTemperature;
 }
 
 export interface QuarterData {

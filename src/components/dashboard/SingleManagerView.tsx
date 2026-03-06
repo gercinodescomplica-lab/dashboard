@@ -10,10 +10,10 @@ interface SingleManagerViewProps {
 
 export function SingleManagerView({ manager }: SingleManagerViewProps) {
     return (
-        <div className="flex-1 flex flex-col gap-6 min-h-0 h-full pb-6">
+        <div className="flex flex-col lg:h-full gap-6 pb-6 lg:min-h-0">
 
             {/* Top half: Header, KPIs, Performance */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-1/2 min-h-[300px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-1/2 min-h-[300px]">
 
                 {/* Left Column: Info & KPIs */}
                 <div className="lg:col-span-5 flex flex-col gap-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md">
@@ -35,8 +35,8 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
             </div>
 
             {/* Bottom half: Pipeline */}
-            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md flex flex-col min-h-0">
-                <PipelineBars pipeline={manager.pipeline} />
+            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 backdrop-blur-md flex flex-col min-h-0 min-h-[300px] lg:min-h-0">
+                <PipelineBars pipeline={manager.pipeline} managerName={manager.name} />
             </div>
 
         </div>

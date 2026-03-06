@@ -93,12 +93,12 @@ export function DashboardShell() {
             {/* Header - Fixed Height */}
             <header className="flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 backdrop-blur-sm z-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+                    {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                         <MapPin className="w-6 h-6 text-indigo-400" />
-                    </div>
+                    </div> */}
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
-                            Dashboard Comercial
+                            Dashboard Comercial PRODAM
                         </h1>
                         <p className="text-zinc-400 text-sm font-medium">
                             Visão Executiva de Gerentes
@@ -201,8 +201,8 @@ export function DashboardShell() {
                 </div>
             </header>
 
-            {/* Main Content Area - Scroll hidden in root, handles remaining height */}
-            <main className="flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full max-w-7xl mx-auto overflow-hidden">
+            {/* Main Content Area - Scrollable on mobile, handles remaining height */}
+            <main className="flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full max-w-7xl mx-auto overflow-y-auto overflow-x-hidden">
                 {selectedManagerId === 'drm' ? (
                     <DRMOverview managers={managersForYear} year={selectedYear} />
                 ) : currentManager ? (

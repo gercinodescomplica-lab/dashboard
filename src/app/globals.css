@@ -45,6 +45,22 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Brand Theme Colors */
+  --color-brand-background: #0B0F14;
+  --color-brand-surface: #121821;
+  --color-brand-surfaceAlt: #1A2230;
+  --color-brand-border: #2A3441;
+  --color-brand-textPrimary: #E8EDF2;
+  --color-brand-textSecondary: #A8B3C2;
+  --color-brand-meta: #5F6B7A;
+  --color-brand-contracted: #7B8794;
+  --color-brand-difference: #A7B1BC;
+  --color-brand-pipeline: #8F99A8;
+  --color-brand-forecastCard: #18202B;
+  --color-brand-success: #7F9B86;
+  --color-brand-warning: #A8956B;
+  --color-brand-danger: #9A7777;
 }
 
 :root {
@@ -120,7 +136,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+  }
+
+  ::selection {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
   }
 }

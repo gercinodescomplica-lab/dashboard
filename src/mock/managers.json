@@ -10,34 +10,51 @@
         "forecastFinal": 125948171,
         "pipeline": {
             "q1": {
-                "total": 7400000,
+                "total": 2086255.12,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
-                        "value": 4440000
+                        "name": "Casa Civil - Integra+Delibera",
+                        "value": 1743057.16
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
-                        "value": 2960000
+                        "name": "PGM - Aditivo com Acréscimo",
+                        "value": 343197.96
                     }
                 ]
             },
             "q2": {
-                "total": 11500000,
+                "total": 75591294.31,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
-                        "value": 6900000
+                        "name": "PGM - Novo Dívida Ativa",
+                        "value": 69103541.08
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
-                        "value": 4600000
+                        "name": "SVMA - SD-WAN",
+                        "value": 5736632.28
+                    },
+                    {
+                        "name": "Sub Pinheiros - Microsoft 365",
+                        "value": 76582.2
+                    },
+                    {
+                        "name": "Sub Santana - Microsoft 365",
+                        "value": 123718.2
+                    },
+                    {
+                        "name": "SMSUB - WFS Auto de Licença",
+                        "value": 550820.55
                     }
                 ]
             },
             "q3": {
-                "total": 0,
-                "projects": []
+                "total": 1299699.6,
+                "projects": [
+                    {
+                        "name": "28 Subprefeituras - Microsoft 365",
+                        "value": 1299699.6
+                    }
+                ]
             },
             "q4": {
                 "total": 0,
@@ -59,11 +76,11 @@
                 "total": 5000000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Institucional 1",
                         "value": 3000000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Institucional 2",
                         "value": 2000000
                     }
                 ]
@@ -100,11 +117,11 @@
                 "total": 25000000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Estruturante 1",
                         "value": 15000000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Estruturante 2",
                         "value": 10000000
                     }
                 ]
@@ -113,11 +130,11 @@
                 "total": 78600000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Estruturante 3",
                         "value": 47160000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Estruturante 4",
                         "value": 31440000
                     }
                 ]
@@ -170,11 +187,11 @@
                 "total": 739000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Operacional 1",
                         "value": 443400
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Operacional 2",
                         "value": 295600
                     }
                 ]
@@ -183,11 +200,11 @@
                 "total": 12100000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Operacional 3",
                         "value": 7260000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Operacional 4",
                         "value": 4840000
                     }
                 ]
@@ -217,28 +234,180 @@
                 "projects": []
             },
             "q2": {
-                "total": 62600000,
+                "total": 62654815.5,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
-                        "value": 37560000
+                        "orgao": "ALESP",
+                        "name": "Serviço de ChatBot e mensageria Inteligente",
+                        "value": 8577615.5,
+                        "temperature": "quente"
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
-                        "value": 25040000
+                        "orgao": "ALESP",
+                        "name": "Suporte Microsoft no ambiente Entra e Exchange 365",
+                        "value": 360000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Ministério Publico de Goias",
+                        "name": "11.770 Licenças Workspace",
+                        "value": 5000000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Secretaria da Fazenda de Palmas",
+                        "name": "Hospedagem do ambiente de infraestrutura",
+                        "value": 6800000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura Joinville",
+                        "name": "16.387 Licenças Workspace",
+                        "value": 7800000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura de Nova Lima",
+                        "name": "20 licenças BI Pró.",
+                        "value": 25000000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura de Florianopolis",
+                        "name": "Delibera",
+                        "value": 0,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura de Florianopolis",
+                        "name": "4.450 Licenças Microstoft 365",
+                        "value": 3693500,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Instituto de Saúde Curitiba",
+                        "name": "200 Licenças Microsoft 365 Apps For Business",
+                        "value": 200000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "ICI",
+                        "name": "Purview/DLP para 900 contas",
+                        "value": 540000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura Curitiba",
+                        "name": "93 Licenças Power BI",
+                        "value": 83700,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura Mogi",
+                        "name": "sistema único para gestão de tributos municipais, abrangendo IPTU, ISS e ITBI",
+                        "value": 3600000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura Amargosa BA",
+                        "name": "Aquisição de servidores Virtual",
+                        "value": 1000000,
+                        "temperature": "quente"
+                    },
+                    {
+                        "orgao": "Prefeitura de Valinhos",
+                        "name": "Licenças Workspace (analise de quantitativo)",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Saúde de Serra",
+                        "name": "Licenças Microsoft (analise de quantitativo)",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "SP Parcerias",
+                        "name": "Licenças Microsoft (analise do quantitativo)",
+                        "value": 0,
+                        "temperature": "frio"
                     }
                 ]
             },
             "q3": {
-                "total": 18100000,
+                "total": 18114200,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
-                        "value": 10860000
+                        "orgao": "Secretaria Meio Ambiente de Fernando de Noronha",
+                        "name": "Google AI Ultra",
+                        "value": 14200,
+                        "temperature": "frio"
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
-                        "value": 7240000
+                        "orgao": "Fazenda de Tatuí",
+                        "name": "Implementar Domicílio Eletrônico do Contribuinte",
+                        "value": 500000,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de Maringá",
+                        "name": "Solução comparada ao SISGAU-Verde",
+                        "value": 900000,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de Araçatuba",
+                        "name": "Smart Sampa",
+                        "value": 5000000,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura Jundiaí",
+                        "name": "Smart Sampa",
+                        "value": 11000000,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura Santa Barbara",
+                        "name": "Smart Sampa",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de Monte Mor",
+                        "name": "Smart Sampa",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de Boituva",
+                        "name": "Consultoria",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de contagem",
+                        "name": "Consultoria",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Secretaria de Segurança Urbana – Barueri",
+                        "name": "Produtização do SEI",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura de Joinville",
+                        "name": "Wifi (Definir necessidades, ex: quantidade de pontos)",
+                        "value": 0,
+                        "temperature": "frio"
+                    },
+                    {
+                        "orgao": "Prefeitura Campina Grande",
+                        "name": "Soluções integradoras para cadeia de serviços urbanos e meio (SGF).",
+                        "value": 700000,
+                        "temperature": "frio"
                     }
                 ]
             },
@@ -266,11 +435,11 @@
                 "total": 53000000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Estratégica 1",
                         "value": 31800000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Estratégica 2",
                         "value": 21200000
                     }
                 ]
@@ -279,11 +448,11 @@
                 "total": 1500000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Estratégica 3",
                         "value": 900000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Estratégica 4",
                         "value": 600000
                     }
                 ]
@@ -312,11 +481,11 @@
                 "total": 11000000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Corporativa 1",
                         "value": 6600000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Corporativa 2",
                         "value": 4400000
                     }
                 ]
@@ -345,11 +514,11 @@
                 "total": 13000000,
                 "projects": [
                     {
-                        "name": "Projeto Alpha (Placeholder)",
+                        "name": "Oportunidade Setorial 1",
                         "value": 7800000
                     },
                     {
-                        "name": "Projeto Beta (Placeholder)",
+                        "name": "Oportunidade Setorial 2",
                         "value": 5200000
                     }
                 ]
