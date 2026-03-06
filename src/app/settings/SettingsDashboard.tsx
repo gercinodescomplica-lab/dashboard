@@ -101,6 +101,7 @@ export function SettingsDashboard() {
 
                 {selectedManager ? (
                     <ManagerEditor
+                        key={selectedManager.id}
                         manager={selectedManager}
                         onChange={handleUpdateManager}
                         onSave={handleSave}

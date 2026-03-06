@@ -204,9 +204,9 @@ export function DashboardShell() {
             {/* Main Content Area - Scrollable on mobile, handles remaining height */}
             <main className="flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full max-w-7xl mx-auto overflow-y-auto overflow-x-hidden">
                 {selectedManagerId === 'drm' ? (
-                    <DRMOverview managers={managersForYear} year={selectedYear} />
+                    <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} />
                 ) : currentManager ? (
-                    <SingleManagerView manager={currentManager} />
+                    <SingleManagerView key={currentManager.id} manager={currentManager} />
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-2xl">
                         <Users className="w-12 h-12 mb-4 text-zinc-700" />
