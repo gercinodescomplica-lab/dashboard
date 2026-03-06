@@ -1,8 +1,7 @@
-import { config } from 'dotenv';
 import { drizzle } from 'drizzle-orm/libsql';
 
-config({ path: '.env' }); // or .env
-
+// Next.js (local) and Vercel (production) inject process.env automatically.
+// DO NOT use dotenv here - it tries to read a file that doesn't exist on Vercel servers.
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
