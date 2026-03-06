@@ -38,7 +38,10 @@ export function CXTab({ items }: CXTabProps) {
                         return (
                             <tr key={i} className="hover:bg-zinc-800/30 transition-colors align-top">
                                 <td className="py-3 pr-4 text-zinc-200 font-medium whitespace-nowrap">{item.cliente}</td>
-                                <td className="py-3 pr-4 text-zinc-400 max-w-xs">{item.problema}</td>
+                                <td className="py-3 pr-4 max-w-xs">
+                                    {item.titulo && <div className="text-zinc-300 font-semibold mb-1 text-sm">{item.titulo}</div>}
+                                    <div className="text-zinc-400 text-xs">{item.problema}</div>
+                                </td>
                                 <td className="py-3 pr-4 text-zinc-400 max-w-xs">{item.solucaoProposta}</td>
                                 <td className="py-3 text-center">
                                     <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${status.style}`}>

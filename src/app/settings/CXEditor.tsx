@@ -21,6 +21,7 @@ const STATUS_OPTIONS: { value: CXStatus; label: string; color: string }[] = [
 
 const EMPTY_ITEM = (): CXItem => ({
     cliente: '',
+    titulo: '',
     problema: '',
     solucaoProposta: '',
     status: 'pendente',
@@ -119,8 +120,8 @@ export function CXEditor({ managerId, initialItems }: CXEditorProps) {
                                             type="button"
                                             onClick={() => update(i, 'status', s.value)}
                                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${item.status === s.value
-                                                    ? s.color + ' ring-2 ring-offset-1 ring-offset-zinc-950 ring-current'
-                                                    : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600'
+                                                ? s.color + ' ring-2 ring-offset-1 ring-offset-zinc-950 ring-current'
+                                                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600'
                                                 }`}
                                         >
                                             {s.label}
@@ -131,11 +132,21 @@ export function CXEditor({ managerId, initialItems }: CXEditorProps) {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-zinc-400">Problema</Label>
+                            <Label className="text-zinc-400">Título do Problema</Label>
+                            <Input
+                                value={item.titulo}
+                                onChange={(e) => update(i, 'titulo', e.target.value)}
+                                placeholder="Resumo do problema"
+                                className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                            />
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <Label className="text-zinc-400">Descrição do Problema</Label>
                             <Input
                                 value={item.problema}
                                 onChange={(e) => update(i, 'problema', e.target.value)}
-                                placeholder="Descreva o problema relatado"
+                                placeholder="Descreva o problema relatado em detalhes"
                                 className="bg-zinc-900 border-zinc-800 text-zinc-200"
                             />
                         </div>

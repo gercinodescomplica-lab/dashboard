@@ -27,6 +27,7 @@ export const cx = sqliteTable('cx', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     managerId: text('manager_id').notNull().references(() => managers.id, { onDelete: 'cascade' }),
     cliente: text('cliente').notNull(),
+    titulo: text('titulo').notNull().default(''),
     problema: text('problema').notNull(),
     solucaoProposta: text('solucao_proposta').notNull(),
     status: text('status', { enum: ['pendente', 'analise', 'resolvido'] }).notNull().default('pendente'),

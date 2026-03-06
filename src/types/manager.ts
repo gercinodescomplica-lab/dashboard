@@ -25,6 +25,7 @@ export interface PipelineData {
 export interface CXItem {
   id?: number;
   cliente: string;
+  titulo: string;
   problema: string;
   solucaoProposta: string;
   status: CXStatus;

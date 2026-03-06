@@ -22,6 +22,7 @@ export async function saveCXData(managerId: string, items: CXItem[]) {
                 items.map((item) => ({
                     managerId,
                     cliente: item.cliente,
+                    titulo: item.titulo,
                     problema: item.problema,
                     solucaoProposta: item.solucaoProposta,
                     status: item.status,

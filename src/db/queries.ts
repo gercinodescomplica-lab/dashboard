@@ -61,6 +61,7 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
     return rows.map((r) => ({
         id: r.id,
         cliente: r.cliente,
+        titulo: r.titulo,
         problema: r.problema,
         solucaoProposta: r.solucaoProposta,
         status: r.status as CXItem['status'],
