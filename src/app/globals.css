@@ -145,4 +145,27 @@
     background-color: #3b82f6 !important;
     color: #ffffff !important;
   }
+
+  /* Custom scrollbar — dark design system */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2a3441;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3d4f62;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }

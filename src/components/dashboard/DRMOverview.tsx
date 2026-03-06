@@ -1,128 +1,396 @@
-import { Manager } from '@/types/manager';
-import { formatCurrency } from '@/lib/format';
-import { calculateGap } from '@/lib/calc';
-import { Building2 } from 'lucide-react';
+'use client';
+
+import { useState } from 'react';
+import { Manager, Project } from '@/types/manager';
+import { formatCurrency, formatPercentage } from '@/lib/format';
+import {
+    calculateGap,
+    calculateAchievementPercentage,
+    sumQuarterProjects,
+    getStatusColor,
+    determinePerformanceStatus,
+} from '@/lib/calc';
+import { Building2, Flame, Snowflake, Circle, Info, X, Thermometer, Calendar } from 'lucide-react';
+import {
+    Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+    Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
 
 interface DRMOverviewProps {
     managers: Manager[];
     year: string;
 }
 
+type Temp = 'quente' | 'morno' | 'frio';
+type QKey = 'q1' | 'q2' | 'q3' | 'q4';
+
+interface ProjectWithMeta extends Project {
+    managerName: string;
+    managerRole: string;
+}
+
+interface ModalState {
+    open: boolean;
+    title: string;
+    subtitle: string;
+    projects: ProjectWithMeta[];
+    total: number;
+    accentColor: string;
+}
+
+const CLOSED_MODAL: ModalState = { open: false, title: '', subtitle: '', projects: [], total: 0, accentColor: 'text-indigo-400' };
+
+function InfoTip({ text }: { text: string }) {
+    return (
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <span className="cursor-help text-zinc-600 hover:text-zinc-400 transition-colors ml-1.5 inline-flex items-center">
+                    <Info className="w-3.5 h-3.5" />
+                </span>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-[260px] text-xs leading-relaxed bg-zinc-900 text-zinc-200 border border-zinc-700 shadow-xl" side="top" sideOffset={6}>
+                {text}
+            </TooltipContent>
+        </Tooltip>
+    );
+}
+
+function KpiCard({ label, value, sub, accent, tip }: {
+    label: string; value: string; sub?: string; accent?: string; tip?: string;
+}) {
+    return (
+        <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800 rounded-2xl px-5 py-4 min-w-0">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest flex items-center">
+                {label}
+                {tip && <InfoTip text={tip} />}
+            </p>
+            <p className={`text-xl sm:text-2xl font-bold font-mono truncate ${accent ?? 'text-zinc-100'}`}>{value}</p>
+            {sub && <p className="text-xs text-zinc-500 mt-0.5">{sub}</p>}
+        </div>
+    );
+}
+
+const TEMP_META: Record<Temp, { label: string; emoji: string; accent: string; bar: string }> = {
+    quente: { label: 'Quente', emoji: '🔥', accent: 'text-orange-400', bar: 'bg-orange-500' },
+    morno: { label: 'Morno', emoji: '🟡', accent: 'text-yellow-400', bar: 'bg-yellow-500' },
+    frio: { label: 'Frio', emoji: '❄️', accent: 'text-blue-400', bar: 'bg-blue-500' },
+};
+
 export function DRMOverview({ managers, year }: DRMOverviewProps) {
     if (!managers || managers.length === 0) return null;
 
-    // Calculate totals
+    const [modal, setModal] = useState<ModalState>(CLOSED_MODAL);
+
+    // ── Totals ──────────────────────────────────────────────────────────────
     const totalMeta = managers.reduce((acc, m) => acc + m.meta, 0);
     const totalContratado = managers.reduce((acc, m) => acc + m.contratado, 0);
+    const totalForecast = managers.reduce((acc, m) => acc + m.forecastFinal, 0);
+    const totalGap = calculateGap(totalMeta, totalContratado);
+    const achievementPct = calculateAchievementPercentage(totalForecast, totalMeta);
+    const overallStatus = determinePerformanceStatus(achievementPct);
 
-    // Sort managers by gap descending for the pyramid logic
-    // The image has the largest ones at the bottom or middle, sorting by gap helps visually
-    const managersWithGaps = managers.map(m => ({
-        ...m,
-        gap: calculateGap(m.meta, m.contratado)
-    })).filter(m => m.gap > 0).sort((a, b) => b.gap - a.gap);
+    // ── Pipeline by quarter ──────────────────────────────────────────────────
+    const qTotals = (['q1', 'q2', 'q3', 'q4'] as const).map((q) => ({
+        key: q,
+        label: q.toUpperCase(),
+        total: managers.reduce((acc, m) => acc + sumQuarterProjects(m.pipeline[q].projects), 0),
+    }));
+    const maxQTotal = Math.max(...qTotals.map((q) => q.total), 1);
 
-    // Determine the max possible width (Total Meta) to scale the blocks
-    // In a stacked bar, the sum of Contracted + All Gaps = Total Meta
-    // Let's use percentages based on Total Meta
+    // ── Temperature counts ───────────────────────────────────────────────────
+    const tempCounts: Record<Temp, number> = { quente: 0, morno: 0, frio: 0 };
+    managers.forEach((m) => {
+        (['q1', 'q2', 'q3', 'q4'] as QKey[]).forEach((q) => {
+            m.pipeline[q].projects.forEach((p) => {
+                const t = (p.temperature ?? 'morno') as Temp;
+                tempCounts[t] = (tempCounts[t] ?? 0) + 1;
+            });
+        });
+    });
+    const totalProjects = tempCounts.quente + tempCounts.morno + tempCounts.frio || 1;
+
+    // ── Ranking ──────────────────────────────────────────────────────────────
+    const ranked = [...managers]
+        .map((m) => ({
+            ...m,
+            pct: calculateAchievementPercentage(m.forecastFinal, m.meta),
+            status: determinePerformanceStatus(calculateAchievementPercentage(m.forecastFinal, m.meta)),
+        }))
+        .sort((a, b) => b.pct - a.pct);
+
+    // ── Pyramid ──────────────────────────────────────────────────────────────
+    const pyramidBlocks = managers
+        .map((m) => ({ ...m, gap: calculateGap(m.meta, m.contratado) }))
+        .filter((m) => m.gap > 0)
+        .sort((a, b) => b.gap - a.gap);
+    const BLOCK_HEIGHT = 52;
+
+    // ── Modal Openers ─────────────────────────────────────────────────────────
+    function openQuarterModal(qKey: QKey, label: string, total: number) {
+        const projects: ProjectWithMeta[] = [];
+        managers.forEach((m) => {
+            m.pipeline[qKey].projects.forEach((p) => {
+                projects.push({ ...p, managerName: m.name, managerRole: m.role });
+            });
+        });
+        projects.sort((a, b) => b.value - a.value);
+        setModal({
+            open: true,
+            title: `Pipeline ${label}`,
+            subtitle: `${projects.length} oportunidades · Total ${formatCurrency(total)}`,
+            projects,
+            total,
+            accentColor: 'text-indigo-400',
+        });
+    }
+
+    function openTempModal(temp: Temp) {
+        const meta = TEMP_META[temp];
+        const projects: ProjectWithMeta[] = [];
+        managers.forEach((m) => {
+            (['q1', 'q2', 'q3', 'q4'] as QKey[]).forEach((q) => {
+                m.pipeline[q].projects
+                    .filter((p) => (p.temperature ?? 'morno') === temp)
+                    .forEach((p) => {
+                        projects.push({ ...p, managerName: m.name, managerRole: m.role });
+                    });
+            });
+        });
+        projects.sort((a, b) => b.value - a.value);
+        const total = projects.reduce((acc, p) => acc + p.value, 0);
+        setModal({
+            open: true,
+            title: `${meta.emoji} Oportunidades ${meta.label}`,
+            subtitle: `${projects.length} oportunidade${projects.length !== 1 ? 's' : ''} · Total ${formatCurrency(total)}`,
+            projects,
+            total,
+            accentColor: meta.accent,
+        });
+    }
 
     return (
-        <div className="flex flex-col gap-8 h-full">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md text-center sm:text-left">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <Building2 className="w-10 h-10 sm:w-12 sm:h-12 text-zinc-500" />
+        <TooltipProvider>
+            <div className="flex flex-col gap-6 h-full">
+
+                {/* ── Header ──────────────────────────────────── */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 backdrop-blur-md">
+                    <div className="w-16 h-16 rounded-full bg-zinc-800 border-2 border-zinc-700 flex items-center justify-center flex-shrink-0">
+                        <Building2 className="w-8 h-8 text-zinc-400" />
+                    </div>
+                    <div className="flex-1 text-center sm:text-left">
+                        <h3 className="text-2xl sm:text-3xl font-bold text-zinc-100">DRM — Visão Geral</h3>
+                        <p className="text-sm font-medium text-zinc-400">Diretoria de Relacionamento e Mercado · {year}</p>
+                    </div>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <div className={`cursor-help px-4 py-2 rounded-full border text-sm font-bold uppercase tracking-wider ${getStatusColor(overallStatus)}`}>
+                                {overallStatus} · {formatPercentage(achievementPct)}
+                            </div>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[280px] text-xs leading-relaxed bg-zinc-900 text-zinc-200 border border-zinc-700 shadow-xl" side="bottom" sideOffset={6}>
+                            <strong>Atingimento Geral da DRM</strong><br />
+                            Calculado como: <em>Forecast Total ÷ Meta Total × 100</em><br /><br />
+                            Representa o quão próximo a equipe está de bater 100% da meta do ano.
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
-                <div className="flex-1">
-                    <h3 className="text-2xl sm:text-3xl font-bold text-zinc-100">DRM - Visão Geral</h3>
-                    <p className="text-sm sm:text-lg font-medium text-zinc-400">Diretoria de Relacionamento e Mercado ({year})</p>
+
+                {/* ── KPI Row ─────────────────────────────────── */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <KpiCard label="Meta Total" value={formatCurrency(totalMeta)} accent="text-zinc-100" tip="Soma das metas individuais de todos os gerentes da DRM para o ano selecionado." />
+                    <KpiCard label="Contratado" value={formatCurrency(totalContratado)} accent="text-emerald-400" tip="Valor total já efetivamente contratado (assinado) por todos os gerentes." />
+                    <KpiCard label="Forecast" value={formatCurrency(totalForecast)} accent="text-indigo-400" tip="Soma do Forecast Final de cada gerente. Calculado como: Contratado + Pipeline Q1+Q2+Q3+Q4." />
+                    <KpiCard label="Gap" value={formatCurrency(totalGap)} sub={totalGap <= 0 ? '🎯 Meta atingida!' : 'Ainda a contratar'} accent={totalGap <= 0 ? 'text-emerald-400' : 'text-blue-400'} tip="Gap = Meta Total − Contratado. Quanto ainda precisa ser contratado." />
                 </div>
 
-                <div className="mt-4 sm:mt-0 sm:ml-auto w-full sm:w-auto text-center sm:text-right border-t border-zinc-800 sm:border-0 pt-4 sm:pt-0">
-                    <p className="text-xs sm:text-sm font-medium text-zinc-400 uppercase tracking-wider mb-1">Meta Global</p>
-                    <p className="text-xl sm:text-3xl font-bold text-emerald-400 break-all sm:break-normal">{formatCurrency(totalMeta)}</p>
+                {/* ── Middle: Pyramid + Ranking ───────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
+
+                    {/* Pyramid */}
+                    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 flex flex-col backdrop-blur-md">
+                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Composição de Meta</h4>
+                        <div className="flex-1 flex flex-col items-center justify-end gap-0.5 min-h-[260px]">
+                            {[...pyramidBlocks].reverse().map((m, i, arr) => {
+                                const count = arr.length;
+                                const step = count > 1 ? (95 - 30) / (count - 1) : 0;
+                                const widthPct = 30 + i * step;
+                                return (
+                                    <Tooltip key={m.id}>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center justify-center bg-blue-600/90 border border-blue-500/50 hover:bg-blue-600 transition-colors shrink-0 cursor-help" style={{ width: `${widthPct}%`, height: `${BLOCK_HEIGHT}px` }}>
+                                                <span className="text-xs font-bold text-white/90 whitespace-nowrap truncate px-2">{m.role} · {formatCurrency(m.gap)}</span>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="text-xs bg-zinc-900 text-zinc-200 border border-zinc-700" sideOffset={4}>
+                                            <strong>{m.name}</strong> — A contratar<br />Meta: {formatCurrency(m.meta)} | Contratado: {formatCurrency(m.contratado)}<br />Gap: {formatCurrency(m.gap)}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                );
+                            })}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="w-full flex items-center justify-center bg-emerald-500/90 border border-emerald-400/50 rounded-b-lg shrink-0 cursor-help" style={{ height: `${BLOCK_HEIGHT + 16}px` }}>
+                                        <span className="text-sm font-bold text-black/80">CONTRATADO · {formatCurrency(totalContratado)}</span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="text-xs bg-zinc-900 text-zinc-200 border border-zinc-700" sideOffset={4}>
+                                    Valor total já contratado por todos os gerentes da DRM.
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                        <div className="flex gap-5 mt-4 justify-center">
+                            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-emerald-500/90 border border-emerald-400/50" /><span className="text-xs font-semibold text-zinc-400">Contratado</span></div>
+                            <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-blue-600/80 border border-blue-500/50" /><span className="text-xs font-semibold text-zinc-400">A Contratar (Gap)</span></div>
+                        </div>
+                    </div>
+
+                    {/* Ranking */}
+                    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 flex flex-col backdrop-blur-md">
+                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center">
+                            Ranking de Gerentes
+                            <InfoTip text="Ordenado pelo Forecast Final de cada gerente (Contratado + Pipeline Q1→Q4). O percentual ao lado mostra quanto esse Forecast representa da Meta individual do gerente." />
+                        </h4>
+                        <p className="text-xs text-zinc-600 mb-4">Ordenado pelo Forecast Final</p>
+                        <div className="flex flex-col gap-3 flex-1">
+                            {ranked.map((m, idx) => {
+                                const barColor = m.pct >= 100 ? 'bg-emerald-500' : m.pct >= 90 ? 'bg-blue-500' : m.pct >= 70 ? 'bg-yellow-500' : 'bg-red-500';
+                                const textColor = m.pct >= 100 ? 'text-emerald-400' : m.pct >= 90 ? 'text-blue-400' : m.pct >= 70 ? 'text-yellow-400' : 'text-red-400';
+                                return (
+                                    <Tooltip key={m.id}>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-3 cursor-help group">
+                                                <span className="text-xs font-bold text-zinc-600 w-4 text-right shrink-0">{idx + 1}</span>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-sm font-semibold text-zinc-200 truncate">{m.name}</span>
+                                                        <span className={`text-xs font-bold ml-2 shrink-0 ${textColor}`}>{formatPercentage(m.pct)}</span>
+                                                    </div>
+                                                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+                                                        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(m.pct, 100)}%` }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent className="text-xs bg-zinc-900 text-zinc-200 border border-zinc-700 leading-relaxed" sideOffset={4}>
+                                            <strong>{m.name}</strong> ({m.role})<br />
+                                            Meta: {formatCurrency(m.meta)}<br />
+                                            Forecast Final: <strong>{formatCurrency(m.forecastFinal)}</strong><br />
+                                            <span className="text-zinc-500">( Forecast ÷ Meta = {formatPercentage(m.pct)} )</span><br />
+                                            Status: {m.status}
+                                        </TooltipContent>
+                                    </Tooltip>
+                                );
+                            })}
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 flex flex-col items-center justify-center overflow-hidden min-h-[500px] backdrop-blur-md relative">
+                {/* ── Bottom: Pipeline por Quarter + Temperatura ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                {/* Always visible flow-based title instead of absolute top */}
-                <div className="w-full flex justify-start sm:absolute sm:top-8 sm:left-8 mb-4 sm:mb-0">
-                    <h4 className="text-lg sm:text-xl font-bold text-zinc-300 tracking-wide z-10 w-full text-center sm:text-left">COMPOSIÇÃO DE META</h4>
-                </div>
-
-                {/* Pyramid Container */}
-                <div className="w-full max-w-5xl flex flex-col items-center justify-end h-full sm:pt-16 gap-1 relative z-0">
-
-                    {/* A Contratar (Gaps) Blocks - Stacked on top */}
-                    {managersWithGaps.reverse().map((m, index) => {
-                        const totalBlocks = managersWithGaps.length;
-                        const minWidth = 40;
-                        const maxWidth = 90;
-                        const step = totalBlocks > 1 ? (maxWidth - minWidth) / (totalBlocks - 1) : 0;
-                        const widthPercent = minWidth + (index * step);
-
-                        return (
-                            <div key={m.id} className="flex items-center justify-center w-full" style={{ height: `calc((100% - 80px) / ${totalBlocks})`, maxHeight: '60px', minHeight: '30px' }}>
-                                {/* Left Spacer */}
-                                <div className="flex-1 hidden md:block min-w-0" />
-
-                                {/* Center Block Container */}
-                                <div className="w-full max-w-[500px] flex justify-center h-full shrink-0">
-                                    <div
-                                        className="bg-blue-600/90 border border-blue-500/50 hover:bg-blue-600 transition-colors h-full flex items-center justify-center shadow-lg shadow-black/20"
-                                        style={{ width: `${widthPercent}%` }}
-                                    >
-                                        <div className="flex items-center justify-center gap-2 px-4 overflow-hidden w-full">
-                                            <span className="text-xs sm:text-sm font-bold text-white/90 drop-shadow-md whitespace-nowrap">
-                                                {formatCurrency(m.gap)}
+                    {/* Pipeline por trimestre — clicável */}
+                    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 backdrop-blur-md">
+                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-1">Pipeline por Trimestre (todos)</h4>
+                        <p className="text-xs text-zinc-600 mb-4 flex items-center gap-1"><Calendar className="w-3 h-3" /> Clique em uma barra para ver os projetos</p>
+                        <div className="flex flex-col gap-3">
+                            {qTotals.map((q) => (
+                                <div key={q.label} className="flex items-center gap-3">
+                                    <span className="text-xs font-bold text-zinc-500 w-8 shrink-0">{q.label}</span>
+                                    <div className="flex-1 h-8 bg-zinc-800 rounded-lg overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => openQuarterModal(q.key, q.label, q.total)}
+                                            className="h-full bg-indigo-600/80 hover:bg-indigo-500 active:bg-indigo-700 rounded-lg transition-all flex items-center px-3 cursor-pointer group"
+                                            style={{ width: `${(q.total / maxQTotal) * 100}%`, minWidth: '64px' }}
+                                        >
+                                            <span className="text-xs font-bold text-white/90 whitespace-nowrap group-hover:text-white">
+                                                {formatCurrency(q.total)}
                                             </span>
-                                            <span className="text-xs sm:text-sm font-medium text-blue-200 truncate hidden sm:inline-block">
-                                                {m.role === 'Projetos' ? m.name : `${m.role} - ${m.name}`}
-                                            </span>
-                                        </div>
+                                        </button>
                                     </div>
                                 </div>
-
-                                {/* Right Spacer (to keep block centered) */}
-                                <div className="flex-1 hidden md:block" />
-                            </div>
-                        );
-                    })}
-
-                    {/* Contratado Base Block - Bottom */}
-                    <div className="flex items-center justify-center w-full h-20 shrink-0 mt-2">
-                        {/* Left Spacer & Label */}
-                        <div className="flex-1 flex justify-end items-center pr-4 md:pr-8 min-w-0">
-                            <span className="text-sm font-bold text-zinc-100 text-right">CONTRATADO</span>
+                            ))}
                         </div>
+                    </div>
 
-                        {/* Center Block Container */}
-                        <div className="w-full max-w-[500px] h-full flex justify-center shrink-0">
-                            <div className="w-full bg-emerald-500/90 border border-emerald-400/50 h-full flex items-center justify-center shadow-lg shadow-black/20 rounded-b-md">
-                                <span className="text-lg sm:text-xl font-bold text-black/80 drop-shadow-sm">
-                                    {formatCurrency(totalContratado)}
-                                </span>
-                            </div>
+                    {/* Temperatura — clicável */}
+                    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 backdrop-blur-md">
+                        <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center">
+                            Temperatura do Pipeline
+                            <InfoTip text="🔥 Quente = alta probabilidade de fechar, 🟡 Morno = em negociação, ❄️ Frio = pouco provável ou inicial." />
+                        </h4>
+                        <p className="text-xs text-zinc-600 mb-4 flex items-center gap-1"><Thermometer className="w-3 h-3" /> Clique em uma barra para ver os projetos</p>
+                        <div className="flex flex-col gap-4">
+                            {(['quente', 'morno', 'frio'] as Temp[]).map((temp) => {
+                                const meta = TEMP_META[temp];
+                                return (
+                                    <div key={temp} className="flex items-center gap-3">
+                                        <span className="text-base w-5 shrink-0">{meta.emoji}</span>
+                                        <span className="text-sm font-semibold text-zinc-300 w-14 shrink-0">{meta.label}</span>
+                                        <div className="flex-1 h-6 bg-zinc-800 rounded-full overflow-hidden">
+                                            <button
+                                                type="button"
+                                                onClick={() => openTempModal(temp)}
+                                                className={`h-full ${meta.bar} hover:brightness-125 active:brightness-90 rounded-full transition-all cursor-pointer`}
+                                                style={{ width: `${(tempCounts[temp] / totalProjects) * 100}%`, minWidth: tempCounts[temp] > 0 ? '40px' : '0' }}
+                                                title={`Ver ${meta.label.toLowerCase()}s`}
+                                            />
+                                        </div>
+                                        <span className="text-xs font-bold text-zinc-400 w-6 text-right shrink-0">{tempCounts[temp]}</span>
+                                    </div>
+                                );
+                            })}
+                            <p className="text-xs text-zinc-600 mt-1">{totalProjects} oportunidade{totalProjects !== 1 ? 's' : ''} no total</p>
                         </div>
-
-                        {/* Right Spacer (to keep block centered) */}
-                        <div className="flex-1 hidden md:block" />
                     </div>
                 </div>
-
-                {/* Legends */}
-                <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6 flex flex-col sm:flex-row gap-2 sm:gap-6 bg-zinc-950/50 px-4 py-2 rounded-lg border border-zinc-800/50 backdrop-blur-md">
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-sm bg-emerald-500/90 border border-emerald-400/50"></div>
-                        <span className="text-xs font-semibold text-zinc-300">CONTRATADO</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-sm bg-blue-600/80 border border-blue-500/50"></div>
-                        <span className="text-xs font-semibold text-zinc-300">A CONTRATAR</span>
-                    </div>
-                </div>
-
             </div>
-        </div>
+
+            {/* ── Drill-down Modal ─────────────────────────── */}
+            <Dialog open={modal.open} onOpenChange={(v) => !v && setModal(CLOSED_MODAL)}>
+                <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
+                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800 shrink-0">
+                        <DialogTitle className="text-xl font-bold">{modal.title}</DialogTitle>
+                        <p className="text-sm text-zinc-400 mt-0.5">{modal.subtitle}</p>
+                    </DialogHeader>
+
+                    {/* Project list */}
+                    <div className="overflow-y-auto flex-1 px-4 py-3">
+                        {modal.projects.length === 0 ? (
+                            <p className="text-center text-zinc-500 py-12">Nenhuma oportunidade encontrada.</p>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                {modal.projects.map((p, i) => {
+                                    const tempMeta = TEMP_META[(p.temperature ?? 'morno') as Temp];
+                                    return (
+                                        <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
+                                            <span className="text-lg shrink-0">{tempMeta.emoji}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold text-zinc-100 truncate">{p.name}</p>
+                                                <p className="text-xs text-zinc-500 mt-0.5">
+                                                    {p.orgao ? <span className="text-zinc-400">{p.orgao} · </span> : null}
+                                                    {p.managerName} <span className="text-zinc-700">({p.managerRole})</span>
+                                                </p>
+                                            </div>
+                                            <p className={`text-sm font-bold font-mono shrink-0 ${modal.accentColor}`}>
+                                                {formatCurrency(p.value)}
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer total */}
+                    <div className="px-6 py-4 border-t border-zinc-800 shrink-0 flex justify-between items-center">
+                        <span className="text-xs text-zinc-500 uppercase tracking-widest">Total</span>
+                        <span className={`text-lg font-bold font-mono ${modal.accentColor}`}>{formatCurrency(modal.total)}</span>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </TooltipProvider>
     );
 }
