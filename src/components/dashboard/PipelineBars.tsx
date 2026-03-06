@@ -20,10 +20,11 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
     const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; projects: PipelineData['q1']['projects']; calculatedTotal: number } | null>(null);
 
     const quarters = [
-        { label: 'Q1', projects: pipeline.q1.projects, calculatedTotal: sumQuarterProjects(pipeline.q1.projects) },
-        { label: 'Q2', projects: pipeline.q2.projects, calculatedTotal: sumQuarterProjects(pipeline.q2.projects) },
-        { label: 'Q3', projects: pipeline.q3.projects, calculatedTotal: sumQuarterProjects(pipeline.q3.projects) },
-        { label: 'Q4', projects: pipeline.q4.projects, calculatedTotal: sumQuarterProjects(pipeline.q4.projects) },
+        { label: 'Q1', projects: pipeline.q1?.projects || [], calculatedTotal: sumQuarterProjects(pipeline.q1?.projects || []) },
+        { label: 'Q2', projects: pipeline.q2?.projects || [], calculatedTotal: sumQuarterProjects(pipeline.q2?.projects || []) },
+        { label: 'Q3', projects: pipeline.q3?.projects || [], calculatedTotal: sumQuarterProjects(pipeline.q3?.projects || []) },
+        { label: 'Q4', projects: pipeline.q4?.projects || [], calculatedTotal: sumQuarterProjects(pipeline.q4?.projects || []) },
+        { label: 'N/M', projects: pipeline.nao_mapeado?.projects || [], calculatedTotal: sumQuarterProjects(pipeline.nao_mapeado?.projects || []) },
     ];
 
     // Find the maximum quarter value to scale the bars proportionally

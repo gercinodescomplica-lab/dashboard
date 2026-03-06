@@ -24,7 +24,7 @@ interface DRMOverviewProps {
 }
 
 type Temp = 'quente' | 'morno' | 'frio';
-type QKey = 'q1' | 'q2' | 'q3' | 'q4';
+type QKey = 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado';
 
 interface ProjectWithMeta extends Project {
     managerName: string;
@@ -92,10 +92,10 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     const overallStatus = determinePerformanceStatus(achievementPct);
 
     // ── Pipeline by quarter ──────────────────────────────────────────────────
-    const qTotals = (['q1', 'q2', 'q3', 'q4'] as const).map((q) => ({
+    const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => ({
         key: q,
-        label: q.toUpperCase(),
-        total: managers.reduce((acc, m) => acc + sumQuarterProjects(m.pipeline[q].projects), 0),
+        label: q === 'nao_mapeado' ? 'N/M' : q.toUpperCase(),
+        total: managers.reduce((acc, m) => acc + sumQuarterProjects(m.pipeline[q]?.projects || []), 0),
     }));
     const maxQTotal = Math.max(...qTotals.map((q) => q.total), 1);
 
@@ -103,8 +103,8 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     const tempCounts: Record<Temp, number> = { quente: 0, morno: 0, frio: 0 };
     const tempValues: Record<Temp, number> = { quente: 0, morno: 0, frio: 0 };
     managers.forEach((m) => {
-        (['q1', 'q2', 'q3', 'q4'] as QKey[]).forEach((q) => {
-            m.pipeline[q].projects.forEach((p) => {
+        (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as QKey[]).forEach((q) => {
+            (m.pipeline[q]?.projects || []).forEach((p) => {
                 const t = (p.temperature ?? 'morno') as Temp;
                 tempCounts[t] = (tempCounts[t] ?? 0) + 1;
                 tempValues[t] = (tempValues[t] ?? 0) + (p.value || 0);

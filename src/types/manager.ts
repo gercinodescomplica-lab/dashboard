@@ -1,10 +1,12 @@
 export type OpportunityTemperature = 'quente' | 'morno' | 'frio';
+export type CXStatus = 'pendente' | 'analise' | 'resolvido';
 
 export interface Project {
   orgao?: string;
   name: string;
   value: number;
   temperature?: OpportunityTemperature;
+  description?: string;
 }
 
 export interface QuarterData {
@@ -17,6 +19,25 @@ export interface PipelineData {
   q2: QuarterData;
   q3: QuarterData;
   q4: QuarterData;
+  nao_mapeado: QuarterData;
+}
+
+export interface CXItem {
+  id?: number;
+  cliente: string;
+  problema: string;
+  solucaoProposta: string;
+  status: CXStatus;
+  createdAt?: string;
+}
+
+export interface Visit {
+  id?: number;
+  titulo: string;
+  local: string;
+  motivo: string;
+  data: string; // "YYYY-MM-DD"
+  createdAt?: string;
 }
 
 export interface Manager {
@@ -30,4 +51,6 @@ export interface Manager {
   forecastFinal: number;
   pipeline: PipelineData;
   notes?: string;
+  cx?: CXItem[];
+  visits?: Visit[];
 }

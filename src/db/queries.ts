@@ -1,6 +1,7 @@
 import { db } from './index';
-import { managers, projects } from './schema';
-import { Manager } from '../types/manager';
+import { managers, projects, cx, visits } from './schema';
+import { eq } from 'drizzle-orm';
+import { Manager, CXItem, Visit } from '../types/manager';
 
 /**
  * Fetches all managers from the database and constructs them exactly
@@ -11,11 +12,9 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     const allProjects = await db.select().from(projects);
 
     return allManagers.map((m) => {
-        // Filter projects for the specific manager
         const mgrProjects = allProjects.filter((p) => p.managerId === m.id);
 
-        // Helper to construct exactly the Quarter structure expected by the interface
-        const buildQuarter = (q: 'q1' | 'q2' | 'q3' | 'q4') => {
+        const buildQuarter = (q: 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado') => {
             const quarterProjects = mgrProjects.filter((p) => p.quarter === q);
             return {
                 total: quarterProjects.reduce((acc, p) => acc + p.value, 0),
@@ -24,6 +23,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
                     name: p.name,
                     value: p.value,
                     temperature: (p.temperature as any) ?? undefined,
+                    description: p.description ?? undefined,
                 })),
             };
         };
@@ -33,9 +33,10 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             q2: buildQuarter('q2'),
             q3: buildQuarter('q3'),
             q4: buildQuarter('q4'),
+            nao_mapeado: buildQuarter('nao_mapeado'),
         };
 
-        const totalPipeline = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total;
+        const totalPipeline = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total + pipeline.nao_mapeado.total;
 
         return {
             id: m.id,
@@ -47,7 +48,39 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             contratado: m.contratado,
             forecastFinal: (m.contratado || 0) + totalPipeline,
             notes: m.notes ?? undefined,
-            pipeline
+            pipeline,
         };
     });
+}
+
+/**
+ * Fetches CX records for a specific manager.
+ */
+export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
+    const rows = await db.select().from(cx).where(eq(cx.managerId, managerId));
+    return rows.map((r) => ({
+        id: r.id,
+        cliente: r.cliente,
+        problema: r.problema,
+        solucaoProposta: r.solucaoProposta,
+        status: r.status as CXItem['status'],
+        createdAt: r.createdAt,
+    }));
+}
+
+/**
+ * Fetches visits for a specific manager, ordered by date descending.
+ */
+export async function fetchVisitsByManager(managerId: string): Promise<Visit[]> {
+    const rows = await db.select().from(visits).where(eq(visits.managerId, managerId));
+    return rows
+        .map((r) => ({
+            id: r.id,
+            titulo: r.titulo,
+            local: r.local,
+            motivo: r.motivo,
+            data: r.data,
+            createdAt: r.createdAt,
+        }))
+        .sort((a, b) => b.data.localeCompare(a.data)); // newest first
 }
