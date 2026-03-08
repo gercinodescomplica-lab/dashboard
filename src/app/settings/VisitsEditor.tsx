@@ -20,20 +20,14 @@ const EMPTY_VISIT = (): Visit => ({
 
 export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
     const update = (i: number, field: keyof Visit, value: any) => {
-        const sortedArray = [...items].sort((a, b) => b.data.localeCompare(a.data));
-        const finalArray = items.map(item => item === sortedArray[i] ? { ...item, [field]: value } : item);
-        onChange(finalArray);
+        onChange(items.map((item, idx) => idx === i ? { ...item, [field]: value } : item));
     };
 
-    const add = () => onChange([...items, EMPTY_VISIT()]);
+    const add = () => onChange([EMPTY_VISIT(), ...items]);
 
     const remove = (i: number) => {
-        const sortedArray = [...items].sort((a, b) => b.data.localeCompare(a.data));
-        onChange(items.filter(item => item !== sortedArray[i]));
+        onChange(items.filter((_, idx) => idx !== i));
     };
-
-    // Sort display by date desc
-    const sorted = [...items].sort((a, b) => b.data.localeCompare(a.data));
 
     return (
         <div className="flex flex-col gap-4">
@@ -59,7 +53,6 @@ export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
 
             <div className="flex flex-col gap-3">
                 {items.map((item, i) => {
-                    const realIdx = items.indexOf(sorted[i]);
                     return (
                         <div key={i} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
                             <div className="flex justify-between items-center">
