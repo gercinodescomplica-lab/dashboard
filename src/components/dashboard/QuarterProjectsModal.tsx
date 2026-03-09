@@ -62,9 +62,9 @@ export function QuarterProjectsModal({
                                     <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-3 hover:bg-zinc-800/40 transition-colors">
                                         <div className="flex flex-col gap-0.5">
                                             <div className="text-xs font-semibold text-brand-pipeline uppercase tracking-wider">{displayOrgao || 'Sem Órgão'}</div>
-                                            <div className="font-medium text-zinc-200 flex items-center gap-1.5 pt-0.5">
-                                                <span title={project.temperature || 'morno'} className="text-sm">{getTempEmoji(project.temperature)}</span>
-                                                <span className="truncate">{displayName}</span>
+                                            <div className="font-medium text-zinc-200 flex items-start gap-1.5 pt-0.5">
+                                                <span title={project.temperature || 'morno'} className="text-sm shrink-0 leading-5">{getTempEmoji(project.temperature)}</span>
+                                                <span className="line-clamp-2 text-sm leading-5 break-words">{displayName}</span>
                                             </div>
                                         </div>
                                         <div className="text-sm sm:text-base text-zinc-100 font-bold tracking-tight bg-zinc-950 px-3 py-1.5 rounded-lg border border-zinc-800/50 min-w-max">{formatCurrency(project.value)}</div>

@@ -53,9 +53,30 @@ export function DashboardShell() {
         return Array.from(new Set(managers.map(m => m.year))).sort((a, b) => b - a);
     }, [managers]);
 
-    // Filter managers by selected year
+    // Filter and sort managers by selected year and role hierarchy
     const managersForYear = useMemo(() => {
-        return managers.filter(m => m.year.toString() === selectedYear);
+        return managers
+            .filter(m => m.year.toString() === selectedYear)
+            .sort((a, b) => {
+                const parseRole = (role: string) => {
+                    const match = role.toUpperCase().match(/^([A-Z]+)\s*(\d*)/);
+                    if (!match) return { order: 99, num: 0 };
+
+                    const prefix = match[1];
+                    let order = 99;
+                    if (prefix === 'KAM') order = 1;
+                    else if (prefix === 'GRC') order = 2;
+                    else if (prefix === 'GER') order = 3;
+
+                    return { order, num: parseInt(match[2] || '0', 10) };
+                };
+
+                const rankA = parseRole(a.role);
+                const rankB = parseRole(b.role);
+
+                if (rankA.order !== rankB.order) return rankA.order - rankB.order;
+                return rankA.num - rankB.num;
+            });
     }, [managers, selectedYear]);
 
     // Auto-select first manager when year changes or data loads
@@ -96,14 +117,17 @@ export function DashboardShell() {
                     {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                         <MapPin className="w-6 h-6 text-indigo-400" />
                     </div> */}
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-zinc-100">
+                    <button
+                        onClick={() => setSelectedManagerId('drm')}
+                        className="text-left group transition-all cursor-pointer"
+                    >
+                        <h1 className="text-2xl font-bold tracking-tight text-zinc-100 group-hover:text-indigo-400 transition-colors">
                             Dashboard Comercial PRODAM
                         </h1>
                         <p className="text-zinc-400 text-sm font-medium">
                             Visão Executiva de Gerentes
                         </p>
-                    </div>
+                    </button>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -181,12 +205,14 @@ export function DashboardShell() {
                                                         <div className="w-full h-full flex items-center justify-center text-zinc-500">{manager.name.charAt(0)}</div>
                                                     )}
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold text-zinc-100 text-lg">{manager.name}</p>
-                                                    <p className="text-sm text-zinc-400">{manager.role}</p>
+                                                <div className="flex-1 flex items-center justify-between ml-2">
+                                                    <div className="text-left">
+                                                        <p className="font-semibold text-zinc-100 text-lg">{manager.name}</p>
+                                                        <p className="text-sm text-zinc-400">{manager.role}</p>
+                                                    </div>
+                                                    <StatBadge status={status} />
                                                 </div>
                                             </div>
-                                            <StatBadge status={status} />
                                         </button>
                                     );
                                 })}
@@ -212,8 +238,9 @@ export function DashboardShell() {
                         <Users className="w-12 h-12 mb-4 text-zinc-700" />
                         <p className="text-lg font-medium">Selecione um gerente para visualizar.</p>
                     </div>
-                )}
-            </main>
-        </div>
+                )
+                }
+            </main >
+        </div >
     );
 }
