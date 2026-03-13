@@ -38,6 +38,7 @@ export interface Visit {
   local: string;
   motivo: string;
   data: string; // "YYYY-MM-DD"
+  dataFim?: string; // "YYYY-MM-DD"
   createdAt?: string;
 }
 

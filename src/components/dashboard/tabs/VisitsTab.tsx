@@ -21,9 +21,8 @@ export function VisitsTab({ items }: VisitsTabProps) {
     return (
         <div className="flex flex-col gap-3">
             {sorted.map((visit, i) => {
-                const dateDisplay = visit.data
-                    ? new Date(visit.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
-                    : '—';
+                const formattedDate = visit.data ? new Date(visit.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '';
+                const dateDisplay = formattedDate ? `Semana do dia ${formattedDate}` : '—';
 
                 return (
                     <div key={i} className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">

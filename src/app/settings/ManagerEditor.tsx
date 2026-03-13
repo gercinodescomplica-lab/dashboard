@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Manager, CXItem, Visit, QuarterData } from '@/types/manager';
+import { Manager, CXItem, Visit, Pipeline } from '@/types/manager';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Loader2, Calculator } from 'lucide-react';
-import { QuarterEditor } from './QuarterEditor';
+import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { calculateForecastFinal } from '@/lib/calc';
@@ -135,26 +135,10 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
 
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex-1 min-h-[500px]">
                         <h3 className="text-lg font-semibold mb-4 text-zinc-200">Pipeline & Projetos</h3>
-                        <Tabs defaultValue="q1" className="w-full">
-                            <TabsList className="grid w-full grid-cols-5 bg-zinc-950 border border-zinc-800 mb-6">
-                                <TabsTrigger value="q1" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">Q1 - 1º Tri</TabsTrigger>
-                                <TabsTrigger value="q2" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">Q2 - 2º Tri</TabsTrigger>
-                                <TabsTrigger value="q3" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">Q3 - 3º Tri</TabsTrigger>
-                                <TabsTrigger value="q4" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">Q4 - 4º Tri</TabsTrigger>
-                                <TabsTrigger value="nao_mapeado" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">Não Mapeado</TabsTrigger>
-                            </TabsList>
-                            {(['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map(qKey => (
-                                <TabsContent key={qKey} value={qKey}>
-                                    <QuarterEditor
-                                        qKey={qKey}
-                                        quarterData={manager.pipeline[qKey] || { total: 0, projects: [] }}
-                                        manager={manager}
-                                        onChange={(newData: QuarterData) => handleUpdateQuarter(qKey, newData)}
-                                        onMoveProject={(toQ: string, idx: number) => handleMoveProject(qKey, toQ as any, idx)}
-                                    />
-                                </TabsContent>
-                            ))}
-                        </Tabs>
+                        <PipelineEditor
+                            pipeline={manager.pipeline}
+                            onChange={(newPipeline: Pipeline) => handleChange('pipeline', newPipeline)}
+                        />
                     </div>
                 </TabsContent>
 

@@ -49,6 +49,7 @@ export async function saveVisitsData(managerId: string, items: Visit[]) {
                     local: item.local,
                     motivo: item.motivo,
                     data: item.data,
+                    dataFim: item.dataFim || null,
                     createdAt: item.createdAt ?? new Date().toISOString(),
                 }))
             );

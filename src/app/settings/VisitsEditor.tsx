@@ -11,12 +11,34 @@ interface VisitsEditorProps {
     onChange: (items: Visit[]) => void;
 }
 
-const EMPTY_VISIT = (): Visit => ({
-    titulo: '',
-    local: '',
-    motivo: '',
-    data: new Date().toISOString().split('T')[0],
-});
+const getCurrentWeekSpan = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay() || 7; // 1 = Monday, 7 = Sunday
+
+    // Go to the Monday of the CURRENT week
+    const currentMonday = new Date(today);
+    currentMonday.setDate(today.getDate() - (dayOfWeek - 1));
+
+    // Friday of that same week (+4 days)
+    const currentFriday = new Date(currentMonday);
+    currentFriday.setDate(currentMonday.getDate() + 4);
+
+    return {
+        monday: currentMonday.toISOString().split('T')[0],
+        friday: currentFriday.toISOString().split('T')[0],
+    };
+};
+
+const EMPTY_VISIT = (): Visit => {
+    const { monday, friday } = getCurrentWeekSpan();
+    return {
+        titulo: '',
+        local: '',
+        motivo: '',
+        data: monday,
+        dataFim: friday,
+    };
+};
 
 export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
     const update = (i: number, field: keyof Visit, value: any) => {
@@ -58,7 +80,10 @@ export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
                             <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                                     <Calendar className="w-3.5 h-3.5" />
-                                    <span>{item.data ? new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span>
+                                    <span>
+                                        {item.data ? new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}
+                                        {item.dataFim ? ` a ${new Date(item.dataFim + 'T00:00:00').toLocaleDateString('pt-BR')}` : ''}
+                                    </span>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -70,7 +95,7 @@ export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
                                 </Button>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3">
                                 <div className="space-y-1.5">
                                     <Label className="text-zinc-400">Título da Visita</Label>
                                     <Input
@@ -80,14 +105,25 @@ export function VisitsEditor({ items, onChange }: VisitsEditorProps) {
                                         className="bg-zinc-900 border-zinc-800 text-zinc-200"
                                     />
                                 </div>
-                                <div className="space-y-1.5">
-                                    <Label className="text-zinc-400">Data</Label>
-                                    <Input
-                                        type="date"
-                                        value={item.data}
-                                        onChange={(e) => update(i, 'data', e.target.value)}
-                                        className="bg-zinc-900 border-zinc-800 text-zinc-200"
-                                    />
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <Label className="text-zinc-400">Data (De)</Label>
+                                        <Input
+                                            type="date"
+                                            value={item.data}
+                                            onChange={(e) => update(i, 'data', e.target.value)}
+                                            className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5 flex flex-col items-start w-full">
+                                        <Label className="text-zinc-400">Data (Até)</Label>
+                                        <Input
+                                            type="date"
+                                            value={item.dataFim || ''}
+                                            onChange={(e) => update(i, 'dataFim', e.target.value)}
+                                            className="bg-zinc-900 border-zinc-800 text-zinc-200 w-full"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

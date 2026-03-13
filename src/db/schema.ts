@@ -41,5 +41,6 @@ export const visits = sqliteTable('visits', {
     local: text('local').notNull(),
     motivo: text('motivo').notNull(),
     data: text('data').notNull(), // ISO date string: "2025-03-06"
+    dataFim: text('data_fim'), // Nullable ISO date string ending
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
