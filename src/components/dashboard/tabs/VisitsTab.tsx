@@ -16,7 +16,11 @@ export function VisitsTab({ items }: VisitsTabProps) {
         );
     }
 
-    const sorted = [...items].sort((a, b) => b.data.localeCompare(a.data));
+    const sorted = [...items].sort((a, b) => {
+        const timeA = a.data ? new Date(a.data + 'T00:00:00').getTime() : 0;
+        const timeB = b.data ? new Date(b.data + 'T00:00:00').getTime() : 0;
+        return timeB - timeA;
+    });
 
     return (
         <div className="flex flex-col gap-3">

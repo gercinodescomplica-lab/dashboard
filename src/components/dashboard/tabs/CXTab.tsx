@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
+import { ChevronUp, ChevronDown, ArrowUpDown } from 'lucide-react';
 
 interface CXTabProps {
     items: CXItem[];
@@ -18,7 +20,59 @@ const CRITICIDADE_CONFIG: Record<CXCriticidade, { label: string; style: string }
     alta: { label: 'Alta', style: 'bg-red-500/10 text-red-400 border border-red-500/20' },
 };
 
+const CRITICIDADE_WEIGHT: Record<CXCriticidade, number> = {
+    baixa: 1,
+    media: 2,
+    alta: 3,
+};
+
+const STATUS_WEIGHT: Record<CXStatus, number> = {
+    pendente: 1,
+    analise: 2,
+    resolvido: 3,
+};
+
+type SortKey = 'criticidade' | 'status' | null;
+type SortDirection = 'asc' | 'desc';
+
 export function CXTab({ items }: CXTabProps) {
+    const [sortKey, setSortKey] = useState<SortKey>(null);
+    const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+    const handleSort = (key: SortKey) => {
+        if (sortKey === key) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortDirection('desc'); // Default new sort to descending (Highest first)
+        }
+    };
+
+    const getSortedItems = () => {
+        if (!sortKey) return items;
+
+        return [...items].sort((a, b) => {
+            let weightA = 0;
+            let weightB = 0;
+
+            if (sortKey === 'criticidade') {
+                weightA = CRITICIDADE_WEIGHT[a.criticidade || 'baixa'];
+                weightB = CRITICIDADE_WEIGHT[b.criticidade || 'baixa'];
+            } else if (sortKey === 'status') {
+                weightA = STATUS_WEIGHT[a.status];
+                weightB = STATUS_WEIGHT[b.status];
+            }
+
+            if (weightA === weightB) return 0;
+            
+            if (sortDirection === 'asc') {
+                return weightA > weightB ? 1 : -1;
+            } else {
+                return weightA < weightB ? 1 : -1;
+            }
+        });
+    };
+
     if (items.length === 0) {
         return (
             <div className="flex items-center justify-center py-20 text-zinc-500">
@@ -35,12 +89,36 @@ export function CXTab({ items }: CXTabProps) {
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Cliente / Órgão</th>
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Problema</th>
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Solução Proposta</th>
-                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-24">Criticidade</th>
-                        <th className="pb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-28">Status</th>
+                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-28">
+                            <button 
+                                onClick={() => handleSort('criticidade')}
+                                className="inline-flex items-center gap-1 hover:text-zinc-300 transition-colors focus:outline-none"
+                            >
+                                CRITICIDADE
+                                {sortKey === 'criticidade' ? (
+                                    sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                                ) : (
+                                    <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                                )}
+                            </button>
+                        </th>
+                        <th className="pb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-32">
+                            <button 
+                                onClick={() => handleSort('status')}
+                                className="inline-flex items-center gap-1 hover:text-zinc-300 transition-colors focus:outline-none"
+                            >
+                                STATUS
+                                {sortKey === 'status' ? (
+                                    sortDirection === 'asc' ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />
+                                ) : (
+                                    <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />
+                                )}
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/50">
-                    {items.map((item, i) => {
+                    {getSortedItems().map((item, i) => {
                         const status = STATUS_CONFIG[item.status];
                         return (
                             <tr key={i} className="hover:bg-zinc-800/30 transition-colors align-top">
