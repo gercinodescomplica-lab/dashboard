@@ -7,6 +7,7 @@ import { Loader2, User, Save, RefreshCw } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
 import { saveManagerData, saveCXData, saveVisitsData } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import Link from 'next/link';
 
 export function SettingsDashboard() {
     const [managers, setManagers] = useState<Manager[]>([]);
@@ -64,8 +65,11 @@ export function SettingsDashboard() {
             <aside className="w-full md:w-80 bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen z-10 sticky top-0 md:sticky">
                 <div className="p-6 border-b border-zinc-800 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold">Admin Panel</h2>
-                        <p className="text-zinc-500 text-sm">Dashboard Data</p>
+                        <Link href="/" className="flex items-center gap-2">
+
+                            <h2 className="text-xl font-bold">Admin Panel</h2>
+                            <p className="text-zinc-500 text-sm">Dashboard Data</p>
+                        </Link>
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">

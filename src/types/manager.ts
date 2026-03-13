@@ -1,5 +1,6 @@
 export type OpportunityTemperature = 'quente' | 'morno' | 'frio';
 export type CXStatus = 'pendente' | 'analise' | 'resolvido';
+export type CXCriticidade = 'baixa' | 'media' | 'alta';
 
 export interface Project {
   orgao?: string;
@@ -29,6 +30,7 @@ export interface CXItem {
   problema: string;
   solucaoProposta: string;
   status: CXStatus;
+  criticidade?: CXCriticidade;
   createdAt?: string;
 }
 

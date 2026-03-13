@@ -26,6 +26,7 @@ export async function saveCXData(managerId: string, items: CXItem[]) {
                     problema: item.problema,
                     solucaoProposta: item.solucaoProposta,
                     status: item.status,
+                    criticidade: item.criticidade ?? 'baixa',
                     createdAt: item.createdAt ?? new Date().toISOString(),
                 }))
             );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Manager, CXItem, Visit, Pipeline } from '@/types/manager';
+import { Manager, CXItem, Visit, PipelineData, QuarterData } from '@/types/manager';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -137,7 +137,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                         <h3 className="text-lg font-semibold mb-4 text-zinc-200">Pipeline & Projetos</h3>
                         <PipelineEditor
                             pipeline={manager.pipeline}
-                            onChange={(newPipeline: Pipeline) => handleChange('pipeline', newPipeline)}
+                            onChange={(newPipeline: PipelineData) => handleChange('pipeline', newPipeline)}
                         />
                     </div>
                 </TabsContent>

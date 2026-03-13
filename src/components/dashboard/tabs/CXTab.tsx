@@ -1,6 +1,6 @@
 'use client';
 
-import { CXItem, CXStatus } from '@/types/manager';
+import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 
 interface CXTabProps {
     items: CXItem[];
@@ -10,6 +10,12 @@ const STATUS_CONFIG: Record<CXStatus, { label: string; style: string }> = {
     pendente: { label: 'Pendente', style: 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' },
     analise: { label: 'Em Análise', style: 'bg-blue-500/20 text-blue-400 border border-blue-500/30' },
     resolvido: { label: 'Resolvido', style: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' },
+};
+
+const CRITICIDADE_CONFIG: Record<CXCriticidade, { label: string; style: string }> = {
+    baixa: { label: 'Baixa', style: 'bg-green-500/10 text-green-400 border border-green-500/20' },
+    media: { label: 'Média', style: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20' },
+    alta: { label: 'Alta', style: 'bg-red-500/10 text-red-400 border border-red-500/20' },
 };
 
 export function CXTab({ items }: CXTabProps) {
@@ -29,6 +35,7 @@ export function CXTab({ items }: CXTabProps) {
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Cliente / Órgão</th>
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Problema</th>
                         <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Solução Proposta</th>
+                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-24">Criticidade</th>
                         <th className="pb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-28">Status</th>
                     </tr>
                 </thead>
@@ -43,6 +50,11 @@ export function CXTab({ items }: CXTabProps) {
                                     <div className="text-zinc-400 text-xs">{item.problema}</div>
                                 </td>
                                 <td className="py-3 pr-4 text-zinc-400 max-w-xs">{item.solucaoProposta}</td>
+                                <td className="py-3 pr-4 text-center">
+                                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold ${CRITICIDADE_CONFIG[item.criticidade || 'baixa'].style}`}>
+                                        {CRITICIDADE_CONFIG[item.criticidade || 'baixa'].label}
+                                    </span>
+                                </td>
                                 <td className="py-3 text-center">
                                     <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${status.style}`}>
                                         {status.label}

@@ -65,6 +65,7 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         problema: r.problema,
         solucaoProposta: r.solucaoProposta,
         status: r.status as CXItem['status'],
+        criticidade: (r.criticidade as CXItem['criticidade']) ?? 'baixa',
         createdAt: r.createdAt,
     }));
 }

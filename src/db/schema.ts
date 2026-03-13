@@ -31,6 +31,7 @@ export const cx = sqliteTable('cx', {
     problema: text('problema').notNull(),
     solucaoProposta: text('solucao_proposta').notNull(),
     status: text('status', { enum: ['pendente', 'analise', 'resolvido'] }).notNull().default('pendente'),
+    criticidade: text('criticidade', { enum: ['baixa', 'media', 'alta'] }).notNull().default('baixa'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

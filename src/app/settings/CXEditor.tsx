@@ -1,6 +1,6 @@
 'use client';
 
-import { CXItem, CXStatus } from '@/types/manager';
+import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,12 +17,19 @@ const STATUS_OPTIONS: { value: CXStatus; label: string; color: string }[] = [
     { value: 'resolvido', label: 'Resolvido', color: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
 ];
 
+const CRITICIDADE_OPTIONS: { value: CXCriticidade; label: string; color: string }[] = [
+    { value: 'baixa', label: 'Baixa', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+    { value: 'media', label: 'Média', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+    { value: 'alta', label: 'Alta', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+];
+
 const EMPTY_ITEM = (): CXItem => ({
     cliente: '',
     titulo: '',
     problema: '',
     solucaoProposta: '',
     status: 'pendente',
+    criticidade: 'baixa',
 });
 
 export function CXEditor({ items, onChange }: CXEditorProps) {
@@ -70,8 +77,8 @@ export function CXEditor({ items, onChange }: CXEditorProps) {
                             </Button>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="space-y-1.5">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="space-y-1.5 min-w-0">
                                 <Label className="text-zinc-400">Cliente / Órgão</Label>
                                 <Input
                                     value={item.cliente}
@@ -80,7 +87,7 @@ export function CXEditor({ items, onChange }: CXEditorProps) {
                                     className="bg-zinc-900 border-zinc-800 text-zinc-200"
                                 />
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 min-w-0">
                                 <Label className="text-zinc-400">Status</Label>
                                 <div className="flex gap-2 flex-wrap">
                                     {STATUS_OPTIONS.map((s) => (
@@ -94,6 +101,24 @@ export function CXEditor({ items, onChange }: CXEditorProps) {
                                                 }`}
                                         >
                                             {s.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="space-y-1.5 min-w-0">
+                                <Label className="text-zinc-400">Criticidade</Label>
+                                <div className="flex gap-2 flex-wrap">
+                                    {CRITICIDADE_OPTIONS.map((c) => (
+                                        <button
+                                            key={c.value}
+                                            type="button"
+                                            onClick={() => update(i, 'criticidade', c.value)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${item.criticidade === c.value
+                                                ? c.color + ' ring-2 ring-offset-1 ring-offset-zinc-950 ring-current'
+                                                : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600'
+                                                }`}
+                                        >
+                                            {c.label}
                                         </button>
                                     ))}
                                 </div>
