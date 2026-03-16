@@ -48,10 +48,12 @@ export function CXTab({ items }: CXTabProps) {
         }
     };
 
-    const getSortedItems = () => {
-        if (!sortKey) return items;
+    const visibleItems = items.filter(item => item.isVisible !== false);
 
-        return [...items].sort((a, b) => {
+    const getSortedItems = () => {
+        if (!sortKey) return visibleItems;
+
+        return [...visibleItems].sort((a, b) => {
             let weightA = 0;
             let weightB = 0;
 
@@ -73,7 +75,7 @@ export function CXTab({ items }: CXTabProps) {
         });
     };
 
-    if (items.length === 0) {
+    if (visibleItems.length === 0) {
         return (
             <div className="flex items-center justify-center py-20 text-zinc-500">
                 Nenhum registro de CX para este gerente.

@@ -30,6 +30,7 @@ const EMPTY_ITEM = (): CXItem => ({
     solucaoProposta: '',
     status: 'pendente',
     criticidade: 'baixa',
+    isVisible: true,
 });
 
 export function CXEditor({ items, onChange }: CXEditorProps) {
@@ -65,8 +66,19 @@ export function CXEditor({ items, onChange }: CXEditorProps) {
             <div className="flex flex-col gap-4">
                 {items.map((item, i) => (
                     <div key={i} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-xs font-bold text-zinc-600 uppercase tracking-wider">CX #{i + 1}</span>
+                        <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded-lg -mx-1 -mt-1 mb-2">
+                            <div className="flex items-center gap-6">
+                                <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">CX #{i + 1}</span>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={item.isVisible !== false}
+                                        onChange={(e) => update(i, 'isVisible', e.target.checked)}
+                                        className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-950 accent-blue-500 cursor-pointer"
+                                    />
+                                    <span className="text-xs font-semibold text-zinc-400 group-hover:text-zinc-300 transition-colors">Mostrar no painel do gerente</span>
+                                </label>
+                            </div>
                             <Button
                                 variant="ghost"
                                 size="sm"

@@ -1,5 +1,10 @@
 import { DashboardShell } from '@/components/dashboard/DashboardShell';
+import { FrontendGate } from '@/components/FrontendGate';
 
 export default function Home() {
-  return <DashboardShell />;
+  return (
+    <FrontendGate>
+      <DashboardShell />
+    </FrontendGate>
+  );
 }

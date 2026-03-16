@@ -66,6 +66,7 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         solucaoProposta: r.solucaoProposta,
         status: r.status as CXItem['status'],
         criticidade: (r.criticidade as CXItem['criticidade']) ?? 'baixa',
+        isVisible: r.isVisible ?? true,
         createdAt: r.createdAt,
     }));
 }
@@ -82,6 +83,7 @@ export async function fetchVisitsByManager(managerId: string): Promise<Visit[]> 
             local: r.local,
             motivo: r.motivo,
             data: r.data,
+            dataFim: r.dataFim ?? undefined,
             createdAt: r.createdAt,
         }))
         .sort((a, b) => b.data.localeCompare(a.data)); // newest first

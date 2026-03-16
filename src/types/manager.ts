@@ -31,6 +31,7 @@ export interface CXItem {
   solucaoProposta: string;
   status: CXStatus;
   criticidade?: CXCriticidade;
+  isVisible?: boolean;
   createdAt?: string;
 }
 
