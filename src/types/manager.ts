@@ -58,4 +58,5 @@ export interface Manager {
   notes?: string;
   cx?: CXItem[];
   visits?: Visit[];
+  servedClients?: string[];
 }

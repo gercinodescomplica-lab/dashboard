@@ -10,8 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectsTab } from './tabs/ProjectsTab';
 import { CXTab } from './tabs/CXTab';
 import { VisitsTab } from './tabs/VisitsTab';
+import { ClientsTab } from './tabs/ClientsTab';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 
 interface SingleManagerViewProps {
     manager: Manager;
@@ -42,12 +43,18 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:h-full gap-0">
             {/* Tab Bar */}
-            <TabsList className="w-full grid grid-cols-4 bg-zinc-900/60 border border-zinc-800 rounded-2xl mb-6 shrink-0">
+            <TabsList className="w-full grid grid-cols-5 bg-zinc-900/60 border border-zinc-800 rounded-2xl mb-6 shrink-0">
                 <TabsTrigger
                     value="dashboard"
                     className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 rounded-xl"
                 >
-                    📊 Dashboard
+                    📊 Info
+                </TabsTrigger>
+                <TabsTrigger
+                    value="clientes"
+                    className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400 rounded-xl"
+                >
+                    🏢 Clientes
                 </TabsTrigger>
                 <TabsTrigger
                     value="projetos"
@@ -72,7 +79,7 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
             {/* ── Dashboard (original view) ── */}
             <TabsContent value="dashboard" className="flex flex-col lg:h-full gap-6 pb-6 lg:min-h-0 mt-0">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-1/2 min-h-[300px]">
-                    <div className="lg:col-span-5 flex flex-col gap-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md">
+                    <div className="lg:col-span-12 flex flex-col gap-6 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md">
                         <ManagerHeader manager={manager} />
                         <div className="flex-1 flex items-center justify-center">
                             <div className="w-full">
@@ -80,13 +87,26 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
                             </div>
                         </div>
                     </div>
-                    <div className="lg:col-span-7 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-center backdrop-blur-md">
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-1/2 min-h-[300px]">
+                    <div className="lg:col-span-5 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-center backdrop-blur-md">
                         <h4 className="text-lg font-medium text-zinc-400 mb-6">Desempenho da Meta</h4>
                         <PerformanceBars meta={manager.meta} contratado={manager.contratado} />
                     </div>
+                    <div className="lg:col-span-7 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 backdrop-blur-md flex flex-col min-h-0 min-h-[300px] lg:min-h-0">
+                        <PipelineBars pipeline={manager.pipeline} managerName={manager.name} />
+                    </div>
                 </div>
-                <div className="flex-1 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 backdrop-blur-md flex flex-col min-h-0 min-h-[300px] lg:min-h-0">
-                    <PipelineBars pipeline={manager.pipeline} managerName={manager.name} />
+            </TabsContent>
+
+            {/* ── Clientes ── */}
+            <TabsContent value="clientes" className="mt-0">
+                <div className="bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 backdrop-blur-md h-[400px] lg:h-[600px] overflow-y-auto custom-scrollbar">
+                    <h4 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+                        <Building2 className="w-6 h-6 text-indigo-400" />
+                        Órgãos e Instituições Atendidas
+                    </h4>
+                    <ClientsTab clients={manager.servedClients} />
                 </div>
             </TabsContent>
 

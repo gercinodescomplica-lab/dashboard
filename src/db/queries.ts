@@ -49,6 +49,17 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             forecastFinal: (m.contratado || 0) + totalPipeline,
             notes: m.notes ?? undefined,
             pipeline,
+            // Try both property names to be absolutely safe
+            servedClients: (() => {
+                const raw = (m as any).servedClients || (m as any).served_clients;
+                if (!raw) return [];
+                try {
+                    return typeof raw === 'string' ? JSON.parse(raw) : raw;
+                } catch (e) {
+                    console.error('Error parsing servedClients JSON:', e);
+                    return [];
+                }
+            })(),
         };
     });
 }
@@ -87,4 +98,26 @@ export async function fetchVisitsByManager(managerId: string): Promise<Visit[]> 
             createdAt: r.createdAt,
         }))
         .sort((a, b) => b.data.localeCompare(a.data)); // newest first
+}
+
+/**
+ * Fetches all managers and their associated data (projects, CX, visits) for the external API.
+ */
+export async function fetchFullDashboardData(): Promise<Manager[]> {
+    const allManagers = await fetchAllManagersFromDB();
+    
+    // Supplement each manager with CX and Visits
+    const fullData = await Promise.all(
+        allManagers.map(async (manager) => {
+            const cx = await fetchCXByManager(manager.id);
+            const visits = await fetchVisitsByManager(manager.id);
+            return {
+                ...manager,
+                cx,
+                visits
+            };
+        })
+    );
+
+    return fullData;
 }

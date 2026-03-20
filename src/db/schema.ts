@@ -10,6 +10,7 @@ export const managers = sqliteTable('managers', {
     contratado: real('contratado').notNull(),
     forecastFinal: real('forecastFinal').notNull(),
     notes: text('notes'),
+    servedClients: text('served_clients'), // JSON string of clients
 });
 
 export const projects = sqliteTable('projects', {

@@ -276,12 +276,19 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                                                 </div>
                                             </div>
                                         </TooltipTrigger>
-                                        <TooltipContent className="text-xs bg-zinc-900 text-zinc-200 border border-zinc-700 leading-relaxed" sideOffset={4}>
-                                            <strong>{m.name}</strong> ({m.role})<br />
-                                            Meta: {formatCurrency(m.meta)}<br />
-                                            Forecast Final: <strong>{formatCurrency(m.forecastFinal)}</strong><br />
-                                            <span className="text-zinc-500">( Forecast ÷ Meta = {formatPercentage(m.pct)} )</span><br />
-                                            Status: {m.status}
+                                        <TooltipContent className="text-[11px] bg-zinc-950 text-zinc-200 border border-zinc-700/50 leading-relaxed p-3 shadow-2xl" sideOffset={8}>
+                                            <p className="font-bold text-zinc-100 text-sm mb-1">{m.name}</p>
+                                            <p className="text-zinc-500 mb-2">{m.role}</p>
+                                            <div className="space-y-1 mb-2">
+                                                <div className="flex justify-between gap-4"><span>Meta:</span> <span className="font-mono">{formatCurrency(m.meta)}</span></div>
+                                                <div className="flex justify-between gap-4"><span>Contratado:</span> <span className="font-mono text-emerald-400">{formatCurrency(m.contratado)}</span></div>
+                                                <div className="flex justify-between gap-4 border-b border-zinc-800 pb-1"><span>Pipeline:</span> <span className="font-mono text-indigo-400">{formatCurrency(m.forecastFinal - m.contratado)}</span></div>
+                                                <div className="flex justify-between gap-4 pt-1 font-bold"><span>Forecast Final:</span> <span className="font-mono text-indigo-300">{formatCurrency(m.forecastFinal)}</span></div>
+                                            </div>
+                                            <p className="text-zinc-500 border-t border-zinc-800 pt-2 italic">
+                                                ( (Contratado + Pipeline) ÷ Meta = {formatPercentage(m.pct)} )
+                                            </p>
+                                            <p className="mt-1">Status: <span className={textColor}>{m.status}</span></p>
                                         </TooltipContent>
                                     </Tooltip>
                                 );

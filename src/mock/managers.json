@@ -1,7 +1,7 @@
 [
     {
         "id": "grc1-bruno",
-        "name": "Bruno",
+        "name": "Bruno Ítalo",
         "role": "GRC1",
         "avatarUrl": "/avatars/bruno.png",
         "year": 2026,
@@ -60,7 +60,15 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "PGM (Procuradoria Geral do Município)",
+            "SMCC (Secretaria Municipal da Casa Civil)",
+            "SMIT (Secretaria Municipal de Inovação e Tecnologia)",
+            "SMSUB (Secretaria Municipal das Subprefeituras)",
+            "SPNegócios (São Paulo Negócios)",
+            "SVMA (Secretaria Municipal do Verde e Meio Ambiente)"
+        ]
     },
     {
         "id": "grc2-paulo",
@@ -97,7 +105,13 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "SEHAB (Secretaria Municipal de Habitação)",
+            "SMADS (Secretaria Municipal de Assistência e Desenvolvimento Social)",
+            "SMDET (Secretaria Municipal de Desenvolvimento Econômico, Trabalho e Turismo)",
+            "SMUL (Secretaria Municipal de Urbanismo e Licenciamento)"
+        ]
     },
     {
         "id": "grc3-barone",
@@ -143,7 +157,21 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "COHAB (Companhia Metropolitana de Habitação)",
+            "EMASP (Escola Municipal de Administração Pública)",
+            "FPETC (Fundação Paulistana de Educação e Tecnologia)",
+            "IPREM (Instituto de Previdência Municipal)",
+            "SEGES (Secretaria Municipal de Gestão)",
+            "SMDHC (Secretaria Municipal de Direitos Humanos e Cidadania)",
+            "SMPED (Secretaria Municipal da Pessoa com Deficiência)",
+            "SMRI (Secretaria Municipal de Relações Internacionais)",
+            "SMTUR (Secretaria Municipal de Turismo)",
+            "SPDA (Companhia São Paulo de Desenvolvimento e Mobilização de Ativos)",
+            "SPOBRAS (São Paulo Obras)",
+            "SPURB (SP Urbanismo)"
+        ]
     },
     {
         "id": "kam4-tomiatto",
@@ -171,7 +199,10 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "Fazenda (Secretaria Municipal da Fazenda)"
+        ]
     },
     {
         "id": "grc4-beatriz",
@@ -217,7 +248,25 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "ADESAMPA (Agência São Paulo de Desenvolvimento)",
+            "CGM (Controladoria Geral do Município)",
+            "CMSP (Câmara Municipal de São Paulo)",
+            "FTM (Fundação Teatro Municipal)",
+            "HSPM (Hospital do Servidor Público Municipal)",
+            "Ouvidoria Geral do Município",
+            "SEME (Secretaria Municipal de Esportes e Lazer)",
+            "SERI (Secretaria Executiva de Relações Institucionais)",
+            "SMC (Secretaria Municipal de Cultura)",
+            "SMJ (Secretaria Municipal de Justiça)",
+            "SMSU (Secretaria Municipal de Segurança Urbana)",
+            "SPCINE (Empresa de Cinema e Audiovisual)",
+            "SPREGULA (Agência Reguladora de Serviços Públicos de SP)",
+            "SPTURIS (Secretaria Executiva de Desestatização e Parcerias)",
+            "SIURB (Secretaria Municipal de Infraestrutura Urbana e Obras)",
+            "TCM (Tribunal de Contas do Município)"
+        ]
     },
     {
         "id": "grcc-debora",
@@ -415,7 +464,8 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": []
     },
     {
         "id": "kam1-malde",
@@ -461,7 +511,10 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "SME (Secretaria Municipal da Educação)"
+        ]
     },
     {
         "id": "kam2-betone",
@@ -498,7 +551,10 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "SMS (Secretaria Municipal da Saúde)"
+        ]
     },
     {
         "id": "kam3-andrea",
@@ -535,7 +591,10 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": [
+            "SEGES (Secretaria de Gestão)"
+        ]
     },
     {
         "id": "projeto-triade",
@@ -563,6 +622,7 @@
                 "total": 0,
                 "projects": []
             }
-        }
+        },
+        "servedClients": []
     }
 ]
