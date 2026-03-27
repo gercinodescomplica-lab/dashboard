@@ -83,7 +83,7 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
                         <ManagerHeader manager={manager} />
                         <div className="flex-1 flex items-center justify-center">
                             <div className="w-full">
-                                <ForecastKpis forecastFinal={manager.forecastFinal} meta={manager.meta} />
+                                <ForecastKpis contratado={manager.contratado} meta={manager.meta} />
                             </div>
                         </div>
                     </div>

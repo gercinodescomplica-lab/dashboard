@@ -79,9 +79,9 @@ const TEMP_META: Record<Temp, { label: string; emoji: string; accent: string; ba
 };
 
 export function DRMOverview({ managers, year }: DRMOverviewProps) {
-    if (!managers || managers.length === 0) return null;
-
     const [modal, setModal] = useState<ModalState>(CLOSED_MODAL);
+
+    if (!managers || managers.length === 0) return null;
 
     // ── Totals ──────────────────────────────────────────────────────────────
     const totalMeta = managers.reduce((acc, m) => acc + m.meta, 0);
@@ -118,8 +118,8 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     const ranked = [...managers]
         .map((m) => ({
             ...m,
-            pct: calculateAchievementPercentage(m.forecastFinal, m.meta),
-            status: determinePerformanceStatus(calculateAchievementPercentage(m.forecastFinal, m.meta)),
+            pct: calculateAchievementPercentage(m.contratado, m.meta),
+            status: determinePerformanceStatus(calculateAchievementPercentage(m.contratado, m.meta)),
         }))
         .sort((a, b) => b.pct - a.pct);
 
@@ -253,9 +253,9 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                     <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 sm:p-6 flex flex-col backdrop-blur-md">
                         <h4 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center">
                             Ranking de Gerentes
-                            <InfoTip text="Ordenado pelo Forecast Final de cada gerente (Contratado + Pipeline Q1→Q4). O percentual ao lado mostra quanto esse Forecast representa da Meta individual do gerente." />
+                            <InfoTip text="Ordenado pelo percentual do valor já Contratado em relação à Meta individual do gerente. O percentual ao lado mostra o atingimento real sem contabilizar o pipeline." />
                         </h4>
-                        <p className="text-xs text-zinc-600 mb-4">Ordenado pelo Forecast Final</p>
+                        <p className="text-xs text-zinc-600 mb-4">Ordenado por % de Contratado</p>
                         <div className="flex flex-col gap-3 flex-1">
                             {ranked.map((m, idx) => {
                                 const barColor = m.pct >= 100 ? 'bg-emerald-500' : m.pct >= 90 ? 'bg-blue-500' : m.pct >= 70 ? 'bg-yellow-500' : 'bg-red-500';
@@ -281,12 +281,12 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                                             <p className="text-zinc-500 mb-2">{m.role}</p>
                                             <div className="space-y-1 mb-2">
                                                 <div className="flex justify-between gap-4"><span>Meta:</span> <span className="font-mono">{formatCurrency(m.meta)}</span></div>
-                                                <div className="flex justify-between gap-4"><span>Contratado:</span> <span className="font-mono text-emerald-400">{formatCurrency(m.contratado)}</span></div>
-                                                <div className="flex justify-between gap-4 border-b border-zinc-800 pb-1"><span>Pipeline:</span> <span className="font-mono text-indigo-400">{formatCurrency(m.forecastFinal - m.contratado)}</span></div>
-                                                <div className="flex justify-between gap-4 pt-1 font-bold"><span>Forecast Final:</span> <span className="font-mono text-indigo-300">{formatCurrency(m.forecastFinal)}</span></div>
+                                                <div className="flex justify-between gap-4 pt-1 font-bold"><span>Contratado:</span> <span className="font-mono text-emerald-400">{formatCurrency(m.contratado)}</span></div>
+                                                <div className="flex justify-between gap-4 border-b border-zinc-800 pb-1 pt-2 border-t mt-2"><span>Pipeline:</span> <span className="font-mono text-indigo-400">{formatCurrency(m.forecastFinal - m.contratado)}</span></div>
+                                                <div className="flex justify-between gap-4 font-normal text-zinc-400"><span>Forecast Final:</span> <span className="font-mono text-indigo-300">{formatCurrency(m.forecastFinal)}</span></div>
                                             </div>
                                             <p className="text-zinc-500 border-t border-zinc-800 pt-2 italic">
-                                                ( (Contratado + Pipeline) ÷ Meta = {formatPercentage(m.pct)} )
+                                                ( Contratado ÷ Meta = {formatPercentage(m.pct)} )
                                             </p>
                                             <p className="mt-1">Status: <span className={textColor}>{m.status}</span></p>
                                         </TooltipContent>

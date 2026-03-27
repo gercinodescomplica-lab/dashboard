@@ -10,36 +10,36 @@ import {
 } from "@/components/ui/tooltip";
 
 interface ForecastKpisProps {
-    forecastFinal: number;
+    contratado: number;
     meta: number;
 }
 
-export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
-    const achievementPercentage = calculateAchievementPercentage(forecastFinal, meta);
+export function ForecastKpis({ contratado, meta }: ForecastKpisProps) {
+    const achievementPercentage = calculateAchievementPercentage(contratado, meta);
     const status = determinePerformanceStatus(achievementPercentage);
     const colorClasses = getStatusColor(status);
 
     return (
         <TooltipProvider>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Forecast KPI */}
+                {/* Meta KPI */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <TrendingUp className="w-4 h-4 text-zinc-400" />
-                            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Forecast Final</span>
+                            <Target className="w-4 h-4 text-zinc-400" />
+                            <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Meta</span>
                         </div>
                         <Tooltip>
                             <TooltipTrigger>
                                 <Info className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" />
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-[300px] text-zinc-300 bg-zinc-900 border-zinc-700">
-                                <p><strong>Forecast Final (Previsão Final de Vendas):</strong> Baseado no que já foi vendido e no que está no funil de negociação, com quanto o gerente vai fechar o ano. Ele é a principal métrica para definir o status de atingimento (Crítico, Atenção, etc).</p>
+                                <p><strong>Meta:</strong> Objetivo global de vendas estabelecido para o gerente no ano atual.</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
                     <div className="text-[clamp(1.1rem,2vw,1.5rem)] xl:text-2xl font-bold text-zinc-100 mt-2 tracking-tighter whitespace-nowrap">
-                        {formatCurrency(forecastFinal)}
+                        {formatCurrency(meta)}
                     </div>
                 </div>
 
@@ -47,7 +47,7 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4 text-zinc-400" />
+                            <TrendingUp className="w-4 h-4 text-zinc-400" />
                             <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">Atingimento</span>
                         </div>
                         <Tooltip>
@@ -55,7 +55,7 @@ export function ForecastKpis({ forecastFinal, meta }: ForecastKpisProps) {
                                 <Info className="w-4 h-4 text-zinc-500 hover:text-zinc-300 transition-colors" />
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-[300px] text-zinc-300 bg-zinc-900 border-zinc-700">
-                                <p>Calculado baseando-se <strong>apenas no Forecast Final</strong>. Se a projeção de vendas do Forecast for menor do que a sua Meta global, o atingimento ficará comprometido.</p>
+                                <p>Porcentagem do valor que já foi efetivamente <strong>contratado</strong> comercialmente em relação à Meta, sem contar os valores do pipeline.</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>

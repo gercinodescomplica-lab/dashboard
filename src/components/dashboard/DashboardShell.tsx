@@ -5,7 +5,10 @@ import { Manager } from '@/types/manager';
 import { fetchManagers } from '@/services/managers.service';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
-import { MapPin, Users, Loader2, Building2 } from 'lucide-react';
+import StoreView from './StoreView';
+import { MapPin, Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch } from 'lucide-react';
+import OrganizationChartView from './OrganizationChartView';
+import PipelineStoreView from './PipelineStoreView';
 import {
     Dialog,
     DialogContent,
@@ -26,6 +29,7 @@ export function DashboardShell() {
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [currentView, setCurrentView] = useState<'dashboard' | 'store' | 'organograma' | 'pipeline'>('dashboard');
 
     // Fetch Data
     useEffect(() => {
@@ -111,8 +115,9 @@ export function DashboardShell() {
 
     return (
         <div className="h-screen w-screen bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden selection:bg-indigo-500/30">
+
             {/* Header - Fixed Height */}
-            <header className="flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 backdrop-blur-sm z-10 flex items-center justify-between">
+            <header className="relative flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 z-10 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                         <MapPin className="w-6 h-6 text-indigo-400" />
@@ -128,6 +133,38 @@ export function DashboardShell() {
                             Visão Executiva de Gerentes
                         </p>
                     </button>
+
+                    {/* Navigation */}
+                    <div className="hidden sm:flex items-center gap-1 ml-6 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/80">
+                        <button
+                            onClick={() => setCurrentView('dashboard')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'dashboard' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                        >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Dashboard
+                        </button>
+                        <button
+                            onClick={() => setCurrentView('store')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                        >
+                            <Store className="w-4 h-4" />
+                            Estatísticas PRODAM Store
+                        </button>
+                        <button
+                            onClick={() => setCurrentView('organograma')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'organograma' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                        >
+                            <Network className="w-4 h-4" />
+                            Organograma
+                        </button>
+                        <button
+                            onClick={() => setCurrentView('pipeline')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'pipeline' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                        >
+                            <PackageSearch className="w-4 h-4" />
+                            Pipeline Prodam Store
+                        </button>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-4">
@@ -228,8 +265,14 @@ export function DashboardShell() {
             </header>
 
             {/* Main Content Area - Scrollable on mobile, handles remaining height */}
-            <main className="flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full max-w-7xl mx-auto overflow-y-auto overflow-x-hidden">
-                {selectedManagerId === 'drm' ? (
+            <main className="relative flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full overflow-y-auto overflow-x-hidden z-10">
+                {currentView === 'organograma' ? (
+                    <OrganizationChartView />
+                ) : currentView === 'pipeline' ? (
+                    <PipelineStoreView />
+                ) : currentView === 'store' ? (
+                    <StoreView />
+                ) : selectedManagerId === 'drm' ? (
                     <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} />
                 ) : currentManager ? (
                     <SingleManagerView key={currentManager.id} manager={currentManager} />
@@ -238,8 +281,7 @@ export function DashboardShell() {
                         <Users className="w-12 h-12 mb-4 text-zinc-700" />
                         <p className="text-lg font-medium">Selecione um gerente para visualizar.</p>
                     </div>
-                )
-                }
+                )}
             </main >
         </div >
     );
