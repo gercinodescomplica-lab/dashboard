@@ -16,7 +16,7 @@ export function ManagerCard({ manager }: ManagerCardProps) {
                 <ManagerHeader manager={manager} />
             </CardHeader>
             <CardContent className="p-6 space-y-8">
-                <ForecastKpis forecastFinal={manager.forecastFinal} meta={manager.meta} />
+                <ForecastKpis contratado={manager.contratado} meta={manager.meta} />
 
                 <div className="space-y-6">
                     <div className="pt-2 border-t border-zinc-900/50">
