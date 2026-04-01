@@ -124,14 +124,17 @@ export function DashboardShell() {
                     </div> */}
                     <button
                         onClick={() => setSelectedManagerId('drm')}
-                        className="text-left group transition-all cursor-pointer"
+                        className="text-left group transition-all cursor-pointer flex items-center gap-3"
                     >
-                        <h1 className="text-2xl font-bold tracking-tight text-zinc-100 group-hover:text-indigo-400 transition-colors">
-                            Dashboard Comercial PRODAM
-                        </h1>
-                        <p className="text-zinc-400 text-sm font-medium">
-                            Visão Executiva de Gerentes
-                        </p>
+                        <img src="/avatars/aibertinho.png" alt="AIBertinho Logo" className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-zinc-100 group-hover:text-indigo-400 transition-colors">
+                                AIBertinho
+                            </h1>
+                            <p className="text-zinc-400 text-sm font-medium">
+                                Visão Executiva de Gerentes
+                            </p>
+                        </div>
                     </button>
 
                     {/* Navigation */}

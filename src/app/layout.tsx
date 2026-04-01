@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DRM — Dashboard Comercial",
+  title: "AIBertinho — DRM",
   description: "Dashboard comercial da Diretoria de Relacionamento e Mercado",
   icons: {
     icon: [
-      { url: '/favicon.png', type: 'image/png' },
+      { url: '/avatars/aibertinho.png', type: 'image/png' },
     ],
-    shortcut: '/favicon.png',
-    apple: '/favicon.png',
+    shortcut: '/avatars/aibertinho.png',
+    apple: '/avatars/aibertinho.png',
   },
 };
 
