@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchManagers } from '@/services/managers.service';
@@ -126,7 +127,7 @@ export function DashboardShell() {
                         onClick={() => setSelectedManagerId('drm')}
                         className="text-left group transition-all cursor-pointer flex items-center gap-3"
                     >
-                        <img src="/avatars/aibertinho.png" alt="AIBertinho Logo" className="w-10 h-10 rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" />
+                        <Image src="/avatars/aibertinho.png" alt="AIBertinho Logo" width={40} height={40} className="rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" priority />
                         <div>
                             <h1 className="text-2xl font-bold tracking-tight text-zinc-100 group-hover:text-indigo-400 transition-colors">
                                 AIBertinho
