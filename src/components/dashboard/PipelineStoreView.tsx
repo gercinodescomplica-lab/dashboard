@@ -41,7 +41,6 @@ const PRODUCTS = [
     { id: 35, n: 'Conversa AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
     { id: 36, n: 'Documenta AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
     { id: 37, n: 'Notifica AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
-    { id: 38, n: 'Pronto', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
     { id: 39, n: 'Descomplica', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'Serviços ao Cidadão' },
     { id: 40, n: 'Escola (Floripa)', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Educação' },
     { id: 41, n: 'Oracle', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Infraestrutura Digital' },
