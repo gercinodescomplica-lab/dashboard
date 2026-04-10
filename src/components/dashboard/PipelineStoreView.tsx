@@ -3,52 +3,15 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, Calendar, Package, BarChart3, Building2 } from 'lucide-react';
 
-const PRODUCTS = [
-    { id: 1, n: 'Smart Sampa', d: 'DRM', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Segurança Pública' },
-    { id: 2, n: 'Tô Legal', d: 'DDS', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Urbanismo' },
-    { id: 3, n: 'Eleições', d: 'DDS', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Governança Eletrônica' },
-    { id: 4, n: 'WFS', d: 'DDS', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Produtividade Interna' },
-    { id: 5, n: 'Liferay', d: 'DDS', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Governança Eletrônica' },
-    { id: 6, n: 'VOIP + Teams', d: 'DIT', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 7, n: 'SD-WAN', d: 'DIT', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 8, n: 'Wifi Livre aaS', d: 'DIT', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Conectividade Urbana' },
-    { id: 9, n: 'DaaS (Arlequim)', d: 'DIT', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 10, n: 'Consultoria', d: 'DRM', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 11, n: 'Google Workspace', d: 'DRM', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Produtividade Interna' },
-    { id: 12, n: 'Office 365', d: 'DRM', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Produtividade Interna' },
-    { id: 13, n: 'Salesforce', d: 'DRM', s: 'store', f: 'Nov 2025', mkt: true, cat: 'Produtividade Interna' },
-    { id: 14, n: 'Backup as a Service', d: 'DIT', s: 'store', f: 'Dez 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 15, n: 'Multicloud', d: 'DIT', s: 'store', f: 'Dez 2025', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 16, n: 'Geoportal', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'Urbanismo' },
-    { id: 17, n: 'ETL Geográfico', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 18, n: 'Agendamento', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'Serviços ao Cidadão' },
-    { id: 19, n: 'Central de Notificações', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'Infraestrutura Digital' },
-    { id: 20, n: 'Delibera AI', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'IA' },
-    { id: 21, n: 'Reconhece AI', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'IA' },
-    { id: 22, n: 'Simplifica AI', d: 'DDS', s: 'store', f: 'Mar 2026', mkt: true, cat: 'IA' },
-    { id: 23, n: 'Virtualização de Dados', d: 'DIT', s: 'breve', f: 'Abr 2026', mkt: false, cat: 'Infraestrutura Digital' },
-    { id: 24, n: 'SAN/NAS', d: 'DIT', s: 'breve', f: 'Abr 2026', mkt: false, cat: 'Infraestrutura Digital' },
-    { id: 25, n: 'Observabilidade', d: 'DIT', s: 'breve', f: 'Abr 2026', mkt: false, cat: 'Infraestrutura Digital' },
-    { id: 26, n: 'Data Lake Prodam', d: 'DIT', s: 'breve', f: 'Mai 2026', mkt: false, cat: 'Dados' },
-    { id: 27, n: 'Fiscalização de lixo', d: 'PRE', s: 'breve', f: 'Mai 2026', mkt: false, cat: 'Meio Ambiente' },
-    { id: 28, n: 'Score Cobrança', d: 'DDS', s: 'breve', f: 'Mai 2026', mkt: false, cat: 'Finanças Públicas' },
-    { id: 29, n: 'Previne Saúde Servidor', d: 'DDS', s: 'breve', f: 'Mai 2026', mkt: false, cat: 'Saúde' },
-    { id: 30, n: 'SEI na Nuvem', d: 'DRM', s: 'breve', f: 'Jun 2026', mkt: false, cat: 'Governança Eletrônica' },
-    { id: 31, n: '156 City', d: 'DRM', s: 'breve', f: 'Jun 2026', mkt: false, cat: 'Serviços ao Cidadão' },
-    { id: 32, n: 'Digitalização Documentos', d: 'DIT', s: 'breve', f: 'Ago 2026', mkt: false, cat: 'Infraestrutura Digital' },
-    { id: 33, n: 'Gestão Ambiental', d: 'PRE', s: 'backlog', f: '—', mkt: false, cat: 'Meio Ambiente' },
-    { id: 34, n: 'Zeladoria', d: 'PRE', s: 'backlog', f: '—', mkt: false, cat: 'Urbanismo' },
-    { id: 35, n: 'Conversa AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
-    { id: 36, n: 'Documenta AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
-    { id: 37, n: 'Notifica AI', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'IA' },
-    { id: 39, n: 'Descomplica', d: 'DDS', s: 'backlog', f: '—', mkt: false, cat: 'Serviços ao Cidadão' },
-    { id: 40, n: 'Escola (Floripa)', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Educação' },
-    { id: 41, n: 'Oracle', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Infraestrutura Digital' },
-    { id: 42, n: 'Hospitais', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Saúde' },
-    { id: 43, n: 'SMAE', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Governança' },
-    { id: 44, n: 'Política de Dados', d: 'DRM', s: 'backlog', f: '—', mkt: false, cat: 'Dados' },
-    { id: 45, n: 'Consultoria Técnica Nuvem', d: 'DIT', s: 'backlog', f: '—', mkt: false, cat: 'Infraestrutura Digital' },
-];
+export interface StoreProduct {
+    id: number;
+    n: string;
+    d: string;
+    s: string;
+    f: string;
+    mkt: boolean;
+    cat: string;
+}
 
 const PHASES = [
     { f: 'Nov 2025', t: 'done', lb: 'produtos disponíveis' },
@@ -87,7 +50,7 @@ const STAT_COLORS = {
 
 const STAT_LABELS = { store: 'Na Store', breve: 'Em breve', backlog: 'Backlog' };
 
-export default function PipelineStoreView() {
+export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreProduct[] }) {
     const [view, setView] = useState<'overview' | 'roadmap' | 'produtos'>('overview');
     const [roadmapFilter, setRoadmapFilter] = useState('all');
     const [prodFilter, setProdFilter] = useState('all');

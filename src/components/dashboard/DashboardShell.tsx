@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchManagers } from '@/services/managers.service';
+import { getStoreProducts } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
@@ -23,6 +24,7 @@ import { StatBadge } from './StatBadge';
 
 export function DashboardShell() {
     const [managers, setManagers] = useState<Manager[]>([]);
+    const [storeProducts, setStoreProducts] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -39,6 +41,8 @@ export function DashboardShell() {
                 setIsLoading(true);
                 const data = await fetchManagers();
                 setManagers(data);
+                const products = await getStoreProducts();
+                setStoreProducts(products);
 
                 if (data.length > 0) {
                     const maxYear = Math.max(...data.map(m => m.year));
@@ -273,7 +277,7 @@ export function DashboardShell() {
                 {currentView === 'organograma' ? (
                     <OrganizationChartView />
                 ) : currentView === 'pipeline' ? (
-                    <PipelineStoreView />
+                    <PipelineStoreView PRODUCTS={storeProducts} />
                 ) : currentView === 'store' ? (
                     <StoreView />
                 ) : selectedManagerId === 'drm' ? (

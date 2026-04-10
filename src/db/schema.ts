@@ -47,3 +47,13 @@ export const visits = sqliteTable('visits', {
     dataFim: text('data_fim'), // Nullable ISO date string ending
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+export const storeProducts = sqliteTable('store_products', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    directorate: text('directorate', { enum: ['DDS', 'DIT', 'DRM', 'PRE'] }).notNull(),
+    status: text('status', { enum: ['store', 'breve', 'backlog'] }).notNull(),
+    phase: text('phase').notNull(),
+    marketplace: integer('marketplace', { mode: 'boolean' }).notNull().default(false),
+    category: text('category').notNull(),
+});
