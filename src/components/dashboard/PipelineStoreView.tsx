@@ -288,7 +288,7 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
 
                     {/* PRODUTOS (Table) */}
                     {view === 'produtos' && (
-                        <div className="flex flex-col h-full">
+                        <div className="flex flex-col">
                             <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">
                                 <span className="text-sm font-bold text-zinc-500 py-1.5 mr-2 uppercase">Filtrar:</span>
                                 {['all', 'store', 'breve', 'backlog', 'DDS', 'DIT', 'DRM', 'PRE'].map(f => (
@@ -307,7 +307,7 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                                 ))}
                             </div>
 
-                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex-1 overflow-x-auto custom-scrollbar">
+                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto custom-scrollbar">
                                 <table className="w-full text-left border-collapse min-w-[600px]">
                                     <thead>
                                         <tr className="bg-zinc-950 text-xs font-bold text-zinc-500 uppercase tracking-wider">
