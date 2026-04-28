@@ -1,4 +1,4 @@
-import { Manager, PipelineData } from '../types/manager';
+import { Manager, PipelineData, QuarterData } from '../types/manager';
 
 export type PerformanceStatus = 'Acima da meta' | 'Muito perto' | 'Atenção' | 'Crítico';
 
@@ -20,7 +20,7 @@ export function sumQuarterProjects(projects: { value: number }[]): number {
  * Sums the value of all pipeline projects marked as 'contratado'
  */
 export function sumPipelineContratado(pipeline: PipelineData): number {
-    return Object.values(pipeline).reduce((acc, quarter) => {
+    return Object.values(pipeline).reduce((acc, quarter: QuarterData) => {
         const contracted = (quarter.projects || [])
             .filter(p => p.temperature === 'contratado')
             .reduce((s, p) => s + (p.value || 0), 0);
