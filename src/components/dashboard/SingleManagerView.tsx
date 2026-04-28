@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Manager, CXItem, Visit } from '@/types/manager';
+import { calcEffectiveContratado } from '@/lib/calc';
 import { ManagerHeader } from './ManagerHeader';
 import { PerformanceBars } from './PerformanceBars';
 import { PipelineBars } from './PipelineBars';
@@ -19,6 +20,7 @@ interface SingleManagerViewProps {
 }
 
 export function SingleManagerView({ manager }: SingleManagerViewProps) {
+    const effectiveContratado = calcEffectiveContratado(manager.contratado, manager.pipeline);
     const [cxItems, setCxItems] = useState<CXItem[] | null>(null);
     const [visits, setVisits] = useState<Visit[] | null>(null);
     const [activeTab, setActiveTab] = useState('dashboard');
@@ -83,7 +85,7 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
                         <ManagerHeader manager={manager} />
                         <div className="flex-1 flex items-center justify-center">
                             <div className="w-full">
-                                <ForecastKpis contratado={manager.contratado} meta={manager.meta} />
+                                <ForecastKpis contratado={effectiveContratado} meta={manager.meta} />
                             </div>
                         </div>
                     </div>
@@ -91,7 +93,7 @@ export function SingleManagerView({ manager }: SingleManagerViewProps) {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:h-1/2 min-h-[300px]">
                     <div className="lg:col-span-5 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-6 sm:p-8 flex flex-col justify-center backdrop-blur-md">
                         <h4 className="text-lg font-medium text-zinc-400 mb-6">Desempenho da Meta</h4>
-                        <PerformanceBars meta={manager.meta} contratado={manager.contratado} />
+                        <PerformanceBars meta={manager.meta} contratado={effectiveContratado} />
                     </div>
                     <div className="lg:col-span-7 bg-zinc-900/30 border border-zinc-800/80 rounded-2xl p-4 sm:p-8 backdrop-blur-md flex flex-col min-h-0 min-h-[300px] lg:min-h-0">
                         <PipelineBars pipeline={manager.pipeline} managerName={manager.name} />

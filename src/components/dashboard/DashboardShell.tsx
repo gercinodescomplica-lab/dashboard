@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchManagers } from '@/services/managers.service';
@@ -8,7 +9,7 @@ import { getStoreProducts } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { MapPin, Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch } from 'lucide-react';
+import { MapPin, Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import {
@@ -172,6 +173,13 @@ export function DashboardShell() {
                             <PackageSearch className="w-4 h-4" />
                             Pipeline Prodam Store
                         </button>
+                        <Link
+                            href="/contracts"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-all"
+                        >
+                            <FileText className="w-4 h-4" />
+                            Contratos
+                        </Link>
                     </div>
                 </div>
 

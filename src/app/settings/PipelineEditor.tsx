@@ -1,6 +1,6 @@
 import { Project, QuarterData, PipelineData, Manager } from '@/types/manager';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Copy } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
 interface Props {
@@ -54,6 +54,18 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
 
         cloneP[fromQ] = sourceQ;
         cloneP[toQ] = destQ;
+        onChange(cloneP);
+    };
+
+    const handleDuplicate = (qKey: QuarterKey, index: number) => {
+        const cloneP = { ...pipeline };
+        const qData = { ...cloneP[qKey] };
+        const projects = [...(qData.projects || [])];
+        const copy = { ...projects[index], name: `${projects[index].name} (cópia)` };
+        projects.splice(index + 1, 0, copy);
+        qData.projects = projects;
+        qData.total = projects.reduce((acc, p) => acc + p.value, 0);
+        cloneP[qKey] = qData;
         onChange(cloneP);
     };
 
@@ -146,6 +158,9 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                                             <option value="quente">🔥</option>
                                             <option value="morno">🟡</option>
                                             <option value="frio">❄️</option>
+                                            <option value="contratado">✅ Contratado</option>
+                                            <option value="historico">🗂️ Histórico</option>
+                                            <option value="perdido">❌ Perdido</option>
                                         </select>
                                     </div>
                                 </div>
@@ -158,7 +173,10 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                             </div>
 
                             {/* Actions */}
-                            <div className="flex gap-2 w-full md:w-auto mt-4 md:mt-0 self-stretch md:self-auto ml-2 border-t border-zinc-800 md:border-0 pt-3 md:pt-4">
+                            <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 self-stretch md:self-auto ml-2 border-t border-zinc-800 md:border-0 pt-3 md:pt-4">
+                                <Button size="sm" className="w-12 flex-shrink-0 bg-indigo-950/50 hover:bg-indigo-900/50 text-indigo-400 border border-indigo-900/50 h-9 px-0" onClick={() => handleDuplicate(item.qKey, item.originalIndex)}>
+                                    <Copy className="w-4 h-4 mx-auto" />
+                                </Button>
                                 <Button size="sm" variant="destructive" className="w-12 flex-shrink-0 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 h-9 px-0" onClick={() => handleDelete(item.qKey, item.originalIndex)}>
                                     <Trash2 className="w-4 h-4 mx-auto" />
                                 </Button>

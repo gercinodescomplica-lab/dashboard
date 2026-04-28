@@ -57,3 +57,26 @@ export const storeProducts = sqliteTable('store_products', {
     marketplace: integer('marketplace', { mode: 'boolean' }).notNull().default(false),
     category: text('category').notNull(),
 });
+
+export const contrato = sqliteTable('contrato', {
+    id: text('id').primaryKey(),
+    numeroContrato: text('numero_contrato').notNull().unique(),
+    protheus: text('protheus'),
+    cliente: text('cliente').notNull(),
+    desde: text('desde'),
+    dtInicioVigencia: text('dt_inicio_vigencia'),
+    dtFimVigencia: text('dt_fim_vigencia'),
+    vlContratado: real('vl_contratado'),
+    vlFaturado: real('vl_faturado'),
+    vlSaldo: real('vl_saldo'),
+    tipo: text('tipo'),
+    situacao: text('situacao'),
+    vigente: integer('vigente', { mode: 'boolean' }),
+    diretoria: text('diretoria'),
+    gerencia: text('gerencia'),
+    nomeGerente: text('nome_gerente'),
+    objeto: text('objeto'),
+    managerId: text('manager_id').references(() => managers.id, { onDelete: 'set null' }),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});

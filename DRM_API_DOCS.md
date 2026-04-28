@@ -81,6 +81,42 @@ curl -X GET http://localhost:3000/api/external/v1/data \
 
 ---
 
+### 2. Listar Contratos
+
+Retorna a lista de contratos da diretoria com suporte a filtros e busca.
+
+- **URL:** `/api/external/v1/contracts`
+- **Método:** `GET`
+- **Query Params:**
+  - `search`: Busca por número, cliente, gerente ou objeto.
+  - `gerencia`: Filtra por código de gerência (ex: `GRC-1`).
+  - `vigente`: `true` ou `false`.
+  - `tipo`: `SUSTENTAÇÃO` ou `PROJETOS`.
+
+#### Exemplo:
+```bash
+curl -X GET "http://localhost:3000/api/external/v1/contracts?search=ALESP&vigente=true" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+---
+
+### 3. Obter Detalhes de um Contrato
+
+Retorna os detalhes de um contrato específico através do seu ID (UUID) ou Número do Contrato.
+
+- **URL:** `/api/external/v1/contracts/[identifier]`
+- **Método:** `GET`
+
+#### Exemplo:
+```bash
+# Busca por número (URL encoded)
+curl -X GET "http://localhost:3000/api/external/v1/contracts/TC%2089%2F2024-ALESP" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+---
+
 ## Códigos de Erro
 
 - **401 Unauthorized:** Cabeçalho de autorização ausente ou mal formatado.

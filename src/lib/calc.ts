@@ -1,4 +1,4 @@
-import { Manager } from '../types/manager';
+import { Manager, PipelineData } from '../types/manager';
 
 export type PerformanceStatus = 'Acima da meta' | 'Muito perto' | 'Atenção' | 'Crítico';
 
@@ -14,6 +14,25 @@ export function calculateGap(meta: number, contratado: number): number {
  */
 export function sumQuarterProjects(projects: { value: number }[]): number {
     return projects.reduce((acc, curr) => acc + (curr.value || 0), 0);
+}
+
+/**
+ * Sums the value of all pipeline projects marked as 'contratado'
+ */
+export function sumPipelineContratado(pipeline: PipelineData): number {
+    return Object.values(pipeline).reduce((acc, quarter) => {
+        const contracted = (quarter.projects || [])
+            .filter(p => p.temperature === 'contratado')
+            .reduce((s, p) => s + (p.value || 0), 0);
+        return acc + contracted;
+    }, 0);
+}
+
+/**
+ * Returns the effective contratado = manager.contratado + sum of pipeline projects tagged as 'contratado'
+ */
+export function calcEffectiveContratado(contratado: number, pipeline: PipelineData): number {
+    return (contratado || 0) + sumPipelineContratado(pipeline);
 }
 
 /**

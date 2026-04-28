@@ -1,6 +1,6 @@
 import { db } from './index';
-import { managers, projects, cx, visits } from './schema';
-import { eq } from 'drizzle-orm';
+import { managers, projects, cx, visits, contrato } from './schema';
+import { eq, like, desc, or } from 'drizzle-orm';
 import { Manager, CXItem, Visit } from '../types/manager';
 
 /**
@@ -120,4 +120,156 @@ export async function fetchFullDashboardData(): Promise<Manager[]> {
     );
 
     return fullData;
+}
+
+// ─── Contrato Queries ──────────────────────────────────────────────────────────
+
+export type ContratoRow = {
+    id: string;
+    numeroContrato: string;
+    protheus: string | null;
+    cliente: string;
+    desde: string | null;
+    dtInicioVigencia: string | null;
+    dtFimVigencia: string | null;
+    vlContratado: number | null;
+    vlFaturado: number | null;
+    vlSaldo: number | null;
+    tipo: string | null;
+    situacao: string | null;
+    vigente: boolean | null;
+    diretoria: string | null;
+    gerencia: string | null;
+    nomeGerente: string | null;
+    objeto: string | null;
+    managerId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    managerName: string | null;
+};
+
+export async function fetchAllContratos(search?: string): Promise<ContratoRow[]> {
+    const baseQuery = db
+        .select({
+            id: contrato.id,
+            numeroContrato: contrato.numeroContrato,
+            protheus: contrato.protheus,
+            cliente: contrato.cliente,
+            desde: contrato.desde,
+            dtInicioVigencia: contrato.dtInicioVigencia,
+            dtFimVigencia: contrato.dtFimVigencia,
+            vlContratado: contrato.vlContratado,
+            vlFaturado: contrato.vlFaturado,
+            vlSaldo: contrato.vlSaldo,
+            tipo: contrato.tipo,
+            situacao: contrato.situacao,
+            vigente: contrato.vigente,
+            diretoria: contrato.diretoria,
+            gerencia: contrato.gerencia,
+            nomeGerente: contrato.nomeGerente,
+            objeto: contrato.objeto,
+            managerId: contrato.managerId,
+            createdAt: contrato.createdAt,
+            updatedAt: contrato.updatedAt,
+            managerName: managers.name,
+        })
+        .from(contrato)
+        .leftJoin(managers, eq(contrato.managerId, managers.id))
+        .orderBy(desc(contrato.dtFimVigencia));
+
+    if (search && search.trim()) {
+        const term = `%${search.trim()}%`;
+        return baseQuery.where(
+            or(
+                like(contrato.numeroContrato, term),
+                like(contrato.cliente, term),
+                like(contrato.nomeGerente, term),
+                like(contrato.gerencia, term),
+                like(contrato.objeto, term),
+            )
+        );
+    }
+
+    return baseQuery;
+}
+
+export async function fetchContratoById(id: string): Promise<ContratoRow | undefined> {
+    const rows = await db
+        .select({
+            id: contrato.id,
+            numeroContrato: contrato.numeroContrato,
+            protheus: contrato.protheus,
+            cliente: contrato.cliente,
+            desde: contrato.desde,
+            dtInicioVigencia: contrato.dtInicioVigencia,
+            dtFimVigencia: contrato.dtFimVigencia,
+            vlContratado: contrato.vlContratado,
+            vlFaturado: contrato.vlFaturado,
+            vlSaldo: contrato.vlSaldo,
+            tipo: contrato.tipo,
+            situacao: contrato.situacao,
+            vigente: contrato.vigente,
+            diretoria: contrato.diretoria,
+            gerencia: contrato.gerencia,
+            nomeGerente: contrato.nomeGerente,
+            objeto: contrato.objeto,
+            managerId: contrato.managerId,
+            createdAt: contrato.createdAt,
+            updatedAt: contrato.updatedAt,
+            managerName: managers.name,
+        })
+        .from(contrato)
+        .leftJoin(managers, eq(contrato.managerId, managers.id))
+        .where(eq(contrato.id, id));
+    return rows[0];
+}
+
+export async function fetchContratoByNumero(numero: string): Promise<ContratoRow | undefined> {
+    const rows = await db
+        .select({
+            id: contrato.id,
+            numeroContrato: contrato.numeroContrato,
+            protheus: contrato.protheus,
+            cliente: contrato.cliente,
+            desde: contrato.desde,
+            dtInicioVigencia: contrato.dtInicioVigencia,
+            dtFimVigencia: contrato.dtFimVigencia,
+            vlContratado: contrato.vlContratado,
+            vlFaturado: contrato.vlFaturado,
+            vlSaldo: contrato.vlSaldo,
+            tipo: contrato.tipo,
+            situacao: contrato.situacao,
+            vigente: contrato.vigente,
+            diretoria: contrato.diretoria,
+            gerencia: contrato.gerencia,
+            nomeGerente: contrato.nomeGerente,
+            objeto: contrato.objeto,
+            managerId: contrato.managerId,
+            createdAt: contrato.createdAt,
+            updatedAt: contrato.updatedAt,
+            managerName: managers.name,
+        })
+        .from(contrato)
+        .leftJoin(managers, eq(contrato.managerId, managers.id))
+        .where(eq(contrato.numeroContrato, numero));
+    return rows[0];
+}
+
+export async function createContrato(data: typeof contrato.$inferInsert) {
+    return db.insert(contrato).values(data);
+}
+
+export async function updateContrato(id: string, data: Partial<typeof contrato.$inferInsert>) {
+    return db
+        .update(contrato)
+        .set({ ...data, updatedAt: new Date().toISOString() })
+        .where(eq(contrato.id, id));
+}
+
+export async function deleteContrato(id: string) {
+    return db.delete(contrato).where(eq(contrato.id, id));
+}
+
+export async function fetchManagersList() {
+    return db.select({ id: managers.id, name: managers.name, role: managers.role }).from(managers);
 }

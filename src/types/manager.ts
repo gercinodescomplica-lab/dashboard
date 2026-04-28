@@ -1,4 +1,4 @@
-export type OpportunityTemperature = 'quente' | 'morno' | 'frio';
+export type OpportunityTemperature = 'quente' | 'morno' | 'frio' | 'contratado' | 'historico' | 'perdido';
 export type CXStatus = 'pendente' | 'analise' | 'resolvido';
 export type CXCriticidade = 'baixa' | 'media' | 'alta';
 
