@@ -3,6 +3,8 @@ import { ContractsTable } from './components/ContractsTable';
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
     title: 'Contratos — DRM',
     description: 'Gestão de contratos da Diretoria de Relacionamento e Mercado',

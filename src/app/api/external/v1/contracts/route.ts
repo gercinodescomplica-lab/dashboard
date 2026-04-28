@@ -61,11 +61,15 @@ export async function GET(request: Request) {
             );
         }
 
-        // Summary
+        // Summary — vigentes + vencidos always equals total (they are subsets, not additional counts)
+        const totalContratos = contratos.length;
+        const totalVigentes = contratos.filter((c) => c.vigente).length;
         const summary = {
-            total: contratos.length,
-            vigentes: contratos.filter((c) => c.vigente).length,
-            vencidos: contratos.filter((c) => !c.vigente).length,
+            totalContratos,
+            breakdown: {
+                vigentes: totalVigentes,
+                vencidos: totalContratos - totalVigentes,
+            },
             totalVlContratado: contratos.reduce((s, c) => s + (c.vlContratado ?? 0), 0),
             totalVlFaturado: contratos.reduce((s, c) => s + (c.vlFaturado ?? 0), 0),
             totalVlSaldo: contratos.reduce((s, c) => s + (c.vlSaldo ?? 0), 0),

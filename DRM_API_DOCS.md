@@ -46,9 +46,11 @@ Retorna a lista de contratos da diretoria com suporte a filtros e busca textual.
   "success": true,
   "timestamp": "2026-04-28T13:54:00.000Z",
   "summary": {
-    "total": 100,
-    "vigentes": 85,
-    "vencidos": 15,
+    "totalContratos": 100,
+    "breakdown": {
+      "vigentes": 85,
+      "vencidos": 15
+    },
     "totalVlContratado": 15000000.00,
     "totalVlFaturado": 8000000.00,
     "totalVlSaldo": 7000000.00
