@@ -30,12 +30,12 @@ function authenticate(request: Request): { ok: true } | { ok: false; response: N
  */
 export async function GET(
     request: Request,
-    { params }: { params: { identifier: string } }
+    { params }: { params: Promise<{ identifier: string }> }
 ) {
     const auth = authenticate(request);
     if (!auth.ok) return auth.response;
 
-    const { identifier } = params;
+    const { identifier } = await params;
 
     try {
         // Decode identifier in case it has slashes or special chars (like TC 001/2024)
