@@ -95,7 +95,9 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => ({
         key: q,
         label: q === 'nao_mapeado' ? 'N/M' : q.toUpperCase(),
-        total: managers.reduce((acc, m) => acc + sumQuarterProjects(m.pipeline[q]?.projects || []), 0),
+        total: managers.reduce((acc, m) => acc + sumQuarterProjects(
+            (m.pipeline[q]?.projects || []).filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido')
+        ), 0),
     }));
     const maxQTotal = Math.max(...qTotals.map((q) => q.total), 1);
 
@@ -105,6 +107,7 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     managers.forEach((m) => {
         (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as QKey[]).forEach((q) => {
             (m.pipeline[q]?.projects || []).forEach((p) => {
+                if (p.temperature === 'historico' || p.temperature === 'perdido' || p.temperature === 'contratado') return;
                 const t = (p.temperature ?? 'morno') as Temp;
                 tempCounts[t] = (tempCounts[t] ?? 0) + 1;
                 tempValues[t] = (tempValues[t] ?? 0) + (p.value || 0);

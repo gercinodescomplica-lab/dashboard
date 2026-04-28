@@ -40,7 +40,7 @@ export default function OrganizationChartView() {
             <div className="w-full h-[1.5px] bg-zinc-800 mb-6"></div>
 
             {/* Departments Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 flex-1">
                 
                 {/* KAM */}
                 <div className="flex flex-col">
@@ -102,10 +102,7 @@ export default function OrganizationChartView() {
                         </div>
                         <div>
                             <div className="text-[11px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 mb-1">grcc DEBORA</div>
-                            <div className="flex items-center gap-1.5 px-2">
-                                <span className="text-[10px] text-zinc-400">Marcella</span>
-                                <span className="text-[8px] font-medium px-1.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 truncate whitespace-nowrap">Em contratação</span>
-                            </div>
+                            <div className="text-[10px] px-2 text-zinc-400">Marcella</div>
                         </div>
                     </div>
                 </div>
@@ -123,7 +120,6 @@ export default function OrganizationChartView() {
                             <div className="text-[10px] px-2 text-zinc-400">Denis</div>
                             <div className="text-[10px] px-2 text-zinc-400">Maria José</div>
                             <div className="text-[10px] px-2 text-zinc-400">Paulo</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Antônio</div>
                         </div>
                         <div className="border border-amber-900/40 rounded bg-zinc-950/50 overflow-hidden">
                             <div className="bg-amber-900/30 text-amber-500 p-1 flex flex-col px-2">
@@ -147,6 +143,7 @@ export default function OrganizationChartView() {
                         <div>
                             <div className="text-[11px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 mb-1">JURÍDICO</div>
                             <div className="text-[10px] px-2 text-zinc-400">Elizanete</div>
+                            <div className="text-[10px] px-2 text-zinc-400">Mauro</div>
                         </div>
                     </div>
                 </div>
@@ -156,7 +153,7 @@ export default function OrganizationChartView() {
                     <div className="mx-auto w-[1.5px] h-3 bg-zinc-800 -mt-6"></div>
                     <div className="bg-purple-700 p-2 text-center rounded-t-lg border border-purple-600 shadow-sm">
                         <span className="block text-sm font-bold text-white leading-tight">GIN</span>
-                        <span className="block text-[9px] text-purple-100/90 mt-0.5">Gerência Inovação</span>
+                        <span className="block text-[9px] text-purple-100/90 mt-0.5">Gerência Inovação de Negócios</span>
                     </div>
                     <div className="border border-t-0 border-purple-900/50 bg-zinc-900/30 rounded-b-lg p-2 flex-1 space-y-3 shadow-inner">
                         <div>
@@ -165,6 +162,7 @@ export default function OrganizationChartView() {
                                 <span className="text-[10px] text-zinc-400">Lucas</span>
                                 <span className="text-[8px] font-medium px-1.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 truncate whitespace-nowrap">Em contratação</span>
                             </div>
+                            <div className="text-[10px] px-2 text-zinc-400">Estagiária</div>
                             <div className="text-[10px] px-2 text-yellow-500/80">· A contratar</div>
                         </div>
                         <div className="border border-purple-900/40 rounded bg-zinc-950/50 overflow-hidden">
@@ -207,26 +205,6 @@ export default function OrganizationChartView() {
                                 <div className="text-[10px] text-zinc-400">Adriana Cristina</div>
                                 <div className="text-[10px] text-zinc-400">Marcos Cesar</div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* NIM */}
-                <div className="flex flex-col">
-                    <div className="mx-auto w-[1.5px] h-3 bg-zinc-800 -mt-6"></div>
-                    <div className="bg-yellow-700 p-2 text-center rounded-t-lg border border-yellow-600 shadow-sm">
-                        <span className="block text-sm font-bold text-white leading-tight">NIM</span>
-                        <span className="block text-[9px] text-yellow-100/90 mt-0.5">Núcleo Intel. de Mercado</span>
-                    </div>
-                    <div className="border border-t-0 border-yellow-900/50 bg-zinc-900/30 rounded-b-lg p-2 flex-1 space-y-3 shadow-inner">
-                        <div>
-                            <div className="text-[11px] font-bold px-2 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-200 mb-1">LINEU</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Daverson</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Delmiro</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Gilvan</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Marcelo</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Mauro</div>
-                            <div className="text-[10px] px-2 text-zinc-400">Kauan (estag.)</div>
                         </div>
                     </div>
                 </div>

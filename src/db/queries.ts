@@ -16,8 +16,11 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
 
         const buildQuarter = (q: 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado') => {
             const quarterProjects = mgrProjects.filter((p) => p.quarter === q);
+            const activeProjects = quarterProjects.filter(
+                (p) => p.temperature !== 'historico' && p.temperature !== 'perdido'
+            );
             return {
-                total: quarterProjects.reduce((acc, p) => acc + p.value, 0),
+                total: activeProjects.reduce((acc, p) => acc + p.value, 0),
                 projects: quarterProjects.map((p) => ({
                     orgao: p.orgao ?? undefined,
                     name: p.name,

@@ -9,7 +9,7 @@ import { getStoreProducts } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { MapPin, Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2 } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import {
@@ -144,7 +144,8 @@ export function DashboardShell() {
                     </button>
 
                     {/* Navigation */}
-                    <div className="hidden sm:flex items-center gap-1 ml-6 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/80">
+                    <nav className="hidden sm:flex items-center gap-1 ml-6 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/80">
+                        {/* Dashboard */}
                         <button
                             onClick={() => setCurrentView('dashboard')}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'dashboard' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
@@ -152,13 +153,8 @@ export function DashboardShell() {
                             <LayoutDashboard className="w-4 h-4" />
                             Dashboard
                         </button>
-                        <button
-                            onClick={() => setCurrentView('store')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
-                        >
-                            <Store className="w-4 h-4" />
-                            Estatísticas PRODAM Store
-                        </button>
+
+                        {/* Organograma */}
                         <button
                             onClick={() => setCurrentView('organograma')}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'organograma' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
@@ -166,13 +162,36 @@ export function DashboardShell() {
                             <Network className="w-4 h-4" />
                             Organograma
                         </button>
-                        <button
-                            onClick={() => setCurrentView('pipeline')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'pipeline' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
-                        >
-                            <PackageSearch className="w-4 h-4" />
-                            Pipeline Prodam Store
-                        </button>
+
+                        {/* Store — hover dropdown */}
+                        <div className="relative group">
+                            <button
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' || currentView === 'pipeline' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                            >
+                                <Store className="w-4 h-4" />
+                                Store
+                                <ChevronDown className="w-3 h-3 opacity-60" />
+                            </button>
+                            {/* Dropdown */}
+                            <div className="absolute top-full left-0 mt-1.5 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1.5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-150 z-50">
+                                <button
+                                    onClick={() => setCurrentView('store')}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'store' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'}`}
+                                >
+                                    <BarChart2 className="w-4 h-4 shrink-0" />
+                                    Estatísticas Store
+                                </button>
+                                <button
+                                    onClick={() => setCurrentView('pipeline')}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'pipeline' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'}`}
+                                >
+                                    <PackageSearch className="w-4 h-4 shrink-0" />
+                                    Pipeline Store
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Contratos */}
                         <Link
                             href="/contracts"
                             className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-all"
@@ -180,7 +199,7 @@ export function DashboardShell() {
                             <FileText className="w-4 h-4" />
                             Contratos
                         </Link>
-                    </div>
+                    </nav>
                 </div>
 
                 <div className="flex items-center gap-4">

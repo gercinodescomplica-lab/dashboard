@@ -20,7 +20,7 @@ export const projects = sqliteTable('projects', {
     orgao: text('orgao'),
     name: text('name').notNull(),
     value: real('value').notNull(),
-    temperature: text('temperature', { enum: ['quente', 'morno', 'frio'] }),
+    temperature: text('temperature', { enum: ['quente', 'morno', 'frio', 'contratado', 'historico', 'perdido'] }),
     description: text('description'),
 });
 
