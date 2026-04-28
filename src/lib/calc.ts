@@ -40,7 +40,7 @@ export function calcEffectiveContratado(contratado: number, pipeline: PipelineDa
  */
 export function calculatePipelineTotal(pipeline: Manager['pipeline']): number {
     return Object.values(pipeline).reduce((acc, curr) => {
-        const active = (curr.projects || []).filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido');
+        const active = (curr.projects || []).filter((p: { temperature?: string }) => p.temperature !== 'historico' && p.temperature !== 'perdido');
         return acc + sumQuarterProjects(active);
     }, 0);
 }
