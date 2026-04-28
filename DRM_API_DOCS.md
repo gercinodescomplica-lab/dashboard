@@ -105,6 +105,101 @@ curl -X GET "http://localhost:3000/api/external/v1/contracts/TC%2089%2F2024-ALES
 
 ---
 
+### 4. Analytics de Contratos (pré-computado para IA)
+Retorna um resumo analítico completo, com todos os cálculos já feitos no servidor. Ideal para o Bot de IA responder perguntas sem precisar fazer matemática.
+
+- **URL:** `/api/external/v1/contracts/analytics`
+- **Método:** `GET`
+- **Cache:** 15 minutos
+
+#### Exemplo:
+```bash
+curl -X GET https://seu-dominio.com/api/external/v1/contracts/analytics \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+#### Estrutura da Resposta:
+```json
+{
+  "success": true,
+  "timestamp": "2026-04-28T14:30:00.000Z",
+  "geradoEm": "28/04/2026 às 14:30",
+
+  "visaoGeral": {
+    "total": 100,
+    "vigentes": 99,
+    "vencidos": 1,
+    "totalVlContratado": 1027226970.79,
+    "totalVlFaturado": 353108730.37,
+    "totalVlSaldo": 674118240.42,
+    "totalVlContratadoFormatted": "R$ 1.027.226.970,79",
+    "totalVlFaturadoFormatted": "R$ 353.108.730,37",
+    "totalVlSaldoFormatted": "R$ 674.118.240,42"
+  },
+
+  "porGerencia": [
+    {
+      "gerencia": "GRC-4",
+      "totalContratos": 32,
+      "vigentes": 32,
+      "vencidos": 0,
+      "vlContratadoTotal": 45842239.04,
+      "vlContratadoTotalFormatted": "R$ 45.842.239,04",
+      "vlSaldoTotal": 38000000.00,
+      "vlSaldoTotalFormatted": "R$ 38.000.000,00"
+    }
+  ],
+
+  "porTipo": [
+    { "tipo": "SUSTENTAÇÃO", "total": 98, "vlContratadoTotal": 1024317221.83, "vlContratadoTotalFormatted": "R$ 1.024.317.221,83" },
+    { "tipo": "PROJETOS", "total": 2, "vlContratadoTotal": 2909748.96, "vlContratadoTotalFormatted": "R$ 2.909.748,96" }
+  ],
+
+  "vencimentos": {
+    "vencidosAtualmente": [],
+    "vencendoHoje": [],
+    "vencendoEm7Dias": [],
+    "vencendoEsteMes": [
+      {
+        "numeroContrato": "24/SEGES/2025",
+        "cliente": "SEGES",
+        "gerencia": "KAM-3",
+        "nomeGerente": "...",
+        "dtFimVigencia": "2026-04-30",
+        "diasRestantes": 2,
+        "vlContratado": 45144753.06,
+        "vlContratadoFormatted": "R$ 45.144.753,06",
+        "vlSaldo": 45144753.06,
+        "vlSaldoFormatted": "R$ 45.144.753,06",
+        "objeto": "..."
+      }
+    ],
+    "vencendoProximoMes": [],
+    "vencendoEm90Dias": [],
+    "vencendoEm180Dias": [],
+    "vencendoEsteAno": [],
+    "totalVencendoEm90Dias": 22,
+    "vlTotalVencendoEm90Dias": 95000000.00,
+    "vlTotalVencendoEm90DiasFormatted": "R$ 95.000.000,00"
+  },
+
+  "destaques": {
+    "proximoAVencer": { "numeroContrato": "...", "diasRestantes": 2, "vlContratadoFormatted": "R$ 45.144.753,06" },
+    "maiorValorContratado": { "numeroContrato": "105/2025-SMS-1/CONTRATOS", "cliente": "FMS", "vlContratadoFormatted": "R$ 212.974.949,70" },
+    "menorValorContratado": { "numeroContrato": "082/2024-ADESAMPA", "vlContratadoFormatted": "R$ 15.058,68" },
+    "maiorSaldoAReceber": { "numeroContrato": "105/2025-SMS-1/CONTRATOS", "vlSaldoFormatted": "R$ 198.776.619,70" },
+    "clientesComMaisContratos": [
+      { "cliente": "SF", "totalContratos": 6 },
+      { "cliente": "HSPM", "totalContratos": 5 }
+    ]
+  }
+}
+```
+
+> **Nota para o Bot de IA:** Use `visaoGeral.total` para o total de contratos. Os campos `vigentes` e `vencidos` são subdivisões — não os some ao total.
+
+---
+
 ## Códigos de Erro
 
 - **401 Unauthorized:** Cabeçalho de autorização ausente ou mal formatado.
