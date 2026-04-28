@@ -36,10 +36,13 @@ export function calcEffectiveContratado(contratado: number, pipeline: PipelineDa
 }
 
 /**
- * Calculates the Total Pipeline from all quarters
+ * Calculates the Total Pipeline from all quarters, excluding 'historico' and 'perdido' projects
  */
 export function calculatePipelineTotal(pipeline: Manager['pipeline']): number {
-    return Object.values(pipeline).reduce((acc, curr) => acc + sumQuarterProjects(curr.projects), 0);
+    return Object.values(pipeline).reduce((acc, curr) => {
+        const active = (curr.projects || []).filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido');
+        return acc + sumQuarterProjects(active);
+    }, 0);
 }
 
 /**

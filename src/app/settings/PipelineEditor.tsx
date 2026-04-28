@@ -159,7 +159,7 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                                             <option value="morno">🟡</option>
                                             <option value="frio">❄️</option>
                                             <option value="contratado">✅ Contratado</option>
-                                            <option value="historico">🗂️ Histórico</option>
+                                            <option value="historico">⏸️ Adiado</option>
                                             <option value="perdido">❌ Perdido</option>
                                         </select>
                                     </div>

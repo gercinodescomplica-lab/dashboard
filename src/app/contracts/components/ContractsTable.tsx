@@ -9,6 +9,7 @@ import { ContractModal } from './ContractModal';
 interface ContractsTableProps {
     initialData: ContratoRow[];
     managersList: { id: string; name: string; role: string }[];
+    readOnly?: boolean;
 }
 
 const GERENCIAS = ['GRC-1', 'GRC-2', 'GRC-3', 'GRC-4', 'GRC-C', 'KAM-1', 'KAM-2', 'KAM-3', 'KAM-4'];
@@ -57,7 +58,7 @@ function TipoBadge({ tipo }: { tipo: string | null }) {
     );
 }
 
-export function ContractsTable({ initialData, managersList }: ContractsTableProps) {
+export function ContractsTable({ initialData, managersList, readOnly = false }: ContractsTableProps) {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [contratos, setContratos] = useState<ContratoRow[]>(initialData);
@@ -158,14 +159,16 @@ export function ContractsTable({ initialData, managersList }: ContractsTableProp
                         className="w-full h-10 pl-9 pr-4 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
                     />
                 </div>
-                <button
-                    id="add-contract-btn"
-                    onClick={handleAdd}
-                    className="flex items-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-indigo-500/20"
-                >
-                    <Plus className="w-4 h-4" />
-                    Novo Contrato
-                </button>
+                {!readOnly && (
+                    <button
+                        id="add-contract-btn"
+                        onClick={handleAdd}
+                        className="flex items-center gap-2 h-10 px-4 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-indigo-500/20"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Novo Contrato
+                    </button>
+                )}
             </div>
 
             {/* Table */}
@@ -184,7 +187,7 @@ export function ContractsTable({ initialData, managersList }: ContractsTableProp
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Tipo</th>
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Situação</th>
                                 <th className="text-left px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">Vencimento</th>
-                                <th className="text-center px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ações</th>
+                                {!readOnly && <th className="text-center px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ações</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/50">
@@ -219,26 +222,28 @@ export function ContractsTable({ initialData, managersList }: ContractsTableProp
                                         <td className="px-4 py-3"><TipoBadge tipo={row.tipo} /></td>
                                         <td className="px-4 py-3"><SituacaoBadge situacao={row.situacao} vigente={row.vigente} /></td>
                                         <td className="px-4 py-3 text-zinc-400 text-xs whitespace-nowrap">{formatDate(row.dtFimVigencia)}</td>
-                                        <td className="px-4 py-3">
-                                            <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    id={`edit-contract-${row.id}`}
-                                                    onClick={() => handleEdit(row)}
-                                                    title="Editar contrato"
-                                                    className="p-1.5 rounded-md hover:bg-indigo-500/20 hover:text-indigo-400 text-zinc-500 transition-colors"
-                                                >
-                                                    <Pencil className="w-3.5 h-3.5" />
-                                                </button>
-                                                <button
-                                                    id={`delete-contract-${row.id}`}
-                                                    onClick={() => handleDelete(row.id, row.numeroContrato)}
-                                                    title="Excluir contrato"
-                                                    className="p-1.5 rounded-md hover:bg-rose-500/20 hover:text-rose-400 text-zinc-500 transition-colors"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
-                                            </div>
-                                        </td>
+                                        {!readOnly && (
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        id={`edit-contract-${row.id}`}
+                                                        onClick={() => handleEdit(row)}
+                                                        title="Editar contrato"
+                                                        className="p-1.5 rounded-md hover:bg-indigo-500/20 hover:text-indigo-400 text-zinc-500 transition-colors"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button
+                                                        id={`delete-contract-${row.id}`}
+                                                        onClick={() => handleDelete(row.id, row.numeroContrato)}
+                                                        title="Excluir contrato"
+                                                        className="p-1.5 rounded-md hover:bg-rose-500/20 hover:text-rose-400 text-zinc-500 transition-colors"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))
                             )}
@@ -252,16 +257,18 @@ export function ContractsTable({ initialData, managersList }: ContractsTableProp
                 )}
             </div>
 
-            {/* Modal */}
-            <ContractModal
-                open={modalOpen}
-                mode={modalMode}
-                contrato={editingContrato}
-                managersList={managersList}
-                gerencias={GERENCIAS}
-                onClose={() => setModalOpen(false)}
-                onSuccess={handleModalSuccess}
-            />
+            {/* Modal — only rendered in edit mode */}
+            {!readOnly && (
+                <ContractModal
+                    open={modalOpen}
+                    mode={modalMode}
+                    contrato={editingContrato}
+                    managersList={managersList}
+                    gerencias={GERENCIAS}
+                    onClose={() => setModalOpen(false)}
+                    onSuccess={handleModalSuccess}
+                />
+            )}
         </div>
     );
 }

@@ -17,7 +17,7 @@ interface PipelineBarsProps {
 }
 
 export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
-    const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; projects: PipelineData['q1']['projects']; calculatedTotal: number } | null>(null);
+    const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; projects: PipelineData['q1']['projects']; calculatedTotal: number; perdidoTotal: number; historicoTotal: number } | null>(null);
 
     const quarters = [
         { label: 'Q1', projects: pipeline.q1?.projects || [] },
@@ -27,9 +27,10 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
         { label: 'N/M', projects: pipeline.nao_mapeado?.projects || [] },
     ].map(q => ({
         ...q,
-        calculatedTotal: sumQuarterProjects(q.projects),
+        calculatedTotal: sumQuarterProjects(q.projects.filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido')),
         contractedTotal: sumQuarterProjects(q.projects.filter(p => p.temperature === 'contratado')),
         perdidoTotal: sumQuarterProjects(q.projects.filter(p => p.temperature === 'perdido')),
+        historicoTotal: sumQuarterProjects(q.projects.filter(p => p.temperature === 'historico')),
     }));
 
     // Find the maximum quarter value to scale the bars proportionally
@@ -53,8 +54,10 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                     {quarters.map((q) => {
                         const contractedWidth = maxValue > 0 ? (q.contractedTotal / maxValue) * 100 : 0;
                         const perdidoWidth = maxValue > 0 ? (q.perdidoTotal / maxValue) * 100 : 0;
-                        const activeTotal = q.calculatedTotal - q.contractedTotal - q.perdidoTotal;
+                        const historicoWidth = maxValue > 0 ? (q.historicoTotal / maxValue) * 100 : 0;
+                        const activeTotal = q.calculatedTotal - q.contractedTotal;
                         const activeWidth = maxValue > 0 ? (activeTotal / maxValue) * 100 : 0;
+                        const isEmpty = q.calculatedTotal === 0 && q.perdidoTotal === 0 && q.historicoTotal === 0;
                         return (
                             <div key={q.label} className="flex items-center gap-3">
                                 <span className="text-xs font-semibold text-zinc-500 w-5">{q.label}</span>
@@ -66,7 +69,7 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                     >
                                         {q.contractedTotal > 0 && (
                                             <div
-                                                className="h-full bg-indigo-500 transition-all duration-1000 ease-out"
+                                                className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
                                                 style={{ width: `${Math.max(contractedWidth, 2)}%` }}
                                             />
                                         )}
@@ -76,13 +79,19 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                                 style={{ width: `${Math.max(activeWidth, 2)}%` }}
                                             />
                                         )}
+                                        {q.historicoTotal > 0 && (
+                                            <div
+                                                className="h-full bg-orange-300/40 border-r border-orange-300/30 transition-all duration-1000 ease-out"
+                                                style={{ width: `${Math.max(historicoWidth, 2)}%` }}
+                                            />
+                                        )}
                                         {q.perdidoTotal > 0 && (
                                             <div
                                                 className="h-full bg-red-900/40 border-r border-red-700/40 transition-all duration-1000 ease-out"
                                                 style={{ width: `${Math.max(perdidoWidth, 2)}%` }}
                                             />
                                         )}
-                                        {q.calculatedTotal === 0 && (
+                                        {isEmpty && (
                                             <span className="absolute left-2 text-xs text-zinc-600 top-1/2 -translate-y-1/2">R$ 0</span>
                                         )}
                                     </button>
@@ -91,7 +100,7 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                 <div className="w-[220px] shrink-0 flex flex-col items-end gap-0.5 text-[10px] leading-tight">
                                     <div className="flex items-center gap-1.5">
                                         {q.contractedTotal > 0 && (
-                                            <span className="text-indigo-200 font-bold whitespace-nowrap">
+                                            <span className="text-emerald-400 font-bold whitespace-nowrap">
                                                 ✅ {formatCurrency(q.contractedTotal)}
                                             </span>
                                         )}
@@ -103,10 +112,15 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                                 {formatCurrency(activeTotal)}
                                             </span>
                                         )}
-                                        {q.calculatedTotal === 0 && (
+                                        {isEmpty && (
                                             <span className="text-zinc-600">R$ 0</span>
                                         )}
                                     </div>
+                                    {q.historicoTotal > 0 && (
+                                        <span className="text-orange-300/80 whitespace-nowrap">
+                                            ⏸️ {formatCurrency(q.historicoTotal)} adiado
+                                        </span>
+                                    )}
                                     {q.perdidoTotal > 0 && (
                                         <span className="text-red-500/70 whitespace-nowrap">
                                             ❌ {formatCurrency(q.perdidoTotal)} perdido

@@ -19,6 +19,9 @@ const TEMP_STYLES: Record<string, { emoji: string; color: string }> = {
     quente: { emoji: '🔥', color: 'text-orange-400' },
     morno: { emoji: '🟡', color: 'text-yellow-400' },
     frio: { emoji: '❄️', color: 'text-blue-400' },
+    contratado: { emoji: '✅', color: 'text-emerald-400' },
+    historico: { emoji: '⏸️', color: 'text-orange-300' },
+    perdido: { emoji: '❌', color: 'text-red-500' },
 };
 
 export function ProjectsTab({ pipeline }: ProjectsTabProps) {

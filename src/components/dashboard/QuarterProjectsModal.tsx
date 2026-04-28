@@ -20,7 +20,7 @@ function getTempEmoji(temp?: OpportunityTemperature) {
     if (temp === 'quente') return '🔥';
     if (temp === 'frio') return '❄️';
     if (temp === 'contratado') return '✅';
-    if (temp === 'historico') return '🗂️';
+    if (temp === 'historico') return '⏸️';
     if (temp === 'perdido') return '❌';
     return '🟡';
 }

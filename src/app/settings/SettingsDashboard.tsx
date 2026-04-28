@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
-import { Loader2, User, Save, RefreshCw } from 'lucide-react';
+import { Loader2, User, Save, FileText } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
+import { ContractsEditor } from './ContractsEditor';
 import { saveManagerData, saveCXData, saveVisitsData } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -12,6 +13,7 @@ import Link from 'next/link';
 export function SettingsDashboard() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const [section, setSection] = useState<'managers' | 'contracts'>('managers');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -76,18 +78,33 @@ export function SettingsDashboard() {
                     {managers.map(m => (
                         <button
                             key={m.id}
-                            onClick={() => setSelectedId(m.id)}
-                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${selectedId === m.id ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                            onClick={() => { setSelectedId(m.id); setSection('managers'); }}
+                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'managers' && selectedId === m.id ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
                         >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${selectedId === m.id ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${section === 'managers' && selectedId === m.id ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
                                 <User className="w-4 h-4" />
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-semibold truncate text-sm">{m.name}</p>
-                                <p className={`text-xs truncate ${selectedId === m.id ? 'text-indigo-200' : 'text-zinc-500'}`}>{m.role}</p>
+                                <p className={`text-xs truncate ${section === 'managers' && selectedId === m.id ? 'text-indigo-200' : 'text-zinc-500'}`}>{m.role}</p>
                             </div>
                         </button>
                     ))}
+
+                    <div className="pt-2 border-t border-zinc-800 mt-2">
+                        <button
+                            onClick={() => setSection('contracts')}
+                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'contracts' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${section === 'contracts' ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
+                                <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate text-sm">Contratos</p>
+                                <p className={`text-xs truncate ${section === 'contracts' ? 'text-indigo-200' : 'text-zinc-500'}`}>Gestão de contratos</p>
+                            </div>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -107,7 +124,9 @@ export function SettingsDashboard() {
                     </Alert>
                 )}
 
-                {selectedManager ? (
+                {section === 'contracts' ? (
+                    <ContractsEditor />
+                ) : selectedManager ? (
                     <ManagerEditor
                         key={selectedManager.id}
                         manager={selectedManager}

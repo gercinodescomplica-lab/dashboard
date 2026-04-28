@@ -1,4 +1,4 @@
-import { fetchAllContratos, fetchManagersList } from '@/db/queries';
+import { fetchAllContratos } from '@/db/queries';
 import { ContractsTable } from './components/ContractsTable';
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
@@ -11,10 +11,7 @@ export const metadata = {
 };
 
 export default async function ContractsPage() {
-    const [contratos, managersList] = await Promise.all([
-        fetchAllContratos(),
-        fetchManagersList(),
-    ]);
+    const contratos = await fetchAllContratos();
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col">
@@ -42,7 +39,7 @@ export default async function ContractsPage() {
 
             {/* Content */}
             <main className="flex-1 flex flex-col p-6 gap-0 overflow-hidden" style={{ height: 'calc(100vh - 73px)' }}>
-                <ContractsTable initialData={contratos} managersList={managersList} />
+                <ContractsTable initialData={contratos} managersList={[]} readOnly />
             </main>
         </div>
     );
