@@ -142,10 +142,11 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
             });
         });
         projects.sort((a, b) => b.value - a.value);
+        const activeCount = projects.filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido').length;
         setModal({
             open: true,
             title: `Pipeline ${label}`,
-            subtitle: `${projects.length} oportunidades · Total ${formatCurrency(total)}`,
+            subtitle: `${activeCount} oportunidades · Total ${formatCurrency(total)}`,
             projects,
             total,
             accentColor: 'text-indigo-400',

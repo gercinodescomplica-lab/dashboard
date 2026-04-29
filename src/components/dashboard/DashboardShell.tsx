@@ -123,7 +123,7 @@ export function DashboardShell() {
         <div className="h-screen w-screen bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden selection:bg-indigo-500/30">
 
             {/* Header - Fixed Height */}
-            <header className="relative flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 z-10 flex items-center justify-between">
+            <header className="relative flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 z-30 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                         <MapPin className="w-6 h-6 text-indigo-400" />

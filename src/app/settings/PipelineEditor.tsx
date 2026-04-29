@@ -88,7 +88,9 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
         });
     });
 
-    const totalPipelineValue = allProjects.reduce((acc, p) => acc + (p.project.value || 0), 0);
+    const totalPipelineValue = allProjects
+        .filter(p => p.project.temperature !== 'historico' && p.project.temperature !== 'perdido')
+        .reduce((acc, p) => acc + (p.project.value || 0), 0);
 
     return (
         <div className="flex flex-col gap-4 animate-in fade-in duration-300">

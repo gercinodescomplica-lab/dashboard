@@ -1,6 +1,6 @@
 import { Manager } from '@/types/manager';
 import { StatBadge } from './StatBadge';
-import { calculateAchievementPercentage, determinePerformanceStatus } from '@/lib/calc';
+import { calculateAchievementPercentage, determinePerformanceStatus, calcEffectiveContratado } from '@/lib/calc';
 import { UserCircle2 } from 'lucide-react';
 
 interface ManagerHeaderProps {
@@ -8,7 +8,8 @@ interface ManagerHeaderProps {
 }
 
 export function ManagerHeader({ manager }: ManagerHeaderProps) {
-    const achievementPercentage = calculateAchievementPercentage(manager.forecastFinal, manager.meta);
+    const effectiveContratado = calcEffectiveContratado(manager.contratado, manager.pipeline);
+    const achievementPercentage = calculateAchievementPercentage(effectiveContratado, manager.meta);
     const status = determinePerformanceStatus(achievementPercentage);
 
     return (
