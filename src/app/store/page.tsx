@@ -8,9 +8,9 @@ export const metadata = {
 export default function StorePage() {
     return (
         <div className="min-h-screen bg-zinc-950">
-            <KeyGateStore>
+            {/* <KeyGateStore> */}
                 <StorePublicContent />
-            </KeyGateStore>
+            {/* </KeyGateStore> */}
         </div>
     );
 }
