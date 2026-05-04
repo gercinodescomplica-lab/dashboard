@@ -13,16 +13,13 @@ export interface StoreProduct {
     cat: string;
 }
 
-const PHASES = [
-    { f: 'Nov 2025', t: 'done', lb: 'produtos disponíveis' },
-    { f: 'Dez 2025', t: 'done', lb: 'produtos disponíveis' },
-    { f: 'Mar 2026', t: 'done', lb: 'produtos disponíveis' },
-    { f: 'Abr 2026', t: 'in', lb: 'produtos em andamento', now: true },
-    { f: 'Mai 2026', t: 'next', lb: 'próximos produtos' },
-    { f: 'Jun 2026', t: 'next', lb: 'próximos produtos' },
-    { f: 'Ago 2026', t: 'next', lb: 'próximos produtos' },
-    { f: '—', t: 'backlog', lb: 'backlog' },
-];
+const MONTH_MAP: Record<string, number> = {
+    'Jan': 0, 'Fev': 1, 'Mar': 2, 'Abr': 3, 'Mai': 4, 'Jun': 5,
+    'Jul': 6, 'Ago': 7, 'Set': 8, 'Out': 9, 'Nov': 10, 'Dez': 11
+};
+
+const MONTH_NAMES_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
 
 const DIR_COLORS: Record<string, string> = {
     DDS: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
@@ -55,6 +52,49 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
     const [roadmapFilter, setRoadmapFilter] = useState('all');
     const [prodFilter, setProdFilter] = useState('all');
     const [selectedProdId, setSelectedProdId] = useState<number | null>(null);
+
+    const PHASES = React.useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        const todayDate = new Date(currentYear, currentMonth, 1);
+
+        const phaseLabels = [
+            'Nov 2025', 'Dez 2025', 'Mar 2026', 'Abr 2026', 'Mai 2026', 'Jun 2026', 'Ago 2026'
+        ];
+        
+        const currentLabel = `${MONTH_NAMES_SHORT[currentMonth]} ${currentYear}`;
+        if (!phaseLabels.includes(currentLabel)) {
+            phaseLabels.push(currentLabel);
+        }
+
+        phaseLabels.sort((a, b) => {
+            const [mA, yA] = a.split(' ');
+            const [mB, yB] = b.split(' ');
+            const valA = parseInt(yA) * 12 + MONTH_MAP[mA];
+            const valB = parseInt(yB) * 12 + MONTH_MAP[mB];
+            return valA - valB;
+        });
+
+        const phases = phaseLabels.map(f => {
+            const [monthStr, yearStr] = f.split(' ');
+            const year = parseInt(yearStr);
+            const month = MONTH_MAP[monthStr];
+            const phaseDate = new Date(year, month, 1);
+
+            if (phaseDate.getTime() === todayDate.getTime()) {
+                return { f, t: 'in', lb: 'produtos em andamento', now: true };
+            } else if (phaseDate.getTime() < todayDate.getTime()) {
+                return { f, t: 'done', lb: 'produtos disponíveis', now: false };
+            } else {
+                return { f, t: 'next', lb: 'próximos produtos', now: false };
+            }
+        });
+
+        phases.push({ f: '—', t: 'backlog', lb: 'backlog', now: false } as any);
+        return phases;
+    }, []);
+
 
     const storeProds = PRODUCTS.filter(p => p.s === 'store').length;
     const breveProds = PRODUCTS.filter(p => p.s === 'breve').length;
@@ -117,8 +157,9 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                 </div>
 
                 <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500">
-                    Novembro 2025 - 2026
+                    Novembro 2025 - {new Date().getFullYear()}
                 </div>
+
             </div>
 
             {/* Content Area */}
@@ -245,8 +286,8 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                                             {/* Phase Info */}
                                             <div className="sm:w-36 flex-shrink-0 flex items-center sm:items-end justify-between sm:justify-start sm:flex-col pt-3 border-b-2 sm:border-b-0 border-zinc-800 pb-2 sm:pb-0">
                                                 <div className="font-bold text-zinc-200 text-sm sm:text-right flex items-center gap-2 sm:block sm:mb-1">
-                                                    {ph.f}
-                                                    {ph.now && <span className="px-2 py-0.5 rounded-full bg-amber-500 text-[9px] text-white uppercase ml-2 sm:ml-0 inline-block align-middle animate-pulse">Agora</span>}
+                                                    {ph.f} {ph.now ? ' - ' : ''}
+                                                    {ph.now && <span className="px-2 py-0.5 rounded-full bg-amber-500 text-[9px] text-white uppercase sm:ml-0 inline-block align-middle animate-pulse">Agora</span>}
                                                 </div>
                                                 <div className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${ph.t === 'done' ? 'bg-emerald-500/10 text-emerald-400' : ph.t === 'in' ? 'bg-amber-500/10 text-amber-400' : ph.t === 'next' ? 'bg-blue-500/10 text-blue-400' : 'bg-zinc-500/10 text-zinc-400'
                                                     }`}>
