@@ -15,19 +15,29 @@ export function KeyGateStore({ children }: { children: React.ReactNode }) {
     const [error, setError] = useState(false);
 
     useEffect(() => {
-        const storedKey = localStorage.getItem(STORAGE_KEY);
-        if (storedKey) {
-            verifyStoreKey(storedKey).then(isValid => {
+        async function checkAuth() {
+            // Obter token da query string da URL (?token=...)
+            const params = new URLSearchParams(window.location.search);
+            const urlToken = params.get('token');
+            const storedKey = localStorage.getItem(STORAGE_KEY);
+
+            // Priorizar o token vindo da URL se existir, senão usar o armazenado
+            const keyToVerify = urlToken || storedKey;
+
+            if (keyToVerify) {
+                const isValid = await verifyStoreKey(keyToVerify);
                 if (isValid) {
                     setIsAuthenticated(true);
+                    // Salvar o token válido no localStorage para acessos subsequentes
+                    localStorage.setItem(STORAGE_KEY, keyToVerify);
                 } else {
+                    // Se o token fornecido for inválido, limpa o localStorage
                     localStorage.removeItem(STORAGE_KEY);
                 }
-                setIsChecking(false);
-            });
-        } else {
+            }
             setIsChecking(false);
         }
+        checkAuth();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {

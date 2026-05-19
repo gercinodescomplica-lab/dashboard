@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { getStoreProducts } from '@/app/pipeline/actions';
-import PipelineStoreView from '@/components/dashboard/PipelineStoreView';
+import PipelineStoreView, { StoreProduct } from '@/components/dashboard/PipelineStoreView';
 
 export function StorePublicContent() {
-    const [products, setProducts] = useState<any[]>([]);
+    const [products, setProducts] = useState<StoreProduct[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
