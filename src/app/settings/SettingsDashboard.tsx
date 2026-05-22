@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
-import { Loader2, User, Save, FileText } from 'lucide-react';
+import { Loader2, User, Save, FileText, Copy } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
 import { ContractsEditor } from './ContractsEditor';
-import { saveManagerData, saveCXData, saveVisitsData } from './actions';
+import { saveManagerData, saveCXData, saveVisitsData, cloneManager } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
@@ -17,6 +17,9 @@ export function SettingsDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [isCloning, setIsCloning] = useState(false);
+    const [cloneStatus, setCloneStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [cloneError, setCloneError] = useState<string>('');
 
     const loadData = async () => {
         setIsLoading(true);
@@ -36,6 +39,26 @@ export function SettingsDashboard() {
 
     const handleUpdateManager = (updatedManager: Manager) => {
         setManagers(prev => prev.map(m => m.id === updatedManager.id ? updatedManager : m));
+    };
+
+    const handleClone = async (sourceId: string) => {
+        const newName = window.prompt('Nome do gerente clonado:');
+        if (!newName?.trim()) return;
+        setIsCloning(true);
+        setCloneStatus('idle');
+        setCloneError('');
+        try {
+            const result = await cloneManager(sourceId, newName.trim());
+            setCloneStatus('success');
+            await loadData();
+            setSelectedId(result.newId);
+            setTimeout(() => setCloneStatus('idle'), 3000);
+        } catch (e: any) {
+            setCloneStatus('error');
+            setCloneError(e?.message ?? 'Erro ao clonar.');
+        } finally {
+            setIsCloning(false);
+        }
     };
 
     const handleSave = async () => {
@@ -76,19 +99,33 @@ export function SettingsDashboard() {
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                     {managers.map(m => (
-                        <button
-                            key={m.id}
-                            onClick={() => { setSelectedId(m.id); setSection('managers'); }}
-                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'managers' && selectedId === m.id ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
-                        >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${section === 'managers' && selectedId === m.id ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
-                                <User className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold truncate text-sm">{m.name}</p>
-                                <p className={`text-xs truncate ${section === 'managers' && selectedId === m.id ? 'text-indigo-200' : 'text-zinc-500'}`}>{m.role}</p>
-                            </div>
-                        </button>
+                        <div key={m.id} className="relative group">
+                            <button
+                                onClick={() => { setSelectedId(m.id); setSection('managers'); }}
+                                className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'managers' && selectedId === m.id ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                            >
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${section === 'managers' && selectedId === m.id ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
+                                    <User className="w-4 h-4" />
+                                </div>
+                                <div className="flex-1 min-w-0 pr-6">
+                                    <p className="font-semibold truncate text-sm flex items-center gap-1.5">
+                                        {m.name}
+                                        {m.showInDashboard === false && (
+                                            <span className="text-[9px] bg-zinc-700 text-zinc-400 px-1 rounded uppercase tracking-tight">oculto</span>
+                                        )}
+                                    </p>
+                                    <p className={`text-xs truncate ${section === 'managers' && selectedId === m.id ? 'text-indigo-200' : 'text-zinc-500'}`}>{m.role}</p>
+                                </div>
+                            </button>
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleClone(m.id); }}
+                                disabled={isCloning}
+                                title="Clonar gerente"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 disabled:opacity-40"
+                            >
+                                {isCloning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                        </div>
                     ))}
 
                     <div className="pt-2 border-t border-zinc-800 mt-2">
@@ -121,6 +158,19 @@ export function SettingsDashboard() {
                     <Alert variant="destructive" className="mb-6 bg-red-500/10 border-red-500/50 text-red-500">
                         <AlertTitle>Erro</AlertTitle>
                         <AlertDescription>Ocorreu um erro ao salvar os dados no banco. Tente novamente.</AlertDescription>
+                    </Alert>
+                )}
+                {cloneStatus === 'success' && (
+                    <Alert className="mb-6 bg-green-500/10 border-green-500/50 text-green-400">
+                        <Copy className="h-4 w-4" />
+                        <AlertTitle>Clonado!</AlertTitle>
+                        <AlertDescription>Gerente clonado com sucesso. O novo registro já está disponível na lista.</AlertDescription>
+                    </Alert>
+                )}
+                {cloneStatus === 'error' && (
+                    <Alert variant="destructive" className="mb-6 bg-red-500/10 border-red-500/50 text-red-500">
+                        <AlertTitle>Erro ao clonar</AlertTitle>
+                        <AlertDescription>{cloneError || 'Ocorreu um erro ao clonar o gerente.'}</AlertDescription>
                     </Alert>
                 )}
 

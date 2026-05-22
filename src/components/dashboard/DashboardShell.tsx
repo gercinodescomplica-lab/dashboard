@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
-import { fetchManagers } from '@/services/managers.service';
+import { fetchDashboardManagers } from '@/services/managers.service';
 import { getStoreProducts } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
@@ -40,7 +40,7 @@ export function DashboardShell() {
         const loadManagers = async () => {
             try {
                 setIsLoading(true);
-                const data = await fetchManagers();
+                const data = await fetchDashboardManagers();
                 setManagers(data);
                 const products = await getStoreProducts();
                 setStoreProducts(products);

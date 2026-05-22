@@ -11,6 +11,7 @@ export const managers = sqliteTable('managers', {
     forecastFinal: real('forecastFinal').notNull(),
     notes: text('notes'),
     servedClients: text('served_clients'), // JSON string of clients
+    showInDashboard: integer('show_in_dashboard', { mode: 'boolean' }).notNull().default(true),
 });
 
 export const projects = sqliteTable('projects', {

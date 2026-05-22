@@ -59,4 +59,5 @@ export interface Manager {
   cx?: CXItem[];
   visits?: Visit[];
   servedClients?: string[];
+  showInDashboard?: boolean;
 }

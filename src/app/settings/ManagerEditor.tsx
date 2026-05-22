@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Save, Loader2, Calculator } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
@@ -99,6 +100,16 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                 <TabsContent value="info" className="flex flex-col gap-6">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
                         <h3 className="text-lg font-semibold mb-4 text-zinc-200">Informações Básicas</h3>
+                        <div className="flex items-center justify-between mb-4 p-3 bg-zinc-950 border border-zinc-800 rounded-xl">
+                            <div>
+                                <p className="text-sm font-medium text-zinc-200">Visível no dashboard</p>
+                                <p className="text-xs text-zinc-500">Quando desativado, o gerente fica oculto no painel principal mas continua no banco.</p>
+                            </div>
+                            <Switch
+                                checked={manager.showInDashboard ?? true}
+                                onCheckedChange={(checked) => handleChange('showInDashboard', checked)}
+                            />
+                        </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label>Nome Completo</Label>

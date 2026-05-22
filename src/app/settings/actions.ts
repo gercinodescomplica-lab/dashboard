@@ -5,6 +5,7 @@ import { managers, projects, cx, visits } from '@/db/schema';
 import { Manager, CXItem, Visit } from '@/types/manager';
 import { eq } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
+import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 
 // Replace with a safer server-side check-1
 export async function verifySettingsKey(key: string) {
@@ -77,7 +78,8 @@ export async function saveManagerData(m: Manager) {
             meta: m.meta,
             contratado: m.contratado,
             forecastFinal: fv,
-            notes: null
+            notes: null,
+            showInDashboard: m.showInDashboard ?? true,
         }).onConflictDoUpdate({
             target: managers.id,
             set: {
@@ -88,6 +90,7 @@ export async function saveManagerData(m: Manager) {
                 meta: m.meta,
                 contratado: m.contratado,
                 forecastFinal: fv,
+                showInDashboard: m.showInDashboard ?? true,
             }
         });
 
@@ -122,5 +125,86 @@ export async function saveManagerData(m: Manager) {
     } catch (err) {
         console.error("Failed to save manager:", err);
         throw new Error("Erro ao salvar gerente no Turso.");
+    }
+}
+
+function slugify(name: string): string {
+    return name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+}
+
+export async function cloneManager(sourceId: string, newName: string): Promise<{ success: true; newId: string }> {
+    try {
+        const [source] = await db.select().from(managers).where(eq(managers.id, sourceId));
+        if (!source) throw new Error('Gerente de origem não encontrado.');
+
+        const roleSlug = slugify(source.role);
+        const nameSlug = slugify(newName);
+        const newId = `${roleSlug}-${nameSlug}`;
+
+        const [existing] = await db.select().from(managers).where(eq(managers.id, newId));
+        if (existing) throw new Error(`Já existe um gerente com o ID "${newId}".`);
+
+        await db.insert(managers).values({
+            id: newId,
+            name: newName,
+            role: source.role,
+            avatarUrl: source.avatarUrl,
+            year: source.year,
+            meta: source.meta,
+            contratado: source.contratado,
+            forecastFinal: source.forecastFinal,
+            notes: source.notes,
+            servedClients: source.servedClients,
+            showInDashboard: true,
+        });
+
+        const sourceProjects = await db.select().from(projects).where(eq(projects.managerId, sourceId));
+        if (sourceProjects.length > 0) {
+            await db.insert(projects).values(
+                sourceProjects.map(({ id: _id, managerId: _mid, ...rest }) => ({ ...rest, managerId: newId }))
+            );
+        }
+
+        const sourceCX = await fetchCXByManager(sourceId);
+        if (sourceCX.length > 0) {
+            await db.insert(cx).values(
+                sourceCX.map(({ id: _id, ...rest }) => ({
+                    managerId: newId,
+                    cliente: rest.cliente,
+                    titulo: rest.titulo,
+                    problema: rest.problema,
+                    solucaoProposta: rest.solucaoProposta,
+                    status: rest.status,
+                    criticidade: rest.criticidade ?? 'baixa',
+                    isVisible: rest.isVisible ?? true,
+                    createdAt: rest.createdAt ?? new Date().toISOString(),
+                }))
+            );
+        }
+
+        const sourceVisits = await fetchVisitsByManager(sourceId);
+        if (sourceVisits.length > 0) {
+            await db.insert(visits).values(
+                sourceVisits.map(({ id: _id, ...rest }) => ({
+                    managerId: newId,
+                    titulo: rest.titulo,
+                    local: rest.local,
+                    motivo: rest.motivo,
+                    data: rest.data,
+                    dataFim: rest.dataFim ?? null,
+                    createdAt: rest.createdAt ?? new Date().toISOString(),
+                }))
+            );
+        }
+
+        return { success: true, newId };
+    } catch (err) {
+        console.error('Failed to clone manager:', err);
+        throw err instanceof Error ? err : new Error('Erro ao clonar gerente.');
     }
 }

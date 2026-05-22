@@ -52,7 +52,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             forecastFinal: (m.contratado || 0) + totalPipeline,
             notes: m.notes ?? undefined,
             pipeline,
-            // Try both property names to be absolutely safe
+            showInDashboard: m.showInDashboard ?? true,
             servedClients: (() => {
                 const raw = (m as any).servedClients || (m as any).served_clients;
                 if (!raw) return [];
@@ -65,6 +65,15 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             })(),
         };
     });
+}
+
+/**
+ * Same as fetchAllManagersFromDB but filters out managers with showInDashboard = false.
+ * Used by the public dashboard so hidden managers don't appear.
+ */
+export async function fetchVisibleManagersFromDB(): Promise<Manager[]> {
+    const all = await fetchAllManagersFromDB();
+    return all.filter(m => m.showInDashboard !== false);
 }
 
 /**
