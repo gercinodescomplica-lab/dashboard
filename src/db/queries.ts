@@ -285,3 +285,59 @@ export async function deleteContrato(id: string) {
 export async function fetchManagersList() {
     return db.select({ id: managers.id, name: managers.name, role: managers.role }).from(managers);
 }
+
+export async function fetchManagerById(id: string) {
+    const rows = await db.select().from(managers).where(eq(managers.id, id));
+    return rows[0] ?? null;
+}
+
+// ─── CX Queries ────────────────────────────────────────────────────────────────
+
+export async function createCXItem(data: typeof cx.$inferInsert) {
+    const rows = await db.insert(cx).values(data).returning();
+    return rows[0];
+}
+
+export async function fetchCXItemById(id: number) {
+    const rows = await db.select().from(cx).where(eq(cx.id, id));
+    return rows[0] ?? null;
+}
+
+export async function updateCXItem(id: number, data: Partial<typeof cx.$inferInsert>) {
+    const rows = await db.update(cx).set(data).where(eq(cx.id, id)).returning();
+    return rows[0];
+}
+
+// ─── Project Queries ───────────────────────────────────────────────────────────
+
+export async function createProject(data: typeof projects.$inferInsert) {
+    const rows = await db.insert(projects).values(data).returning();
+    return rows[0];
+}
+
+export async function fetchProjectById(id: number) {
+    const rows = await db.select().from(projects).where(eq(projects.id, id));
+    return rows[0] ?? null;
+}
+
+export async function updateProject(id: number, data: Partial<typeof projects.$inferInsert>) {
+    const rows = await db.update(projects).set(data).where(eq(projects.id, id)).returning();
+    return rows[0];
+}
+
+// ─── Visit Queries ─────────────────────────────────────────────────────────────
+
+export async function createVisit(data: typeof visits.$inferInsert) {
+    const rows = await db.insert(visits).values(data).returning();
+    return rows[0];
+}
+
+export async function fetchVisitById(id: number) {
+    const rows = await db.select().from(visits).where(eq(visits.id, id));
+    return rows[0] ?? null;
+}
+
+export async function updateVisit(id: number, data: Partial<typeof visits.$inferInsert>) {
+    const rows = await db.update(visits).set(data).where(eq(visits.id, id)).returning();
+    return rows[0];
+}
