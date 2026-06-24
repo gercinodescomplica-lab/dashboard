@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchDashboardManagers } from '@/services/managers.service';
-import { getStoreProducts } from '@/app/pipeline/actions';
+import { getStoreProducts, getDropdownOptions } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
@@ -26,6 +26,7 @@ import { StatBadge } from './StatBadge';
 export function DashboardShell() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [storeProducts, setStoreProducts] = useState<any[]>([]);
+    const [dropdownOpts, setDropdownOpts] = useState<Record<string, string[]>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +43,9 @@ export function DashboardShell() {
                 setIsLoading(true);
                 const data = await fetchDashboardManagers();
                 setManagers(data);
-                const products = await getStoreProducts();
+                const [products, opts] = await Promise.all([getStoreProducts(), getDropdownOptions()]);
                 setStoreProducts(products);
+                setDropdownOpts(opts);
 
                 if (data.length > 0) {
                     const maxYear = Math.max(...data.map(m => m.year));
@@ -304,7 +306,7 @@ export function DashboardShell() {
                 {currentView === 'organograma' ? (
                     <OrganizationChartView />
                 ) : currentView === 'pipeline' ? (
-                    <PipelineStoreView PRODUCTS={storeProducts} />
+                    <PipelineStoreView PRODUCTS={storeProducts} EXTRA_OPTIONS={dropdownOpts} />
                 ) : currentView === 'store' ? (
                     <StoreView />
                 ) : selectedManagerId === 'drm' ? (

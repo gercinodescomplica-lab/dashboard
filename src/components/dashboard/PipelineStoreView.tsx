@@ -11,6 +11,7 @@ export interface StoreProduct {
     f: string;
     mkt: boolean;
     cat: string;
+    r?: string;
 }
 
 const MONTH_MAP: Record<string, number> = {
@@ -47,7 +48,7 @@ const STAT_COLORS = {
 
 const STAT_LABELS = { store: 'Na Store', breve: 'Em breve', backlog: 'Backlog' };
 
-export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreProduct[] }) {
+export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }: { PRODUCTS?: StoreProduct[]; EXTRA_OPTIONS?: Record<string, string[]> }) {
     const [view, setView] = useState<'overview' | 'roadmap' | 'produtos'>('overview');
     const [roadmapFilter, setRoadmapFilter] = useState('all');
     const [prodFilter, setProdFilter] = useState('all');
@@ -100,6 +101,29 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
     }, [PRODUCTS]);
 
 
+    const directorateFilters = React.useMemo(() => {
+        const set = new Set<string>(['DDS', 'DIT', 'DRM', 'PRE']);
+        (EXTRA_OPTIONS.diretoria ?? []).forEach(v => set.add(v));
+        PRODUCTS.forEach(p => p.d && set.add(p.d));
+        return ['all', ...Array.from(set)];
+    }, [PRODUCTS, EXTRA_OPTIONS]);
+
+    const { tableFilters, statusValues, dirValues } = React.useMemo(() => {
+        const statusSet = new Set<string>(['store', 'breve', 'backlog']);
+        const dirSet = new Set<string>(['DDS', 'DIT', 'DRM', 'PRE']);
+        (EXTRA_OPTIONS.diretoria ?? []).forEach(v => dirSet.add(v));
+        (EXTRA_OPTIONS.status ?? []).forEach(v => statusSet.add(v));
+        PRODUCTS.forEach(p => {
+            if (p.s) statusSet.add(p.s);
+            if (p.d) dirSet.add(p.d);
+        });
+        return {
+            statusValues: statusSet,
+            dirValues: dirSet,
+            tableFilters: ['all', ...Array.from(statusSet), ...Array.from(dirSet)],
+        };
+    }, [PRODUCTS, EXTRA_OPTIONS]);
+
     const storeProds = PRODUCTS.filter(p => p.s === 'store').length;
     const breveProds = PRODUCTS.filter(p => p.s === 'breve').length;
     const backProds = PRODUCTS.filter(p => p.s === 'backlog').length;
@@ -107,7 +131,7 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
     const filteredRoadmapProds = roadmapFilter === 'all' ? PRODUCTS : PRODUCTS.filter(p => p.d === roadmapFilter);
     const filteredTableProds = prodFilter === 'all'
         ? PRODUCTS
-        : ['DDS', 'DIT', 'DRM', 'PRE'].includes(prodFilter)
+        : dirValues.has(prodFilter)
             ? PRODUCTS.filter(p => p.d === prodFilter)
             : PRODUCTS.filter(p => p.s === prodFilter);
 
@@ -269,13 +293,13 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                         <div>
                             <div className="flex flex-wrap gap-2 mb-8">
                                 <span className="text-sm font-bold text-zinc-500 py-1.5 mr-2 uppercase">Filtrar:</span>
-                                {['all', 'DDS', 'DIT', 'DRM', 'PRE'].map(f => (
+                                {directorateFilters.map(f => (
                                     <button
                                         key={f}
                                         onClick={() => setRoadmapFilter(f)}
                                         className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${roadmapFilter === f ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
                                     >
-                                        {f !== 'all' && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f]}`}></div>}
+                                        {f !== 'all' && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f] ?? 'bg-zinc-500'}`}></div>}
                                         {f === 'all' ? 'Todas' : f}
                                     </button>
                                 ))}
@@ -312,14 +336,19 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                                                 ) : (
                                                     <div className="flex flex-wrap gap-2">
                                                         {items.map(p => (
-                                                            <button
-                                                                key={p.id}
-                                                                onClick={() => setSelectedProdId(p.id)}
-                                                                className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-transform hover:scale-105 flex items-center gap-2 ${STAT_COLORS[p.s as keyof typeof STAT_COLORS]}`}
-                                                            >
-                                                                <div className={`w-1.5 h-1.5 rounded-full ${DIR_DOT_COLORS[p.d]}`}></div>
-                                                                {p.n}
-                                                            </button>
+                                                            <div key={p.id} className="relative group/chip">
+                                                                <button
+                                                                    onClick={() => setSelectedProdId(p.id)}
+                                                                    className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-transform hover:scale-105 flex items-center gap-2 ${STAT_COLORS[p.s as keyof typeof STAT_COLORS] ?? STAT_COLORS.backlog}`}
+                                                                >
+                                                                    <div className={`w-1.5 h-1.5 rounded-full ${DIR_DOT_COLORS[p.d] ?? 'bg-zinc-500'}`}></div>
+                                                                    {p.n}
+                                                                </button>
+                                                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-md bg-zinc-950 border border-zinc-700 text-[11px] font-medium text-zinc-200 whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150 z-20 shadow-lg">
+                                                                    <span className="text-[9px] uppercase tracking-wider text-zinc-500 mr-1.5">Responsável:</span>
+                                                                    {p.r && p.r.trim() ? p.r : 'Não definido'}
+                                                                </div>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 )}
@@ -336,20 +365,27 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                         <div className="flex flex-col">
                             <div className="flex flex-wrap gap-2 mb-6 sm:mb-8">
                                 <span className="text-sm font-bold text-zinc-500 py-1.5 mr-2 uppercase">Filtrar:</span>
-                                {['all', 'store', 'breve', 'backlog', 'DDS', 'DIT', 'DRM', 'PRE'].map(f => (
-                                    <button
-                                        key={f}
-                                        onClick={() => setProdFilter(f)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${prodFilter === f ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
-                                    >
-                                        {['DDS', 'DIT', 'DRM', 'PRE'].includes(f) && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f]}`}></div>}
-                                        {f === 'store' && '✅ Na Store'}
-                                        {f === 'breve' && '🔜 Em breve'}
-                                        {f === 'backlog' && '📋 Backlog'}
-                                        {f === 'all' && 'Todos'}
-                                        {['DDS', 'DIT', 'DRM', 'PRE'].includes(f) && f}
-                                    </button>
-                                ))}
+                                {tableFilters.map(f => {
+                                    const isDir = dirValues.has(f);
+                                    const isStatus = statusValues.has(f);
+                                    const label =
+                                        f === 'all' ? 'Todos'
+                                        : f === 'store' ? '✅ Na Store'
+                                        : f === 'breve' ? '🔜 Em breve'
+                                        : f === 'backlog' ? '📋 Backlog'
+                                        : isStatus ? STAT_LABELS[f as keyof typeof STAT_LABELS] ?? f
+                                        : f;
+                                    return (
+                                        <button
+                                            key={f}
+                                            onClick={() => setProdFilter(f)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${prodFilter === f ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
+                                        >
+                                            {isDir && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f] ?? 'bg-zinc-500'}`}></div>}
+                                            {label}
+                                        </button>
+                                    );
+                                })}
                             </div>
 
                             <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto custom-scrollbar">
@@ -425,6 +461,10 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
                             <div>
                                 <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Fase de entrega</div>
                                 <div className="text-sm font-medium text-zinc-200">{activeProd.f}</div>
+                            </div>
+                            <div>
+                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Pessoa responsável</div>
+                                <div className="text-sm font-medium text-zinc-200">{activeProd.r && activeProd.r.trim() ? activeProd.r : '—'}</div>
                             </div>
                             <div>
                                 <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Disponível no Marketplace</div>
