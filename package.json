@@ -6,7 +6,8 @@
     "dev": "next dev -p 6000 || next dev -p 6001",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "tsx migrate.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.0",

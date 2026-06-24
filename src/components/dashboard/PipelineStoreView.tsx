@@ -59,10 +59,14 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
         const currentYear = now.getFullYear();
         const todayDate = new Date(currentYear, currentMonth, 1);
 
-        const phaseLabels = [
-            'Nov 2025', 'Dez 2025', 'Mar 2026', 'Abr 2026', 'Mai 2026', 'Jun 2026', 'Ago 2026'
-        ];
-        
+        const phaseLabels: string[] = [];
+        for (const p of PRODUCTS) {
+            if (!p.f || p.s === 'backlog') continue;
+            const [monthStr, yearStr] = p.f.split(' ');
+            if (!monthStr || !yearStr || !(monthStr in MONTH_MAP)) continue;
+            if (!phaseLabels.includes(p.f)) phaseLabels.push(p.f);
+        }
+
         const currentLabel = `${MONTH_NAMES_SHORT[currentMonth]} ${currentYear}`;
         if (!phaseLabels.includes(currentLabel)) {
             phaseLabels.push(currentLabel);
@@ -93,7 +97,7 @@ export default function PipelineStoreView({ PRODUCTS = [] }: { PRODUCTS?: StoreP
 
         phases.push({ f: '—', t: 'backlog', lb: 'backlog', now: false } as any);
         return phases;
-    }, []);
+    }, [PRODUCTS]);
 
 
     const storeProds = PRODUCTS.filter(p => p.s === 'store').length;

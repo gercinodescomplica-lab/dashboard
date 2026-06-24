@@ -52,11 +52,18 @@ export const visits = sqliteTable('visits', {
 export const storeProducts = sqliteTable('store_products', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
-    directorate: text('directorate', { enum: ['DDS', 'DIT', 'DRM', 'PRE'] }).notNull(),
-    status: text('status', { enum: ['store', 'breve', 'backlog'] }).notNull(),
+    directorate: text('directorate').notNull(),
+    status: text('status').notNull(),
     phase: text('phase').notNull(),
     marketplace: integer('marketplace', { mode: 'boolean' }).notNull().default(false),
     category: text('category').notNull(),
+    responsavel: text('responsavel'),
+});
+
+export const dropdownOptions = sqliteTable('dropdown_options', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    field: text('field').notNull(),
+    value: text('value').notNull(),
 });
 
 export const contrato = sqliteTable('contrato', {
