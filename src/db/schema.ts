@@ -88,3 +88,24 @@ export const contrato = sqliteTable('contrato', {
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+export const proposta = sqliteTable('proposta', {
+    id: text('id').primaryKey(),
+    numeroProposta: text('numero_proposta').notNull().unique(),
+    nomeOportunidade: text('nome_oportunidade').notNull(),
+    proprietario: text('proprietario'),
+    cliente: text('cliente').notNull(),
+    fase: text('fase'),
+    valor: real('valor'),
+    receitaEsperada: real('receita_esperada'),
+    probabilidade: real('probabilidade'),
+    duracao: integer('duracao'),
+    dataCriacao: text('data_criacao'),
+    dataFechamento: text('data_fechamento'),
+    gerencia: text('gerencia'),
+    managerId: text('manager_id').references(() => managers.id, { onDelete: 'set null' }),
+    status: text('status'),
+    observacao: text('observacao'),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});

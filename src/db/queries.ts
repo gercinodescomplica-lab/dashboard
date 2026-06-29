@@ -1,5 +1,5 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato } from './schema';
+import { managers, projects, cx, visits, contrato, proposta } from './schema';
 import { eq, like, desc, or } from 'drizzle-orm';
 import { Manager, CXItem, Visit } from '../types/manager';
 
@@ -340,4 +340,115 @@ export async function fetchVisitById(id: number) {
 export async function updateVisit(id: number, data: Partial<typeof visits.$inferInsert>) {
     const rows = await db.update(visits).set(data).where(eq(visits.id, id)).returning();
     return rows[0];
+}
+
+// ─── Proposta Queries ──────────────────────────────────────────────────────────
+
+export type PropostaRow = {
+    id: string;
+    numeroProposta: string;
+    nomeOportunidade: string;
+    proprietario: string | null;
+    cliente: string;
+    fase: string | null;
+    valor: number | null;
+    receitaEsperada: number | null;
+    probabilidade: number | null;
+    duracao: number | null;
+    dataCriacao: string | null;
+    dataFechamento: string | null;
+    gerencia: string | null;
+    managerId: string | null;
+    status: string | null;
+    observacao: string | null;
+    createdAt: string;
+    updatedAt: string;
+    managerName: string | null;
+};
+
+export async function fetchAllPropostas(search?: string): Promise<PropostaRow[]> {
+    const baseQuery = db
+        .select({
+            id: proposta.id,
+            numeroProposta: proposta.numeroProposta,
+            nomeOportunidade: proposta.nomeOportunidade,
+            proprietario: proposta.proprietario,
+            cliente: proposta.cliente,
+            fase: proposta.fase,
+            valor: proposta.valor,
+            receitaEsperada: proposta.receitaEsperada,
+            probabilidade: proposta.probabilidade,
+            duracao: proposta.duracao,
+            dataCriacao: proposta.dataCriacao,
+            dataFechamento: proposta.dataFechamento,
+            gerencia: proposta.gerencia,
+            managerId: proposta.managerId,
+            status: proposta.status,
+            observacao: proposta.observacao,
+            createdAt: proposta.createdAt,
+            updatedAt: proposta.updatedAt,
+            managerName: managers.name,
+        })
+        .from(proposta)
+        .leftJoin(managers, eq(proposta.managerId, managers.id))
+        .orderBy(desc(proposta.dataFechamento));
+
+    if (search && search.trim()) {
+        const term = `%${search.trim()}%`;
+        return baseQuery.where(
+            or(
+                like(proposta.numeroProposta, term),
+                like(proposta.cliente, term),
+                like(proposta.nomeOportunidade, term),
+                like(proposta.proprietario, term),
+                like(proposta.gerencia, term),
+            )
+        );
+    }
+
+    return baseQuery;
+}
+
+export async function fetchPropostaByNumero(numero: string): Promise<PropostaRow | undefined> {
+    const rows = await db
+        .select({
+            id: proposta.id,
+            numeroProposta: proposta.numeroProposta,
+            nomeOportunidade: proposta.nomeOportunidade,
+            proprietario: proposta.proprietario,
+            cliente: proposta.cliente,
+            fase: proposta.fase,
+            valor: proposta.valor,
+            receitaEsperada: proposta.receitaEsperada,
+            probabilidade: proposta.probabilidade,
+            duracao: proposta.duracao,
+            dataCriacao: proposta.dataCriacao,
+            dataFechamento: proposta.dataFechamento,
+            gerencia: proposta.gerencia,
+            managerId: proposta.managerId,
+            status: proposta.status,
+            observacao: proposta.observacao,
+            createdAt: proposta.createdAt,
+            updatedAt: proposta.updatedAt,
+            managerName: managers.name,
+        })
+        .from(proposta)
+        .leftJoin(managers, eq(proposta.managerId, managers.id))
+        .where(eq(proposta.numeroProposta, numero));
+    return rows[0];
+}
+
+export async function createProposta(data: typeof proposta.$inferInsert) {
+    return db.insert(proposta).values(data);
+}
+
+export async function updateProposta(id: string, data: Partial<typeof proposta.$inferInsert>) {
+    return db
+        .update(proposta)
+        .set({ ...data, updatedAt: new Date().toISOString() })
+        .where(eq(proposta.id, id));
+}
+
+export async function deleteProposta(id: string) {
+    return db.delete(proposta).where(eq(proposta.id, id));
 }
