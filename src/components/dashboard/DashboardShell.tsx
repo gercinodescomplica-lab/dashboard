@@ -9,7 +9,7 @@ import { getStoreProducts, getDropdownOptions } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2 } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import {
@@ -200,6 +200,15 @@ export function DashboardShell() {
                         >
                             <FileText className="w-4 h-4" />
                             Contratos
+                        </Link>
+
+                        {/* Propostas */}
+                        <Link
+                            href="/proposals"
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-all"
+                        >
+                            <Handshake className="w-4 h-4" />
+                            Propostas
                         </Link>
                     </nav>
                 </div>
