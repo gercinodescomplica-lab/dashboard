@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
+import { ClientsEditor } from './ClientsEditor';
 import { calculateForecastFinal } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
 
@@ -84,9 +85,12 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
 
             {/* Tabs: Info + Pipeline + Visitas + CX */}
             <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 bg-zinc-950 border border-zinc-800 mb-6">
+                <TabsList className="grid w-full grid-cols-4 bg-zinc-950 border border-zinc-800 mb-6">
                     <TabsTrigger value="info" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
                         Informações
+                    </TabsTrigger>
+                    <TabsTrigger value="clientes" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
+                        🏛️ Clientes
                     </TabsTrigger>
                     <TabsTrigger value="visitas" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
                         📍 Visitas
@@ -149,6 +153,16 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                         <PipelineEditor
                             pipeline={manager.pipeline}
                             onChange={(newPipeline: PipelineData) => handleChange('pipeline', newPipeline)}
+                        />
+                    </div>
+                </TabsContent>
+
+                {/* ── Tab Clientes ── */}
+                <TabsContent value="clientes">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 min-h-[400px]">
+                        <ClientsEditor
+                            items={manager.servedClients || []}
+                            onChange={(clients) => handleChange('servedClients', clients)}
                         />
                     </div>
                 </TabsContent>

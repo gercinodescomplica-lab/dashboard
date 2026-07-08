@@ -1,12 +1,22 @@
-import 'dotenv/config';
+import { config as loadEnv } from 'dotenv';
 import { createClient } from '@libsql/client';
-import { readFileSync, readdirSync } from 'fs';
+import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join } from 'path';
+
+// Carrega .env sempre. Se NODE_ENV !== 'production' e houver .env.development,
+// carrega por cima (mesmo comportamento do Next.js: dev sobrescreve o padrão).
+loadEnv({ path: '.env' });
+const nodeEnv = process.env.NODE_ENV ?? 'development';
+if (nodeEnv !== 'production' && existsSync('.env.development')) {
+    loadEnv({ path: '.env.development', override: true });
+}
 
 const url = process.env.TURSO_DATABASE_URL;
 const authToken = process.env.TURSO_AUTH_TOKEN;
 
 if (!url) throw new Error('TURSO_DATABASE_URL missing');
+
+console.log(`→ migrating against ${url} (NODE_ENV=${nodeEnv})`);
 
 const client = createClient({ url, authToken });
 const MIGRATIONS_DIR = join(process.cwd(), 'src/db/migrations');

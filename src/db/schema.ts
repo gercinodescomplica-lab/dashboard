@@ -89,6 +89,12 @@ export const contrato = sqliteTable('contrato', {
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const orgChart = sqliteTable('org_chart', {
+    id: integer('id').primaryKey(),
+    data: text('data').notNull(),
+    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
 export const proposta = sqliteTable('proposta', {
     id: text('id').primaryKey(),
     numeroProposta: text('numero_proposta').notNull().unique(),

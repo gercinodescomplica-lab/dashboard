@@ -68,6 +68,8 @@ export async function saveManagerData(m: Manager) {
     try {
         const fv = calculateForecastFinal(m.contratado, m.pipeline);
 
+        const servedClientsJson = JSON.stringify(m.servedClients ?? []);
+
         // Upsert Manager details
         await db.insert(managers).values({
             id: m.id,
@@ -79,6 +81,7 @@ export async function saveManagerData(m: Manager) {
             contratado: m.contratado,
             forecastFinal: fv,
             notes: null,
+            servedClients: servedClientsJson,
             showInDashboard: m.showInDashboard ?? true,
         }).onConflictDoUpdate({
             target: managers.id,
@@ -90,6 +93,7 @@ export async function saveManagerData(m: Manager) {
                 meta: m.meta,
                 contratado: m.contratado,
                 forecastFinal: fv,
+                servedClients: servedClientsJson,
                 showInDashboard: m.showInDashboard ?? true,
             }
         });
