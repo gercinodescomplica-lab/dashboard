@@ -35,6 +35,7 @@ export const cx = sqliteTable('cx', {
     status: text('status', { enum: ['pendente', 'analise', 'resolvido'] }).notNull().default('pendente'),
     criticidade: text('criticidade', { enum: ['baixa', 'media', 'alta'] }).notNull().default('baixa'),
     isVisible: integer('is_visible', { mode: 'boolean' }).notNull().default(true),
+    externalId: text('external_id'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
