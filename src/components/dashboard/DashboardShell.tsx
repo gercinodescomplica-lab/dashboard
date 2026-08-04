@@ -20,7 +20,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { calculateAchievementPercentage, determinePerformanceStatus } from '@/lib/calc';
+import { calculateAchievementPercentage, determinePerformanceStatus, sumNovosNegocios } from '@/lib/calc';
 import { StatBadge } from './StatBadge';
 
 export function DashboardShell() {
@@ -265,7 +265,8 @@ export function DashboardShell() {
                                 <div className="h-px bg-zinc-800/50 my-2" />
 
                                 {managersForYear.map(manager => {
-                                    const achievement = calculateAchievementPercentage(manager.forecastFinal, manager.meta);
+                                    const novos = manager.novosNegocios ?? sumNovosNegocios(manager.pipeline);
+                                    const achievement = calculateAchievementPercentage(novos, manager.meta);
                                     const status = determinePerformanceStatus(achievement);
                                     const isSelected = manager.id === selectedManagerId;
 
@@ -288,12 +289,11 @@ export function DashboardShell() {
                                                         <div className="w-full h-full flex items-center justify-center text-zinc-500">{manager.name.charAt(0)}</div>
                                                     )}
                                                 </div>
-                                                <div className="flex-1 flex items-center justify-between ml-2">
+                                                <div className="flex-1 flex items-center ml-2">
                                                     <div className="text-left">
                                                         <p className="font-semibold text-zinc-100 text-lg">{manager.name}</p>
                                                         <p className="text-sm text-zinc-400">{manager.role}</p>
                                                     </div>
-                                                    <StatBadge status={status} />
                                                 </div>
                                             </div>
                                         </button>

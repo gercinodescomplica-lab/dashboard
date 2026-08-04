@@ -1,7 +1,12 @@
 import { Project, QuarterData, PipelineData, Manager } from '@/types/manager';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Copy } from 'lucide-react';
+import { Plus, Trash2, Copy, Sparkles, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { formatCurrency } from '@/lib/format';
+import { calculateProject2026Value } from '@/lib/calc';
+import {
+    Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Props {
     pipeline: PipelineData;
@@ -101,7 +106,19 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                     </span>
                 </div>
                 <div className="text-right">
-                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-1">Total Auto-calculado</p>
+                    <p className="text-xs text-zinc-500 uppercase tracking-widest font-semibold mb-1 flex items-center justify-end gap-1">
+                        Total Auto-calculado
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger type="button">
+                                    <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                    Soma do valor em Reais de todas as oportunidades ativas (exclui projetos desativados/perdidos/históricos).
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    </p>
                     <p className="text-xl font-bold text-brand-pipeline font-mono">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalPipelineValue)}
                     </p>
@@ -119,11 +136,11 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
 
                             {/* Form Grid */}
                             <div className="flex-1 w-full flex flex-col justify-center">
-                                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full">
-                                    <div className="space-y-1.5 md:col-span-2">
+                                <div className="grid grid-cols-1 md:grid-cols-12 gap-2.5 w-full">
+                                    <div className="space-y-1.5 md:col-span-1">
                                         <label className="text-xs font-semibold text-zinc-500 uppercase">Período</label>
                                         <select
-                                            className="h-9 w-full px-2 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+                                            className="h-9 w-full px-1.5 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-xs"
                                             value={item.qKey}
                                             onChange={(e) => handleMove(item.qKey, e.target.value as QuarterKey, item.originalIndex)}
                                         >
@@ -136,30 +153,60 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                                     </div>
 
                                     <div className="space-y-1.5 md:col-span-2">
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase flex items-center justify-between">
+                                            Início Fat.
+                                        </label>
+                                        <select
+                                            className="h-9 w-full px-2 rounded-md border border-zinc-800 bg-zinc-900 text-zinc-300 outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer text-xs"
+                                            value={item.project.billingStartMonth || 0}
+                                            onChange={(e) => handleUpdate(item.qKey, item.originalIndex, 'billingStartMonth', parseInt(e.target.value) || undefined)}
+                                        >
+                                            <option value={0}>Automatic (Qtr)</option>
+                                            <option value={1}>01 - Janeiro</option>
+                                            <option value={2}>02 - Fevereiro</option>
+                                            <option value={3}>03 - Março</option>
+                                            <option value={4}>04 - Abril</option>
+                                            <option value={5}>05 - Maio</option>
+                                            <option value={6}>06 - Junho</option>
+                                            <option value={7}>07 - Julho</option>
+                                            <option value={8}>08 - Agosto</option>
+                                            <option value={9}>09 - Setembro</option>
+                                            <option value={10}>10 - Outubro</option>
+                                            <option value={11}>11 - Novembro</option>
+                                            <option value={12}>12 - Dezembro</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-xs font-semibold text-zinc-500 uppercase">Órgão</label>
                                         <Input value={item.project.orgao || ''} onChange={e => handleUpdate(item.qKey, item.originalIndex, 'orgao', e.target.value)} placeholder="Ex: PGM" className="bg-zinc-900 border-zinc-800 text-sm h-9 px-2" />
                                     </div>
 
-                                    <div className="space-y-1.5 md:col-span-3">
+                                    <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-xs font-semibold text-zinc-500 uppercase">Oportunidade</label>
                                         <Input value={item.project.name} onChange={e => handleUpdate(item.qKey, item.originalIndex, 'name', e.target.value)} placeholder="Nome do Projeto" className="bg-zinc-900 border-zinc-800 text-sm h-9 px-2" />
                                     </div>
 
-                                    <div className="space-y-1.5 md:col-span-3">
-                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Valor (R$)</label>
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Valor Total (R$)</label>
                                         <Input type="number" step="0.01" value={item.project.value} onChange={e => handleUpdate(item.qKey, item.originalIndex, 'value', parseFloat(e.target.value))} className="bg-zinc-900 border-zinc-800 text-sm h-9 font-mono px-2" />
                                     </div>
 
+                                    <div className="space-y-1.5 md:col-span-1">
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Vigência</label>
+                                        <Input type="number" min="1" value={item.project.durationMonths ?? 12} onChange={e => handleUpdate(item.qKey, item.originalIndex, 'durationMonths', parseInt(e.target.value) || 12)} className="bg-zinc-900 border-zinc-800 text-sm h-9 font-mono px-1.5 text-center" placeholder="12m" title="Número de parcelas / meses de vigência" />
+                                    </div>
+
                                     <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Temp</label>
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Temp / Status</label>
                                         <select
                                             value={item.project.temperature || 'morno'}
                                             onChange={e => handleUpdate(item.qKey, item.originalIndex, 'temperature', e.target.value)}
-                                            className="flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-2 py-2 text-xs text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
                                         >
-                                            <option value="quente">🔥</option>
-                                            <option value="morno">🟡</option>
-                                            <option value="frio">❄️</option>
+                                            <option value="quente">🔥 Quente</option>
+                                            <option value="morno">🟡 Morno</option>
+                                            <option value="frio">❄️ Frio</option>
                                             <option value="contratado">✅ Contratado</option>
                                             <option value="historico">⏸️ Adiado</option>
                                             <option value="perdido">❌ Perdido</option>
@@ -167,8 +214,33 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                                     </div>
                                 </div>
 
+                                {/* Pro-Rata Breakdown info if Contratado */}
+                                {item.project.temperature === 'contratado' && (
+                                    <div className="mt-3 p-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex flex-wrap items-center justify-between gap-2 text-xs">
+                                        <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+                                            <Sparkles className="w-3.5 h-3.5" />
+                                            <span>Contrato Fechado</span>
+                                            <span className="text-zinc-400 font-normal">• Vigência: {item.project.durationMonths || 12} meses</span>
+                                            <span className="text-zinc-400 font-normal">• Mensalidade: {formatCurrency((item.project.value || 0) / (item.project.durationMonths || 12))}/mês</span>
+                                        </div>
+                                        <div className="font-bold font-mono text-blue-400 bg-zinc-950 px-2.5 py-1 rounded border border-zinc-800 flex items-center gap-1.5">
+                                            <span>Reconhecido em 2026: {formatCurrency(calculateProject2026Value(item.project, item.qKey))}</span>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger type="button">
+                                                        <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent className="text-zinc-200 max-w-[280px] leading-relaxed">
+                                                        <strong>Cálculo Pro-Rata 2026:</strong><br />(Valor Total ÷ Vigência) × Meses vigentes em 2026 a partir do mês de início de faturamento.
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Description Row */}
-                                <div className="space-y-1.5 mt-4">
+                                <div className="space-y-1.5 mt-3">
                                     <label className="text-xs font-semibold text-zinc-500 uppercase">Descrição (Opcional)</label>
                                     <Input value={item.project.description || ''} onChange={e => handleUpdate(item.qKey, item.originalIndex, 'description', e.target.value)} placeholder="Detalhes, próximos passos ou status..." className="bg-zinc-900 border-zinc-800 text-sm h-9 px-2" />
                                 </div>

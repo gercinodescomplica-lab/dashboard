@@ -71,31 +71,39 @@ export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProj
                             <div className="flex-1 w-full flex flex-col justify-center">
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 w-full">
 
-                                    <div className="space-y-1.5 md:col-span-3">
+                                    <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-xs font-semibold text-zinc-500 uppercase">Órgão</label>
                                         <Input value={p.orgao || ''} onChange={e => handleUpdate(idx, 'orgao', e.target.value)} placeholder="Ex: PGM" className="bg-zinc-900 border-zinc-800 text-sm h-9" />
                                     </div>
 
-                                    <div className="space-y-1.5 md:col-span-4">
+                                    <div className="space-y-1.5 md:col-span-3">
                                         <label className="text-xs font-semibold text-zinc-500 uppercase">Oportunidade</label>
                                         <Input value={p.name} onChange={e => handleUpdate(idx, 'name', e.target.value)} placeholder="Nome do Projeto" className="bg-zinc-900 border-zinc-800 text-sm h-9" />
                                     </div>
 
                                     <div className="space-y-1.5 md:col-span-3">
-                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Valor (R$)</label>
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Valor Total (R$)</label>
                                         <Input type="number" step="0.01" value={p.value} onChange={e => handleUpdate(idx, 'value', parseFloat(e.target.value))} className="bg-zinc-900 border-zinc-800 text-sm h-9 font-mono" />
                                     </div>
 
                                     <div className="space-y-1.5 md:col-span-2">
-                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Temp</label>
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Vigência (meses)</label>
+                                        <Input type="number" min="1" value={p.durationMonths ?? 12} onChange={e => handleUpdate(idx, 'durationMonths', parseInt(e.target.value) || 12)} className="bg-zinc-900 border-zinc-800 text-sm h-9 font-mono" placeholder="12" />
+                                    </div>
+
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <label className="text-xs font-semibold text-zinc-500 uppercase">Temp / Status</label>
                                         <select
                                             value={p.temperature || 'morno'}
                                             onChange={e => handleUpdate(idx, 'temperature', e.target.value)}
-                                            className="flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
+                                            className="flex h-9 w-full items-center justify-between rounded-md border border-zinc-800 bg-zinc-900 px-2 py-2 text-xs text-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500"
                                         >
                                             <option value="quente">🔥 Quente</option>
                                             <option value="morno">🟡 Morno</option>
                                             <option value="frio">❄️ Frio</option>
+                                            <option value="contratado">✅ Contratado</option>
+                                            <option value="historico">⏸️ Histórico</option>
+                                            <option value="perdido">❌ Perdido</option>
                                         </select>
                                     </div>
                                 </div>

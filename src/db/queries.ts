@@ -7,6 +7,8 @@ import { Manager, CXItem, Visit } from '../types/manager';
  * Fetches all managers from the database and constructs them exactly
  * like the JSON mock structure to ensure app compatibility.
  */
+import { calcEffectiveContratado, sumNovosNegocios } from '../lib/calc';
+
 export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     const allManagers = await db.select().from(managers);
     const allProjects = await db.select().from(projects);
@@ -27,6 +29,17 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
                     value: p.value,
                     temperature: (p.temperature as any) ?? undefined,
                     description: p.description ?? undefined,
+                    durationMonths: p.durationMonths ?? 12,
+                    startDate: p.startDate ?? undefined,
+                    billingStartMonth: p.billingStartMonth ?? undefined,
+                    history: (() => {
+                        if (!p.history) return undefined;
+                        try {
+                            return typeof p.history === 'string' ? JSON.parse(p.history) : p.history;
+                        } catch (e) {
+                            return undefined;
+                        }
+                    })(),
                 })),
             };
         };
@@ -40,6 +53,8 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
         };
 
         const totalPipeline = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total + pipeline.nao_mapeado.total;
+        const novosNegocios = sumNovosNegocios(pipeline);
+        const contratado2026 = calcEffectiveContratado(m.contratado, pipeline);
 
         return {
             id: m.id,
@@ -48,8 +63,12 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             avatarUrl: m.avatarUrl,
             year: m.year,
             meta: m.meta,
+            metaNovosNegocios: m.metaNovosNegocios ?? undefined,
             contratado: m.contratado,
-            forecastFinal: (m.contratado || 0) + totalPipeline,
+            contratosHerdados: m.contratado,
+            novosNegocios,
+            contratado2026,
+            forecastFinal: contratado2026 + totalPipeline,
             notes: m.notes ?? undefined,
             pipeline,
             showInDashboard: m.showInDashboard ?? true,
@@ -116,7 +135,7 @@ export async function fetchVisitsByManager(managerId: string): Promise<Visit[]> 
  * Fetches all managers and their associated data (projects, CX, visits) for the external API.
  */
 export async function fetchFullDashboardData(): Promise<Manager[]> {
-    const allManagers = await fetchAllManagersFromDB();
+    const allManagers = await fetchVisibleManagersFromDB();
     
     // Supplement each manager with CX and Visits
     const fullData = await Promise.all(

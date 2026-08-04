@@ -78,6 +78,7 @@ export async function saveManagerData(m: Manager) {
             avatarUrl: m.avatarUrl,
             year: m.year,
             meta: m.meta,
+            metaNovosNegocios: m.metaNovosNegocios ?? null,
             contratado: m.contratado,
             forecastFinal: fv,
             notes: null,
@@ -91,6 +92,7 @@ export async function saveManagerData(m: Manager) {
                 avatarUrl: m.avatarUrl,
                 year: m.year,
                 meta: m.meta,
+                metaNovosNegocios: m.metaNovosNegocios ?? null,
                 contratado: m.contratado,
                 forecastFinal: fv,
                 servedClients: servedClientsJson,
@@ -116,6 +118,10 @@ export async function saveManagerData(m: Manager) {
                         value: proj.value,
                         temperature: proj.temperature || null,
                         description: proj.description || null,
+                        durationMonths: proj.durationMonths ?? 12,
+                        startDate: proj.startDate || null,
+                        billingStartMonth: proj.billingStartMonth || null,
+                        history: proj.history ? JSON.stringify(proj.history) : null,
                     });
                 });
             }

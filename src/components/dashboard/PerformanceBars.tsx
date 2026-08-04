@@ -10,18 +10,20 @@ import {
 
 interface PerformanceBarsProps {
     meta: number;
-    contratado: number;
+    metaNovosNegocios?: number;
+    novosNegocios: number;
 }
 
-export function PerformanceBars({ meta, contratado }: PerformanceBarsProps) {
-    const gap = calculateGap(meta, contratado);
+export function PerformanceBars({ meta, metaNovosNegocios, novosNegocios }: PerformanceBarsProps) {
+    const targetMeta = (metaNovosNegocios && metaNovosNegocios > 0) ? metaNovosNegocios : meta;
+    const gap = calculateGap(targetMeta, novosNegocios);
 
-    // Treat negative gap (above target) as 0 for the bar visualization, although we still display the actual value or "Acima"
+    // Treat negative gap (above target) as 0 for the bar visualization
     const gapValue = gap < 0 ? 0 : gap;
 
-    // Calculate percentages based on meta being 100%
-    const contratadoPercent = Math.min((contratado / meta) * 100, 100);
-    const gapPercent = Math.min((gapValue / meta) * 100, 100);
+    // Calculate percentages based on targetMeta being 100%
+    const novosPercent = targetMeta > 0 ? Math.min((novosNegocios / targetMeta) * 100, 100) : 0;
+    const gapPercent = targetMeta > 0 ? Math.min((gapValue / targetMeta) * 100, 100) : 0;
 
     return (
         <TooltipProvider>
@@ -30,43 +32,43 @@ export function PerformanceBars({ meta, contratado }: PerformanceBarsProps) {
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-1.5">
-                            <span className="text-zinc-400">Meta</span>
+                            <span className="text-zinc-400">{metaNovosNegocios && metaNovosNegocios > 0 ? 'Meta Novos Negócios' : 'Meta Total'}</span>
                             <Tooltip>
                                 <TooltipTrigger>
                                     <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300 transition-colors" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-[250px] text-zinc-300 bg-zinc-900 border-zinc-700">
-                                    <p><strong>Meta:</strong> Objetivo total de vendas/contratos estipulado para o ano vigente.</p>
+                                    <p><strong>Meta:</strong> Objetivo de captação de novos negócios estipulado para o gerente no ano.</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
-                        <span className="font-semibold text-blue-400">{formatCurrency(meta)}</span>
+                        <span className="font-semibold text-blue-400">{formatCurrency(targetMeta)}</span>
                     </div>
                     <div className="h-2.5 w-full bg-zinc-800 rounded-full overflow-hidden">
                         <div className="h-full bg-blue-500 rounded-full w-full" />
                     </div>
                 </div>
 
-                {/* Contratado Bar */}
+                {/* Negócios Concluídos Bar */}
                 <div className="space-y-1.5">
                     <div className="flex justify-between items-center text-sm">
                         <div className="flex items-center gap-1.5">
-                            <span className="text-zinc-400">Contratado</span>
+                            <span className="text-zinc-400">Negócios Concluídos (TCV)</span>
                             <Tooltip>
                                 <TooltipTrigger>
                                     <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300 transition-colors" />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-[250px] text-zinc-300 bg-zinc-900 border-zinc-700">
-                                    <p><strong>Contratado:</strong> Dinheiro que já está "no bolso". Representa contratos definitivamente assinados/fechados.</p>
+                                    <p><strong>Negócios Concluídos (TCV):</strong> Soma do Valor Total de todos os novos contratos fechados no pipeline.</p>
                                 </TooltipContent>
                             </Tooltip>
                         </div>
-                        <span className="font-semibold text-emerald-400">{formatCurrency(contratado)}</span>
+                        <span className="font-semibold text-emerald-400">{formatCurrency(novosNegocios)}</span>
                     </div>
                     <div className="h-2.5 w-full bg-zinc-800 rounded-full overflow-hidden">
                         <div
                             className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out"
-                            style={{ width: `${contratadoPercent}%` }}
+                            style={{ width: `${novosPercent}%` }}
                         />
                     </div>
                 </div>

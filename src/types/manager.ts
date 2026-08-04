@@ -2,12 +2,28 @@ export type OpportunityTemperature = 'quente' | 'morno' | 'frio' | 'contratado' 
 export type CXStatus = 'pendente' | 'analise' | 'resolvido';
 export type CXCriticidade = 'baixa' | 'media' | 'alta';
 
+export type HistoryChangeType = 'status' | 'valor' | 'quarter' | 'nota';
+
+export interface ProjectHistoryItem {
+  id?: string;
+  date: string;
+  tipo: HistoryChangeType;
+  de?: string;
+  para?: string;
+  justificativa?: string;
+  autor?: string;
+}
+
 export interface Project {
   orgao?: string;
   name: string;
   value: number;
   temperature?: OpportunityTemperature;
   description?: string;
+  durationMonths?: number;
+  startDate?: string;
+  billingStartMonth?: number;
+  history?: ProjectHistoryItem[];
 }
 
 export interface QuarterData {
@@ -51,8 +67,12 @@ export interface Manager {
   role: string;
   avatarUrl: string;
   year: number;
-  meta: number;
-  contratado: number;
+  meta: number; // Meta Total
+  metaNovosNegocios?: number; // Meta específica para novos negócios (Negócios Concluídos)
+  contratado: number; // Base herdada (Contratos Herdados)
+  contratosHerdados?: number;
+  novosNegocios?: number; // Total TCV dos novos contratos no pipeline
+  contratado2026?: number; // Contratos Herdados + Parcela pro-rata de 2026 dos novos negócios
   forecastFinal: number;
   pipeline: PipelineData;
   notes?: string;

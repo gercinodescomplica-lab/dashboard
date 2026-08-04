@@ -17,11 +17,12 @@ export function sumQuarterProjects(projects: { value: number }[]): number {
 }
 
 /**
- * Sums the value of all pipeline projects marked as 'contratado'
+ * Sums the total TCV value of all pipeline projects marked as 'contratado' (Novos Negócios)
  */
-export function sumPipelineContratado(pipeline: PipelineData): number {
+export function sumNovosNegocios(pipeline: PipelineData): number {
+    if (!pipeline) return 0;
     return Object.values(pipeline).reduce((acc, quarter: QuarterData) => {
-        const contracted = (quarter.projects || [])
+        const contracted = (quarter?.projects || [])
             .filter(p => p.temperature === 'contratado')
             .reduce((s, p) => s + (p.value || 0), 0);
         return acc + contracted;
@@ -29,18 +30,92 @@ export function sumPipelineContratado(pipeline: PipelineData): number {
 }
 
 /**
- * Returns the effective contratado = manager.contratado + sum of pipeline projects tagged as 'contratado'
+ * Calculates the pro-rata recognized revenue in 2026 for a single project based on billing start month, quarter, and duration.
  */
-export function calcEffectiveContratado(contratado: number, pipeline: PipelineData): number {
-    return (contratado || 0) + sumPipelineContratado(pipeline);
+export function calculateProject2026Value(
+    project: { value: number; durationMonths?: number; startDate?: string; billingStartMonth?: number },
+    quarterKey: string = 'q1'
+): number {
+    if (!project || !project.value) return 0;
+    const duration = project.durationMonths && project.durationMonths > 0 ? project.durationMonths : 12;
+    const monthlyRate = project.value / duration;
+
+    let monthsRemainingInYear: number;
+
+    if (project.billingStartMonth && project.billingStartMonth >= 1 && project.billingStartMonth <= 12) {
+        monthsRemainingInYear = Math.max(0, 12 - project.billingStartMonth + 1);
+    } else if (project.startDate) {
+        const monthMatch = project.startDate.match(/(\d{4})-(\d{2})/);
+        if (monthMatch) {
+            const year = parseInt(monthMatch[1], 10);
+            const month = parseInt(monthMatch[2], 10);
+            if (year === 2026 && month >= 1 && month <= 12) {
+                monthsRemainingInYear = Math.max(0, 12 - month + 1);
+            } else if (year < 2026) {
+                monthsRemainingInYear = 12;
+            } else {
+                monthsRemainingInYear = 0;
+            }
+        } else {
+            const monthsRemainingMap: Record<string, number> = {
+                q1: 12,
+                q2: 9,
+                q3: 6,
+                q4: 3,
+                nao_mapeado: 6,
+            };
+            monthsRemainingInYear = monthsRemainingMap[quarterKey] ?? 12;
+        }
+    } else {
+        const monthsRemainingMap: Record<string, number> = {
+            q1: 12,
+            q2: 9,
+            q3: 6,
+            q4: 3,
+            nao_mapeado: 6,
+        };
+        monthsRemainingInYear = monthsRemainingMap[quarterKey] ?? 12;
+    }
+
+    const monthsIn2026 = Math.min(duration, monthsRemainingInYear);
+    return monthlyRate * monthsIn2026;
+}
+
+/**
+ * Sums the pro-rata 2026 recognized revenue of all pipeline projects marked as 'contratado'
+ */
+export function sumPipelineContratado2026(pipeline: PipelineData): number {
+    if (!pipeline) return 0;
+    return (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).reduce((acc, qKey) => {
+        const quarter = pipeline[qKey];
+        const contracted2026Sum = (quarter?.projects || [])
+            .filter(p => p.temperature === 'contratado')
+            .reduce((s, p) => s + calculateProject2026Value(p, qKey), 0);
+        return acc + contracted2026Sum;
+    }, 0);
+}
+
+/**
+ * Legacy sum of pipeline contratado (full TCV)
+ */
+export function sumPipelineContratado(pipeline: PipelineData): number {
+    return sumNovosNegocios(pipeline);
+}
+
+/**
+ * Returns the effective contratado for 2026 = Contratos Herdados + sum of 2026 recognized revenue of 'contratado' projects
+ */
+export function calcEffectiveContratado(contratadoHerdado: number, pipeline: PipelineData): number {
+    return (contratadoHerdado || 0) + sumPipelineContratado2026(pipeline);
 }
 
 /**
  * Calculates the Total Pipeline from all quarters, excluding 'historico' and 'perdido' projects
  */
 export function calculatePipelineTotal(pipeline: Manager['pipeline']): number {
+    if (!pipeline) return 0;
     return Object.values(pipeline).reduce((acc, curr) => {
-        const active = (curr.projects || []).filter((p: { temperature?: string }) => p.temperature !== 'historico' && p.temperature !== 'perdido');
+        const active = (curr?.projects || []).filter((p: { temperature?: string }) => p.temperature !== 'historico' && p.temperature !== 'perdido');
         return acc + sumQuarterProjects(active);
     }, 0);
 }

@@ -7,6 +7,7 @@ export const managers = sqliteTable('managers', {
     avatarUrl: text('avatarUrl').notNull(),
     year: integer('year').notNull(),
     meta: real('meta').notNull(),
+    metaNovosNegocios: real('meta_novos_negocios'),
     contratado: real('contratado').notNull(),
     forecastFinal: real('forecastFinal').notNull(),
     notes: text('notes'),
@@ -23,6 +24,10 @@ export const projects = sqliteTable('projects', {
     value: real('value').notNull(),
     temperature: text('temperature', { enum: ['quente', 'morno', 'frio', 'contratado', 'historico', 'perdido'] }),
     description: text('description'),
+    durationMonths: integer('duration_months').default(12),
+    startDate: text('start_date'),
+    billingStartMonth: integer('billing_start_month'),
+    history: text('history'),
 });
 
 export const cx = sqliteTable('cx', {

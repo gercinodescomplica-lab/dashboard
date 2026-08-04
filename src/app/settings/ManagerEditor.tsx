@@ -6,13 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, Loader2, Calculator } from 'lucide-react';
+import { Save, Loader2, Calculator, Info } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import {
+    Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { ClientsEditor } from './ClientsEditor';
-import { calculateForecastFinal } from '@/lib/calc';
+import { calculateForecastFinal, sumNovosNegocios, calcEffectiveContratado } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
 
 interface Props {
@@ -128,20 +131,110 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                 <Input type="number" value={manager.year} onChange={e => handleChange('year', parseInt(e.target.value))} className="bg-zinc-950 border-zinc-800 text-zinc-200" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Meta Global (R$)</Label>
+                                <Label className="flex items-center gap-1.5">
+                                    Meta Total (R$)
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                Meta Total global estipulada para o gerente no ano.
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
                                 <Input type="number" step="0.01" value={manager.meta} onChange={e => handleChange('meta', parseFloat(e.target.value))} className="bg-zinc-950 border-zinc-800 text-zinc-400 font-mono" />
                             </div>
                             <div className="space-y-2">
-                                <Label>Contratado (R$)</Label>
+                                <Label className="flex items-center gap-1.5">
+                                    Meta Novos Negócios (R$)
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                Meta específica de novos negócios estipulada para o gerente no ano.
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <Input type="number" step="0.01" value={manager.metaNovosNegocios ?? ''} onChange={e => handleChange('metaNovosNegocios', parseFloat(e.target.value) || 0)} className="bg-zinc-950 border-zinc-800 text-zinc-400 font-mono" placeholder="0" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-1.5">
+                                    Contratos Herdados (R$)
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                Base de contratos legados existentes sob responsabilidade do gerente trazida de anos anteriores.
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
                                 <Input type="number" step="0.01" value={manager.contratado} onChange={e => handleChange('contratado', parseFloat(e.target.value))} className="bg-zinc-950 border-zinc-800 text-zinc-400 font-mono" />
                             </div>
                             <div className="space-y-2">
-                                <Label className="flex items-center gap-2">
+                                <Label className="flex items-center gap-1.5">
+                                    Negócios Concluídos (R$)
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter font-bold">Auto (TCV)</span>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                <strong>Negócios Concluídos (TCV):</strong> Soma automática do Valor Total (Total Contract Value) de todos os novos contratos fechados no pipeline (Status = Contratado).
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-zinc-800 rounded-md text-emerald-400 font-mono font-bold text-sm">
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sumNovosNegocios(manager.pipeline))}</span>
+                                    <Calculator className="w-3.5 h-3.5 text-zinc-600" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-1.5">
+                                    Contratado 2026 (R$)
+                                    <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20 uppercase tracking-tighter font-bold">Efetivo 2026</span>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                <strong>Contratado 2026:</strong> Receita efetiva reconhecida em 2026.<br />Calculado como: <em>Contratos Herdados + Parcela Pro-Rata 2026 dos Novos Negócios.</em>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-zinc-800 rounded-md text-blue-400 font-mono font-bold text-sm">
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calcEffectiveContratado(manager.contratado, manager.pipeline))}</span>
+                                    <Calculator className="w-3.5 h-3.5 text-zinc-600" />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-1.5">
                                     Forecast Final (R$)
                                     <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-500/20 uppercase tracking-tighter font-bold">Calculado</span>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                <strong>Forecast Final:</strong> Projeção total para o ano.<br />Calculado como: <em>Contratado 2026 + Total em Reais dos projetos ativos do Pipeline (Quente, Morno, Frio).</em>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
                                 </Label>
                                 <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-zinc-800 rounded-md text-indigo-400 font-mono font-bold text-sm">
-                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculateForecastFinal(manager.contratado, manager.pipeline))}</span>
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculateForecastFinal(calcEffectiveContratado(manager.contratado, manager.pipeline), manager.pipeline))}</span>
                                     <Calculator className="w-3.5 h-3.5 text-zinc-600" />
                                 </div>
                             </div>
