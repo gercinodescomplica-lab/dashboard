@@ -7,7 +7,7 @@ import { Manager, CXItem, Visit } from '../types/manager';
  * Fetches all managers from the database and constructs them exactly
  * like the JSON mock structure to ensure app compatibility.
  */
-import { calcEffectiveContratado, sumNovosNegocios } from '../lib/calc';
+import { calcEffectiveContratado, sumNovosNegocios, sumPipelineAberto } from '../lib/calc';
 
 export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     const allManagers = await db.select().from(managers);
@@ -16,10 +16,13 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     return allManagers.map((m) => {
         const mgrProjects = allProjects.filter((p) => p.managerId === m.id);
 
+        const OPEN_TEMPS = ['quente', 'morno', 'frio'];
+        const ALL_ACTIVE_TEMPS = ['quente', 'morno', 'frio', 'contratado'];
         const buildQuarter = (q: 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado') => {
             const quarterProjects = mgrProjects.filter((p) => p.quarter === q);
+            // All active projects (non-historico, non-perdido) count toward the quarter total
             const activeProjects = quarterProjects.filter(
-                (p) => p.temperature !== 'historico' && p.temperature !== 'perdido'
+                (p) => ALL_ACTIVE_TEMPS.includes(p.temperature ?? '')
             );
             return {
                 total: activeProjects.reduce((acc, p) => acc + p.value, 0),
@@ -52,9 +55,13 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             nao_mapeado: buildQuarter('nao_mapeado'),
         };
 
-        const totalPipeline = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total + pipeline.nao_mapeado.total;
-        const novosNegocios = sumNovosNegocios(pipeline);
-        const contratado2026 = calcEffectiveContratado(m.contratado, pipeline);
+        // allActiveTCV = TCV de todos os projetos ativos (quente/morno/frio/contratado)
+        // Exclui apenas historico e perdido
+        // Mover frio→contratado NÃO altera o forecastFinal (mesmo valor, só muda o label)
+        const allActiveTCV = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total + pipeline.nao_mapeado.total;
+        const pipelineAberto = sumPipelineAberto(pipeline); // TCV só de quente/morno/frio (para outros usos)
+        const novosNegocios = sumNovosNegocios(pipeline);   // TCV só de contratado
+        const contratado2026 = calcEffectiveContratado(m.contratado, pipeline); // Rec. Reconhecida 2026
 
         return {
             id: m.id,
@@ -68,7 +75,9 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             contratosHerdados: m.contratado,
             novosNegocios,
             contratado2026,
-            forecastFinal: contratado2026 + totalPipeline,
+            // Forecast Final = Herdados + TCV de todos os projetos ativos
+            // Mover um projeto de frio→contratado NÃO muda o Forecast Final
+            forecastFinal: m.contratado + allActiveTCV,
             notes: m.notes ?? undefined,
             pipeline,
             showInDashboard: m.showInDashboard ?? true,

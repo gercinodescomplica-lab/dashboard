@@ -17,7 +17,7 @@ export function sumQuarterProjects(projects: { value: number }[]): number {
 }
 
 /**
- * Sums the total TCV value of all pipeline projects marked as 'contratado' (Novos Negócios)
+ * Sums the total TCV value of all pipeline projects marked as 'contratado' (Negócios Concluídos)
  */
 export function sumNovosNegocios(pipeline: PipelineData): number {
     if (!pipeline) return 0;
@@ -26,6 +26,21 @@ export function sumNovosNegocios(pipeline: PipelineData): number {
             .filter(p => p.temperature === 'contratado')
             .reduce((s, p) => s + (p.value || 0), 0);
         return acc + contracted;
+    }, 0);
+}
+
+/**
+ * Sums the total TCV value of pipeline projects NOT yet concluded (quente, morno, frio).
+ * These enter the Forecast Final but are NOT counted as Negócios Concluídos.
+ */
+export function sumPipelineAberto(pipeline: PipelineData): number {
+    if (!pipeline) return 0;
+    const OPEN_TEMPERATURES = ['quente', 'morno', 'frio'];
+    return Object.values(pipeline).reduce((acc, quarter: QuarterData) => {
+        const open = (quarter?.projects || [])
+            .filter(p => OPEN_TEMPERATURES.includes(p.temperature ?? ''))
+            .reduce((s, p) => s + (p.value || 0), 0);
+        return acc + open;
     }, 0);
 }
 

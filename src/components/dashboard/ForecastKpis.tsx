@@ -1,7 +1,7 @@
 import { formatCurrency, formatPercentage } from '@/lib/format';
 import { calculateAchievementPercentage, determinePerformanceStatus, getStatusColor, sumNovosNegocios, calcEffectiveContratado } from '@/lib/calc';
 import { cn } from '@/lib/utils';
-import { Target, Info, FileCheck2, Sparkles, CalendarCheck } from 'lucide-react';
+import { Target, Info, FileCheck2, Sparkles, CalendarCheck, TrendingUp } from 'lucide-react';
 import { Manager } from '@/types/manager';
 import {
     Tooltip,
@@ -44,7 +44,7 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
 
     return (
         <TooltipProvider>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                 {/* Meta Total KPI */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-1">
@@ -136,6 +136,22 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
                         </Tooltip>
                     </div>
                     <div className="text-lg sm:text-xl font-bold font-mono text-blue-400 mt-1 tracking-tighter truncate">
+                        {formatCurrency(contratado2026)}
+                    </div>
+                </div>
+
+                {/* Receita Reconhecida 2026 */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                            <TrendingUp className="w-3.5 h-3.5 text-violet-400" />
+                            <span className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">
+                                Rec. 2026
+                                <InfoTip text="Receita efetivamente reconhecida em 2026 = Contratos Herdados + parcela pro-rata dos Negócios Concluídos com vigência em 2026." />
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-lg sm:text-xl font-bold font-mono text-violet-300 mt-1 tracking-tighter truncate">
                         {formatCurrency(contratado2026)}
                     </div>
                 </div>

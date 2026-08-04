@@ -15,7 +15,7 @@ import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { ClientsEditor } from './ClientsEditor';
-import { calculateForecastFinal, sumNovosNegocios, calcEffectiveContratado } from '@/lib/calc';
+import { sumNovosNegocios, calcEffectiveContratado, sumPipelineAberto } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
 
 interface Props {
@@ -234,7 +234,14 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                     </TooltipProvider>
                                 </Label>
                                 <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-zinc-800 rounded-md text-indigo-400 font-mono font-bold text-sm">
-                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calculateForecastFinal(calcEffectiveContratado(manager.contratado, manager.pipeline), manager.pipeline))}</span>
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                                        // Forecast Final = Herdados + TCV de todos os ativos (quente/morno/frio/contratado)
+                                        // Mover frio→contratado NÃO altera o Forecast Final
+                                        manager.contratado + Object.values(manager.pipeline).reduce((acc, q) => {
+                                            const activeTCV = (q.projects || []).filter((p: any) => ['quente','morno','frio','contratado'].includes(p.temperature ?? '')).reduce((s: number, p: any) => s + (p.value || 0), 0);
+                                            return acc + activeTCV;
+                                        }, 0)
+                                    )}</span>
                                     <Calculator className="w-3.5 h-3.5 text-zinc-600" />
                                 </div>
                             </div>
