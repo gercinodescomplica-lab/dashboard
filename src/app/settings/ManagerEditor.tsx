@@ -15,7 +15,7 @@ import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { ClientsEditor } from './ClientsEditor';
-import { sumNovosNegocios, calcEffectiveContratado, sumPipelineAberto } from '@/lib/calc';
+import { sumPipelineContratado2026, calcEffectiveContratado, sumPipelineAberto } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
 
 interface Props {
@@ -181,20 +181,20 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-1.5">
                                     Negócios Concluídos (R$)
-                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter font-bold">Auto (TCV)</span>
+                                    <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 uppercase tracking-tighter font-bold">Auto (2026)</span>
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger type="button">
                                                 <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
-                                                <strong>Negócios Concluídos (TCV):</strong> Soma automática do Valor Total (Total Contract Value) de todos os novos contratos fechados no pipeline (Status = Contratado).
+                                                <strong>Negócios Concluídos (Pro-rata 2026):</strong> Soma automática da receita reconhecida em 2026 de todos os novos contratos fechados no pipeline (Status = Contratado), considerando o mês de início de faturamento e a duração de cada contrato.
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
                                 </Label>
                                 <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-zinc-800 rounded-md text-emerald-400 font-mono font-bold text-sm">
-                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sumNovosNegocios(manager.pipeline))}</span>
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(sumPipelineContratado2026(manager.pipeline))}</span>
                                     <Calculator className="w-3.5 h-3.5 text-zinc-600" />
                                 </div>
                             </div>

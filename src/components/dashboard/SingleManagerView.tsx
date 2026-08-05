@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Manager, CXItem, Visit } from '@/types/manager';
-import { calcEffectiveContratado, sumNovosNegocios } from '@/lib/calc';
+import { calcEffectiveContratado, sumPipelineContratado2026 } from '@/lib/calc';
 import { ManagerHeader } from './ManagerHeader';
 import { PerformanceBars } from './PerformanceBars';
 import { PipelineBars } from './PipelineBars';
@@ -21,7 +21,7 @@ interface SingleManagerViewProps {
 
 export function SingleManagerView({ manager }: SingleManagerViewProps) {
     const effectiveContratado = calcEffectiveContratado(manager.contratado, manager.pipeline);
-    const novosNegocios = manager.novosNegocios ?? sumNovosNegocios(manager.pipeline);
+    const novosNegocios = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
     const [cxItems, setCxItems] = useState<CXItem[] | null>(null);
     const [visits, setVisits] = useState<Visit[] | null>(null);
     const [activeTab, setActiveTab] = useState('dashboard');

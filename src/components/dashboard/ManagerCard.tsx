@@ -1,5 +1,5 @@
 import { Manager } from '@/types/manager';
-import { calcEffectiveContratado, sumNovosNegocios } from '@/lib/calc';
+import { calcEffectiveContratado, sumPipelineContratado2026 } from '@/lib/calc';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ManagerHeader } from './ManagerHeader';
 import { PerformanceBars } from './PerformanceBars';
@@ -11,7 +11,7 @@ interface ManagerCardProps {
 }
 
 export function ManagerCard({ manager }: ManagerCardProps) {
-    const novosNegocios = manager.novosNegocios ?? sumNovosNegocios(manager.pipeline);
+    const novosNegocios = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
     return (
         <Card className="bg-zinc-950/50 border-zinc-800/60 overflow-hidden shadow-xl backdrop-blur-sm">
             <CardHeader className="pb-4 border-b border-zinc-900/50 bg-zinc-900/20">

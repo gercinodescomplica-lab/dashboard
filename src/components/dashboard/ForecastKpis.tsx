@@ -1,5 +1,5 @@
 import { formatCurrency, formatPercentage } from '@/lib/format';
-import { calculateAchievementPercentage, determinePerformanceStatus, getStatusColor, sumNovosNegocios, calcEffectiveContratado } from '@/lib/calc';
+import { calculateAchievementPercentage, determinePerformanceStatus, getStatusColor, sumPipelineContratado2026, calcEffectiveContratado } from '@/lib/calc';
 import { cn } from '@/lib/utils';
 import { Target, Info, FileCheck2, Sparkles, CalendarCheck, TrendingUp } from 'lucide-react';
 import { Manager } from '@/types/manager';
@@ -35,7 +35,7 @@ function InfoTip({ text }: { text: string }) {
 
 export function ForecastKpis({ manager }: ForecastKpisProps) {
     const contratado2026 = manager.contratado2026 ?? calcEffectiveContratado(manager.contratado, manager.pipeline);
-    const novosNegocios = manager.novosNegocios ?? sumNovosNegocios(manager.pipeline);
+    const novosNegocios = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
     const contratosHerdados = manager.contratosHerdados ?? manager.contratado;
     const targetMeta = (manager.metaNovosNegocios && manager.metaNovosNegocios > 0) ? manager.metaNovosNegocios : manager.meta;
     const achievementPercentage = calculateAchievementPercentage(novosNegocios, targetMeta);
@@ -100,7 +100,7 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
                             <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
                             <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">
                                 Concluídos
-                                <InfoTip text="Soma do TCV (Total Contract Value) de todos os negócios marcados como 'Contratado' no pipeline (Negócios Concluídos)." />
+                                <InfoTip text="Receita reconhecida em 2026 de todos os negócios marcados como 'Contratado' no pipeline, calculada pro-rata conforme o mês de início de faturamento e duração do contrato." />
                             </span>
                         </div>
                     </div>
@@ -130,7 +130,7 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
                                 side="top"
                                 sideOffset={6}
                             >
-                                Atingimento = Negócios Concluídos (TCV) ÷ Meta Novos Negócios × 100.<br />
+                                Atingimento = Negócios Concluídos (Pro-rata 2026) ÷ Meta Novos Negócios × 100.<br />
                                 Aqui: {formatCurrency(novosNegocios)} ÷ {formatCurrency(targetMeta)} = {formatPercentage(achievementPercentage)}
                             </TooltipContent>
                         </Tooltip>

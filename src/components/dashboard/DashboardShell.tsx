@@ -20,7 +20,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { calculateAchievementPercentage, determinePerformanceStatus, sumNovosNegocios } from '@/lib/calc';
+import { calculateAchievementPercentage, determinePerformanceStatus, sumPipelineContratado2026 } from '@/lib/calc';
 import { StatBadge } from './StatBadge';
 
 export function DashboardShell() {
@@ -265,7 +265,7 @@ export function DashboardShell() {
                                 <div className="h-px bg-zinc-800/50 my-2" />
 
                                 {managersForYear.map(manager => {
-                                    const novos = manager.novosNegocios ?? sumNovosNegocios(manager.pipeline);
+                                    const novos = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
                                     const achievement = calculateAchievementPercentage(novos, manager.meta);
                                     const status = determinePerformanceStatus(achievement);
                                     const isSelected = manager.id === selectedManagerId;

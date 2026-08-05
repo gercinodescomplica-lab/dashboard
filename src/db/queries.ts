@@ -7,7 +7,7 @@ import { Manager, CXItem, Visit } from '../types/manager';
  * Fetches all managers from the database and constructs them exactly
  * like the JSON mock structure to ensure app compatibility.
  */
-import { calcEffectiveContratado, sumNovosNegocios, sumPipelineAberto } from '../lib/calc';
+import { calcEffectiveContratado, sumNovosNegocios, sumPipelineAberto, sumPipelineContratado2026 } from '../lib/calc';
 
 export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     const allManagers = await db.select().from(managers);
@@ -60,7 +60,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
         // Mover frio→contratado NÃO altera o forecastFinal (mesmo valor, só muda o label)
         const allActiveTCV = pipeline.q1.total + pipeline.q2.total + pipeline.q3.total + pipeline.q4.total + pipeline.nao_mapeado.total;
         const pipelineAberto = sumPipelineAberto(pipeline); // TCV só de quente/morno/frio (para outros usos)
-        const novosNegocios = sumNovosNegocios(pipeline);   // TCV só de contratado
+        const novosNegocios = sumPipelineContratado2026(pipeline); // Receita pro-rata reconhecida em 2026 (só contratado)
         const contratado2026 = calcEffectiveContratado(m.contratado, pipeline); // Rec. Reconhecida 2026
 
         return {
