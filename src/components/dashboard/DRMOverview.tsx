@@ -198,7 +198,7 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                 {/* ── KPI Row (3 Cards) ───────────────────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <KpiCard label="Contratos Herdados" value={formatCurrency(totalHerdados)} accent="text-zinc-300" tip="Base de contratos legados existentes sob responsabilidade dos gerentes trazida de anos anteriores." />
-                    <KpiCard label="Negócios Concluídos" value={formatCurrency(totalNovosNegocios)} accent="text-emerald-400" tip="Soma do Valor Total (TCV - Total Contract Value) de todos os novos contratos fechados no pipeline (Negócios Concluídos)." />
+                    <KpiCard label="Negócios Concluídos" value={formatCurrency(totalNovosNegocios)} accent="text-emerald-400" tip="Receita reconhecida em 2026 dos novos contratos fechados no pipeline (Status = Contratado), calculada pro-rata conforme o mês de início de faturamento e duração de cada contrato." />
                     <KpiCard label="Contratado 2026" value={formatCurrency(totalContratado2026)} accent="text-blue-400" tip="Receita efetiva reconhecida em 2026 = Contratos Herdados + parcela pro-rata de 2026 dos novos negócios." />
                 </div>
 
