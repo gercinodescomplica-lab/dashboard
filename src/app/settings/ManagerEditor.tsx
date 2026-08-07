@@ -15,7 +15,7 @@ import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { ClientsEditor } from './ClientsEditor';
-import { sumPipelineContratado2026, calcEffectiveContratado, sumPipelineAberto } from '@/lib/calc';
+import { sumPipelineContratado2026, calcEffectiveContratado, sumPipelineAberto, calcForecastProRata2026 } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
 
 interface Props {
@@ -218,6 +218,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                     <Calculator className="w-3.5 h-3.5 text-zinc-600" />
                                 </div>
                             </div>
+                            {/* Forecast Final (TCV bruto) */}
                             <div className="space-y-2">
                                 <Label className="flex items-center gap-1.5">
                                     Forecast Final (R$)
@@ -228,7 +229,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                                 <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
                                             </TooltipTrigger>
                                             <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
-                                                <strong>Forecast Final:</strong> Projeção total para o ano.<br />Calculado como: <em>Contratado 2026 + Total em Reais dos projetos ativos do Pipeline (Quente, Morno, Frio).</em>
+                                                <strong>Forecast Final (Bruto):</strong> Projeção total sem pro-rata.<br />Calculado como: <em>Contratos Herdados + TCV de todos os projetos ativos (Quente, Morno, Frio, Contratado).</em>
                                             </TooltipContent>
                                         </Tooltip>
                                     </TooltipProvider>
@@ -242,6 +243,27 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                                             return acc + activeTCV;
                                         }, 0)
                                     )}</span>
+                                    <Calculator className="w-3.5 h-3.5 text-zinc-600" />
+                                </div>
+                            </div>
+                            {/* Forecast Pro-rata 2026 */}
+                            <div className="space-y-2">
+                                <Label className="flex items-center gap-1.5">
+                                    Forecast Pro-rata 2026 (R$)
+                                    <span className="text-[10px] bg-violet-500/10 text-violet-400 px-1.5 py-0.5 rounded border border-violet-500/20 uppercase tracking-tighter font-bold">Pro-rata</span>
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger type="button">
+                                                <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            </TooltipTrigger>
+                                            <TooltipContent className="max-w-[280px] text-zinc-200 leading-relaxed">
+                                                <strong>Forecast Pro-rata 2026:</strong> Projeção de receita reconhecida em 2026 com pro-rata em todo o pipeline.<br />Calculado como: <em>Contratado 2026 + parcela pro-rata de 2026 dos projetos abertos (Quente, Morno, Frio).</em>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                </Label>
+                                <div className="h-10 w-full flex items-center justify-between px-3 bg-zinc-950/50 border border-violet-800/40 rounded-md text-violet-400 font-mono font-bold text-sm">
+                                    <span>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(calcForecastProRata2026(manager.contratado, manager.pipeline))}</span>
                                     <Calculator className="w-3.5 h-3.5 text-zinc-600" />
                                 </div>
                             </div>

@@ -118,6 +118,30 @@ export function sumPipelineContratado(pipeline: PipelineData): number {
 }
 
 /**
+ * Sums the pro-rata 2026 recognized revenue of open pipeline projects (quente, morno, frio).
+ * Uses the same billingStartMonth / startDate / quarter logic as calculateProject2026Value.
+ */
+export function sumPipelineAberto2026(pipeline: PipelineData): number {
+    if (!pipeline) return 0;
+    const OPEN_TEMPERATURES = ['quente', 'morno', 'frio'];
+    return (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).reduce((acc, qKey) => {
+        const quarter = pipeline[qKey];
+        const open2026 = (quarter?.projects || [])
+            .filter(p => OPEN_TEMPERATURES.includes(p.temperature ?? ''))
+            .reduce((s, p) => s + calculateProject2026Value(p, qKey), 0);
+        return acc + open2026;
+    }, 0);
+}
+
+/**
+ * Calculates the Forecast Pro-Rata 2026:
+ * = contratado2026 (Herdados + pro-rata contratados) + pro-rata 2026 dos projetos abertos (quente/morno/frio)
+ */
+export function calcForecastProRata2026(contratadoHerdado: number, pipeline: PipelineData): number {
+    return calcEffectiveContratado(contratadoHerdado, pipeline) + sumPipelineAberto2026(pipeline);
+}
+
+/**
  * Returns the effective contratado for 2026 = Contratos Herdados + sum of 2026 recognized revenue of 'contratado' projects
  */
 export function calcEffectiveContratado(contratadoHerdado: number, pipeline: PipelineData): number {

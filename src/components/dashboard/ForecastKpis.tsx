@@ -1,7 +1,7 @@
 import { formatCurrency, formatPercentage } from '@/lib/format';
-import { calculateAchievementPercentage, determinePerformanceStatus, getStatusColor, sumPipelineContratado2026, calcEffectiveContratado } from '@/lib/calc';
+import { calculateAchievementPercentage, determinePerformanceStatus, getStatusColor, sumPipelineContratado2026, calcEffectiveContratado, calcForecastProRata2026 } from '@/lib/calc';
 import { cn } from '@/lib/utils';
-import { Target, Info, FileCheck2, Sparkles, CalendarCheck, TrendingUp } from 'lucide-react';
+import { Target, Info, FileCheck2, Sparkles, CalendarCheck, TrendingUp, BarChart2 } from 'lucide-react';
 import { Manager } from '@/types/manager';
 import {
     Tooltip,
@@ -37,6 +37,8 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
     const contratado2026 = manager.contratado2026 ?? calcEffectiveContratado(manager.contratado, manager.pipeline);
     const novosNegocios = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
     const contratosHerdados = manager.contratosHerdados ?? manager.contratado;
+    const forecastTotal = manager.forecastFinal;
+    const forecastProRata = manager.forecastProRata2026 ?? calcForecastProRata2026(manager.contratado, manager.pipeline);
     const targetMeta = (manager.metaNovosNegocios && manager.metaNovosNegocios > 0) ? manager.metaNovosNegocios : manager.meta;
     const achievementPercentage = calculateAchievementPercentage(novosNegocios, targetMeta);
     const status = determinePerformanceStatus(achievementPercentage);
@@ -44,7 +46,7 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
 
     return (
         <TooltipProvider>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                 {/* Meta Total KPI */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between min-w-0">
                     <div className="flex items-center justify-between mb-1">
@@ -140,19 +142,35 @@ export function ForecastKpis({ manager }: ForecastKpisProps) {
                     </div>
                 </div>
 
-                {/* Receita Reconhecida 2026 */}
+                {/* Forecast Total (TCV bruto) */}
                 <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                            <BarChart2 className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider">
+                                Forecast Total
+                                <InfoTip text="Projeção total bruta = Contratos Herdados + TCV de todos os projetos ativos no pipeline (Quente, Morno, Frio e Contratado). Não aplica pro-rata." />
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-lg sm:text-xl font-bold font-mono text-indigo-300 mt-1 tracking-tighter truncate">
+                        {formatCurrency(forecastTotal)}
+                    </div>
+                </div>
+
+                {/* Forecast Pro-rata 2026 */}
+                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 flex flex-col justify-between min-w-0 ring-1 ring-violet-500/30">
                     <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1.5">
                             <TrendingUp className="w-3.5 h-3.5 text-violet-400" />
                             <span className="text-[11px] font-semibold text-violet-400 uppercase tracking-wider">
-                                Rec. 2026
-                                <InfoTip text="Receita efetivamente reconhecida em 2026 = Contratos Herdados + parcela pro-rata dos Negócios Concluídos com vigência em 2026." />
+                                Forecast 2026
+                                <InfoTip text="Projeção de receita reconhecida em 2026 aplicando pro-rata em todo o pipeline: Contratado 2026 + parcela pro-rata de 2026 dos projetos abertos (Quente, Morno, Frio)." />
                             </span>
                         </div>
                     </div>
                     <div className="text-lg sm:text-xl font-bold font-mono text-violet-300 mt-1 tracking-tighter truncate">
-                        {formatCurrency(contratado2026)}
+                        {formatCurrency(forecastProRata)}
                     </div>
                 </div>
             </div>

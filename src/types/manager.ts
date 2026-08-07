@@ -73,7 +73,8 @@ export interface Manager {
   contratosHerdados?: number;
   novosNegocios?: number; // Total TCV dos novos contratos no pipeline
   contratado2026?: number; // Contratos Herdados + Parcela pro-rata de 2026 dos novos negócios
-  forecastFinal: number;
+  forecastFinal: number;  // Herdados + TCV bruto de todos os ativos (usado para comparativo total)
+  forecastProRata2026?: number; // Forecast completo aplicando pro-rata em 2026 (Contratado2026 + Aberto pro-rata)
   pipeline: PipelineData;
   notes?: string;
   cx?: CXItem[];

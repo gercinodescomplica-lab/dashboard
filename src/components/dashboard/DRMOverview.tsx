@@ -9,6 +9,7 @@ import {
     sumQuarterProjects,
     getStatusColor,
     determinePerformanceStatus,
+    calcForecastProRata2026,
 } from '@/lib/calc';
 import { Building2, Flame, Snowflake, Circle, Info, X, Thermometer, Calendar } from 'lucide-react';
 import {
@@ -113,6 +114,7 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
     const totalNovosNegocios = managers.reduce((acc, m) => acc + (m.novosNegocios ?? 0), 0);
     const totalContratado2026 = managers.reduce((acc, m) => acc + (m.contratado2026 ?? m.contratado), 0);
     const totalForecast = managers.reduce((acc, m) => acc + m.forecastFinal, 0);
+    const totalForecastProRata2026 = managers.reduce((acc, m) => acc + (m.forecastProRata2026 ?? calcForecastProRata2026(m.contratado, m.pipeline)), 0);
     const totalPipelineAberto = managers.reduce((acc, m) => acc + Math.max(0, m.forecastFinal - (m.contratado2026 ?? m.contratado)), 0);
     const totalGap = calculateGap(totalMeta, totalNovosNegocios);
     const achievementPct = calculateAchievementPercentage(totalNovosNegocios, totalMeta);
@@ -196,10 +198,16 @@ export function DRMOverview({ managers, year }: DRMOverviewProps) {
                 </div>
 
                 {/* ── KPI Row (3 Cards) ───────────────────────── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <KpiCard label="Contratos Herdados" value={formatCurrency(totalHerdados)} accent="text-zinc-300" tip="Base de contratos legados existentes sob responsabilidade dos gerentes trazida de anos anteriores." />
                     <KpiCard label="Negócios Concluídos" value={formatCurrency(totalNovosNegocios)} accent="text-emerald-400" tip="Receita reconhecida em 2026 dos novos contratos fechados no pipeline (Status = Contratado), calculada pro-rata conforme o mês de início de faturamento e duração de cada contrato." />
                     <KpiCard label="Contratado 2026" value={formatCurrency(totalContratado2026)} accent="text-blue-400" tip="Receita efetiva reconhecida em 2026 = Contratos Herdados + parcela pro-rata de 2026 dos novos negócios." />
+                    <KpiCard
+                        label="Forecast Pro-rata 2026"
+                        value={formatCurrency(totalForecastProRata2026)}
+                        accent="text-violet-400"
+                        tip="Projeção de receita reconhecida em 2026 considerando todo o pipeline com pro-rata: Contratado 2026 + parcela 2026 dos projetos em andamento (Quente, Morno, Frio)."
+                    />
                 </div>
 
                 {/* ── Middle: Composição por Gerência (Stacked Bar Chart) ── */}
