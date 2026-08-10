@@ -14,6 +14,48 @@ export function parseValorBRL(valor: any): number {
     return isNaN(num) ? 0 : num;
 }
 
+/**
+ * Intelligent date parser for leads.
+ * Checks explicit previsao_fechamento field, or extracts embedded date from status string (e.g. "Proposta no cliente 17/03/26").
+ */
+export function extractLeadDate(lead: { previsao_fechamento?: string; status?: string }): Date | null {
+    // 1. Check explicit field previsao_fechamento
+    if (lead.previsao_fechamento && lead.previsao_fechamento.trim() !== '') {
+        const raw = lead.previsao_fechamento.trim();
+        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+            const [y, m, d] = raw.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+        const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+        if (matchSlash) {
+            let y = parseInt(matchSlash[3], 10);
+            if (y < 100) y += 2000;
+            return new Date(y, parseInt(matchSlash[2], 10) - 1, parseInt(matchSlash[1], 10));
+        }
+    }
+
+    // 2. Extract embedded date from status field if previsao_fechamento is empty
+    if (lead.status) {
+        const matches = lead.status.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g);
+        if (matches && matches.length > 0) {
+            for (const m of matches) {
+                const parts = m.split('/');
+                const day = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10);
+                let year = parts[2] ? parseInt(parts[2], 10) : 2026;
+                if (year < 100) year += 2000;
+
+                // Validate realistic date numbers
+                if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+                    return new Date(year, month - 1, day);
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
 export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
     try {
         const response = await fetch(POWER_AUTOMATE_WEBHOOK_URL, {
@@ -40,7 +82,7 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
             const rawUf = String(item.uf || '').trim().toUpperCase();
             const rawCategoria = String(item.categoria || '').trim() || 'Lead';
 
-            return {
+            const leadObj = {
                 id: item.id ? Number(item.id) : index + 1,
                 cliente: String(item.cliente || '').trim(),
                 solicitacao: String(item.solicitacao || '').trim(),
@@ -55,6 +97,19 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
                 contato_telefone: item.contato_telefone ? String(item.contato_telefone).trim() : undefined,
                 previsao_fechamento: item.previsao_fechamento ? String(item.previsao_fechamento).trim() : undefined,
             };
+
+            // If previsao_fechamento was blank, enrich with parsed date from status
+            if (!leadObj.previsao_fechamento) {
+                const extractedDate = extractLeadDate(leadObj);
+                if (extractedDate) {
+                    const yyyy = extractedDate.getFullYear();
+                    const mm = String(extractedDate.getMonth() + 1).padStart(2, '0');
+                    const dd = String(extractedDate.getDate()).padStart(2, '0');
+                    leadObj.previsao_fechamento = `${yyyy}-${mm}-${dd}`;
+                }
+            }
+
+            return leadObj;
         });
     } catch (error) {
         console.error('Erro ao buscar leads do Power Automate:', error);

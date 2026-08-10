@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchCidadesLeads } from '@/services/cidades.service';
+import { fetchCidadesLeads, extractLeadDate } from '@/services/cidades.service';
 import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat } from '@/types/cidades';
 import { formatCurrency } from '@/lib/format';
 import { BrazilHeatMap } from './BrazilHeatMap';
@@ -26,6 +26,9 @@ import {
     PieChart,
     Map as MapIcon,
     Table as TableIcon,
+    AlertCircle,
+    CalendarClock,
+    ArrowUpRight,
 } from 'lucide-react';
 import {
     ResponsiveContainer,
@@ -35,6 +38,9 @@ import {
     YAxis,
     Tooltip,
     CartesianGrid,
+    BarChart,
+    Bar,
+    Cell,
 } from 'recharts';
 
 export function CidadesView() {
@@ -105,6 +111,46 @@ export function CidadesView() {
             leadsSemUf,
         };
     }, [leads]);
+
+    // ─── Upcoming Closing Dates (Datas de Fechamento Ordenadas) ────────────
+    const upcomingClosingLeads = useMemo(() => {
+        return leads
+            .map((lead) => {
+                const date = extractLeadDate(lead);
+                return { ...lead, dateObj: date };
+            })
+            .filter((lead) => lead.dateObj !== null)
+            .sort((a, b) => (a.dateObj!.getTime() - b.dateObj!.getTime()));
+    }, [leads]);
+
+    // ─── Monthly Closing Volume (Próximos Fechamentos por Mês) ─────────────
+    const monthlyClosingChart = useMemo(() => {
+        const map = new Map<string, { label: string; count: number; valor: number }>();
+
+        for (const lead of upcomingClosingLeads) {
+            if (!lead.dateObj) continue;
+            const y = lead.dateObj.getFullYear();
+            const m = lead.dateObj.getMonth() + 1;
+            const key = `${y}-${String(m).padStart(2, '0')}`;
+
+            const monthName = lead.dateObj.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+            const label = `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}/${String(y).substring(2)}`;
+
+            const cur = map.get(key) || { label, count: 0, valor: 0 };
+            cur.count += 1;
+            cur.valor += lead.valor;
+            map.set(key, cur);
+        }
+
+        return Array.from(map.entries())
+            .sort(([keyA], [keyB]) => keyA.localeCompare(keyB))
+            .map(([key, data]) => ({
+                key,
+                label: data.label,
+                count: data.count,
+                valor: data.valor,
+            }));
+    }, [upcomingClosingLeads]);
 
     // ─── Categories Breakdown ───────────────────────────────────────────────
     const categoriaStats: CategoriaStat[] = useMemo(() => {
@@ -374,6 +420,123 @@ export function CidadesView() {
                             <span className="text-2xl font-bold font-mono text-rose-400 mt-1">{summary.leadsSemUf}</span>
                             <span className="text-[10px] text-zinc-400">Estado não definido</span>
                         </div>
+                    </div>
+
+                    {/* ── SEÇÃO EXCLUSIVA: PRÓXIMAS DATAS DE FECHAMENTO ─────────────────────── */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                        {/* Card Principal: Próximos Fechamentos Iminentes (2 cols) */}
+                        <div className="lg:col-span-2 bg-gradient-to-br from-indigo-950/40 via-zinc-900/60 to-zinc-900/40 border border-indigo-500/30 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3 mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg">
+                                            <CalendarClock className="w-5 h-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                                                Próximos Fechamentos Mapeados
+                                            </h3>
+                                            <p className="text-xs text-zinc-400">
+                                                Propostas com datas de fechamento mais próximas extraídas dos registros
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
+                                        {upcomingClosingLeads.length} Oportunidades com Data
+                                    </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
+                                    {upcomingClosingLeads.slice(0, 8).map((lead) => {
+                                        const dStr = lead.dateObj ? lead.dateObj.toLocaleDateString('pt-BR') : 'N/A';
+                                        return (
+                                            <div
+                                                key={lead.id}
+                                                className="bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 rounded-xl p-3.5 flex flex-col justify-between transition-all group"
+                                            >
+                                                <div className="flex items-start justify-between gap-2 mb-2">
+                                                    <div>
+                                                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                                            📅 Fechamento: {dStr}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
+                                                        {lead.uf || 'UF N/A'}
+                                                    </span>
+                                                </div>
+
+                                                <div>
+                                                    <h4 className="text-xs font-bold text-zinc-100 group-hover:text-indigo-300 transition-colors line-clamp-1">
+                                                        {lead.cliente || lead.municipio || 'Cliente Não Informado'}
+                                                    </h4>
+                                                    <p className="text-[11px] text-zinc-400 line-clamp-1 mt-0.5">
+                                                        {lead.solicitacao || lead.status}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center justify-between mt-3 pt-2 border-t border-zinc-800/60">
+                                                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                                                        {lead.categoria}
+                                                    </span>
+                                                    <span className="text-sm font-bold font-mono text-emerald-400">
+                                                        {formatCurrency(lead.valor)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Gráfico de Barras: Distribuição por Mês de Fechamento (1 col) */}
+                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 flex flex-col justify-between">
+                            <div>
+                                <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3 mb-4">
+                                    <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider">
+                                        Volume por Mês de Fechamento
+                                    </h3>
+                                    <span className="text-xs text-zinc-400">Soma R$</span>
+                                </div>
+
+                                <div className="w-full h-[220px]">
+                                    {monthlyClosingChart.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={monthlyClosingChart} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                                                <XAxis dataKey="label" stroke="#71717a" fontSize={10} />
+                                                <YAxis stroke="#71717a" fontSize={10} tickFormatter={(v) => `R$ ${(v / 1000000).toFixed(1)}M`} />
+                                                <Tooltip
+                                                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '12px', fontSize: '12px' }}
+                                                    formatter={(value: any, name: any, item: any) => [
+                                                        `${formatCurrency(Number(value))} (${item.payload.count} propostas)`,
+                                                        'Volume Total',
+                                                    ]}
+                                                />
+                                                <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
+                                                    {monthlyClosingChart.map((entry, index) => (
+                                                        <Cell key={`cell-${index}`} fill={index === 0 ? '#818cf8' : '#4f46e5'} />
+                                                    ))}
+                                                </Bar>
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center text-zinc-500 text-xs">
+                                            Sem datas identificadas nos registros
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-zinc-950/60 border border-zinc-800/60 rounded-xl p-3 mt-3 flex items-center gap-3">
+                                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
+                                <p className="text-[11px] text-zinc-400 leading-tight">
+                                    <strong className="text-zinc-200">Aviso Comercial:</strong> As datas foram sincronizadas e extraídas do Excel/Webhook do Power Automate.
+                                </p>
+                            </div>
+                        </div>
+
                     </div>
 
                     {/* Categories Cards Breakdown */}
