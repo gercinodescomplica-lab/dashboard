@@ -22,15 +22,34 @@ export function extractLeadDate(lead: { previsao_fechamento?: string; status?: s
     // 1. Check explicit field previsao_fechamento
     if (lead.previsao_fechamento && lead.previsao_fechamento.trim() !== '') {
         const raw = lead.previsao_fechamento.trim();
+
+        // 1a. Excel Serial Number (e.g. 46260 => 2026-08-26)
+        const serialNum = Number(raw);
+        if (!isNaN(serialNum) && serialNum > 20000 && serialNum < 70000) {
+            const parsedExcelDate = new Date((serialNum - (25567 + 2)) * 86400 * 1000);
+            if (!isNaN(parsedExcelDate.getTime())) {
+                return parsedExcelDate;
+            }
+        }
+
+        // 1b. YYYY-MM-DD
         if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
             const [y, m, d] = raw.split('-').map(Number);
             return new Date(y, m - 1, d);
         }
+
+        // 1c. DD/MM/YYYY or DD/MM/YY
         const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
         if (matchSlash) {
             let y = parseInt(matchSlash[3], 10);
             if (y < 100) y += 2000;
             return new Date(y, parseInt(matchSlash[2], 10) - 1, parseInt(matchSlash[1], 10));
+        }
+
+        // 1d. Text formatted dates (e.g. "Wednesday, August 26, 2026" or "26 de Agosto de 2026")
+        const parsedJsDate = new Date(raw);
+        if (!isNaN(parsedJsDate.getTime())) {
+            return parsedJsDate;
         }
     }
 
