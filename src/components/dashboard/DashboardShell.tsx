@@ -9,9 +9,10 @@ import { getStoreProducts, getDropdownOptions } from '@/app/pipeline/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
+import { CidadesView } from '@/components/cidades/CidadesView';
 import {
     Dialog,
     DialogContent,
@@ -34,7 +35,7 @@ export function DashboardShell() {
     const [selectedYear, setSelectedYear] = useState<string>('');
     const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [currentView, setCurrentView] = useState<'dashboard' | 'store' | 'organograma' | 'pipeline'>('dashboard');
+    const [currentView, setCurrentView] = useState<'dashboard' | 'store' | 'organograma' | 'pipeline' | 'cidades'>('dashboard');
 
     // Fetch Data
     useEffect(() => {
@@ -154,6 +155,15 @@ export function DashboardShell() {
                         >
                             <LayoutDashboard className="w-4 h-4" />
                             Dashboard
+                        </button>
+
+                        {/* Cidades */}
+                        <button
+                            onClick={() => setCurrentView('cidades')}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'cidades' ? 'bg-zinc-800 text-indigo-400 shadow-sm border border-indigo-500/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                        >
+                            <MapPin className="w-4 h-4 text-indigo-400" />
+                            Cidades
                         </button>
 
                         {/* Organograma */}
@@ -312,7 +322,9 @@ export function DashboardShell() {
 
             {/* Main Content Area - Scrollable on mobile, handles remaining height */}
             <main className="relative flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full overflow-y-auto overflow-x-hidden z-10">
-                {currentView === 'organograma' ? (
+                {currentView === 'cidades' ? (
+                    <CidadesView />
+                ) : currentView === 'organograma' ? (
                     <OrganizationChartView />
                 ) : currentView === 'pipeline' ? (
                     <PipelineStoreView PRODUCTS={storeProducts} EXTRA_OPTIONS={dropdownOpts} />
