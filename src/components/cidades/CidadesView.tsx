@@ -118,13 +118,31 @@ export function CidadesView() {
 
     // ─── Upcoming Closing Dates (Datas de Fechamento Ordenadas) ────────────
     const upcomingClosingLeads = useMemo(() => {
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
         return leads
             .map((lead) => {
                 const date = extractLeadDate(lead);
                 return { ...lead, dateObj: date };
             })
             .filter((lead) => lead.dateObj !== null)
-            .sort((a, b) => (a.dateObj!.getTime() - b.dateObj!.getTime()));
+            .sort((a, b) => {
+                const isPastA = a.dateObj! < startOfCurrentMonth;
+                const isPastB = b.dateObj! < startOfCurrentMonth;
+
+                // Active/Future dates come first, past dates come last
+                if (!isPastA && isPastB) return -1;
+                if (isPastA && !isPastB) return 1;
+
+                // Within future: nearest date first
+                if (!isPastA && !isPastB) {
+                    return a.dateObj!.getTime() - b.dateObj!.getTime();
+                }
+
+                // Within past: most recent past date first (descending)
+                return b.dateObj!.getTime() - a.dateObj!.getTime();
+            });
     }, [leads]);
 
     // ─── Monthly Closing Volume (Próximos Fechamentos por Mês) ─────────────
