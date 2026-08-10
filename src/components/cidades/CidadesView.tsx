@@ -78,6 +78,7 @@ export function CidadesView() {
         const ticketMedio = totalLeads > 0 ? pipelineTotal / totalLeads : 0;
 
         const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
         const next90DaysLimit = new Date();
@@ -90,13 +91,16 @@ export function CidadesView() {
         for (const lead of leads) {
             if (!lead.uf) leadsSemUf++;
 
-            if (lead.previsao_fechamento) {
-                if (lead.previsao_fechamento.startsWith(currentYearMonth)) {
+            const leadDate = extractLeadDate(lead);
+            if (leadDate) {
+                const leadYm = `${leadDate.getFullYear()}-${String(leadDate.getMonth() + 1).padStart(2, '0')}`;
+
+                if (leadYm === currentYearMonth) {
                     previsaoMesAtual += lead.valor;
                 }
 
-                const prevDate = new Date(lead.previsao_fechamento);
-                if (!isNaN(prevDate.getTime()) && prevDate >= now && prevDate <= next90DaysLimit) {
+                // Check if date is current or future within 90 days
+                if (leadDate >= startOfCurrentMonth && leadDate <= next90DaysLimit) {
                     proximos90Dias += lead.valor;
                 }
             }
@@ -448,18 +452,32 @@ export function CidadesView() {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto pr-1">
-                                    {upcomingClosingLeads.slice(0, 8).map((lead) => {
+                                    {upcomingClosingLeads.map((lead) => {
                                         const dStr = lead.dateObj ? lead.dateObj.toLocaleDateString('pt-BR') : 'N/A';
+                                        const now = new Date();
+                                        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                                        const isPast = lead.dateObj ? lead.dateObj < startOfCurrentMonth : false;
+
                                         return (
                                             <div
                                                 key={lead.id}
-                                                className="bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800 hover:border-indigo-500/50 rounded-xl p-3.5 flex flex-col justify-between transition-all group"
+                                                className={`border rounded-xl p-3.5 flex flex-col justify-between transition-all group ${
+                                                    isPast
+                                                        ? 'bg-zinc-950/40 border-zinc-800/60 opacity-70 hover:opacity-100'
+                                                        : 'bg-zinc-950/90 border-indigo-500/50 shadow-md ring-1 ring-indigo-500/20 hover:border-indigo-400'
+                                                }`}
                                             >
                                                 <div className="flex items-start justify-between gap-2 mb-2">
                                                     <div>
-                                                        <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                                            📅 Fechamento: {dStr}
-                                                        </span>
+                                                        {isPast ? (
+                                                            <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                                📁 Vencido: {dStr}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 animate-pulse">
+                                                                🔥 Fechamento: {dStr}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400">
                                                         {lead.uf || 'UF N/A'}
