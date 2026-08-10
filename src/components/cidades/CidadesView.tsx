@@ -435,10 +435,10 @@ export function CidadesView() {
                                         </div>
                                         <div>
                                             <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-2">
-                                                Próximos Fechamentos Mapeados
+                                                Linha do Tempo de Fechamentos Mapeados
                                             </h3>
                                             <p className="text-xs text-zinc-400">
-                                                Propostas com datas de fechamento mais próximas extraídas dos registros
+                                                Datas de fechamento extraídas do Excel/Power Automate (ordenadas cronologicamente)
                                             </p>
                                         </div>
                                     </div>
@@ -508,7 +508,16 @@ export function CidadesView() {
                                                 <XAxis dataKey="label" stroke="#71717a" fontSize={10} />
                                                 <YAxis stroke="#71717a" fontSize={10} tickFormatter={(v) => `R$ ${(v / 1000000).toFixed(1)}M`} />
                                                 <Tooltip
-                                                    contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '12px', fontSize: '12px' }}
+                                                    contentStyle={{
+                                                        backgroundColor: '#09090b',
+                                                        borderColor: '#3f3f46',
+                                                        borderRadius: '12px',
+                                                        fontSize: '12px',
+                                                        color: '#f4f4f5',
+                                                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                                                    }}
+                                                    itemStyle={{ color: '#e4e4e7', fontWeight: 600 }}
+                                                    labelStyle={{ color: '#a1a1aa', fontWeight: 700, marginBottom: '4px' }}
                                                     formatter={(value: any, name: any, item: any) => [
                                                         `${formatCurrency(Number(value))} (${item.payload.count} propostas)`,
                                                         'Volume Total',
@@ -599,7 +608,16 @@ export function CidadesView() {
                                             <XAxis dataKey="label" stroke="#71717a" fontSize={11} />
                                             <YAxis stroke="#71717a" fontSize={11} tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`} />
                                             <Tooltip
-                                                contentStyle={{ backgroundColor: '#18181b', borderColor: '#3f3f46', borderRadius: '12px', fontSize: '12px' }}
+                                                contentStyle={{
+                                                    backgroundColor: '#09090b',
+                                                    borderColor: '#3f3f46',
+                                                    borderRadius: '12px',
+                                                    fontSize: '12px',
+                                                    color: '#f4f4f5',
+                                                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
+                                                }}
+                                                itemStyle={{ color: '#818cf8', fontWeight: 700 }}
+                                                labelStyle={{ color: '#a1a1aa', fontWeight: 700, marginBottom: '4px' }}
                                                 formatter={(value: any) => [formatCurrency(Number(value)), 'Acumulado']}
                                                 labelFormatter={(label) => `Mês: ${label}`}
                                             />
