@@ -337,11 +337,8 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                             </p>
                                                         </div>
 
-                                                        {/* Right: Selected Total R$ & % da Meta */}
+                                                        {/* Right: Selected Total R$ */}
                                                         <div className="flex items-center gap-2 shrink-0">
-                                                            <span className={`text-[10px] font-bold font-mono px-1.5 py-0.5 rounded border backdrop-blur-sm ${m.statusColor}`}>
-                                                                {formatPercentage(m.achievementPct)}
-                                                            </span>
                                                             <span className="text-xs font-bold font-mono text-zinc-50 drop-shadow-sm min-w-[80px] text-right">
                                                                 {formatCurrency(m.totalSelected)}
                                                             </span>
