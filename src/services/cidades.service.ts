@@ -15,61 +15,43 @@ export function parseValorBRL(valor: any): number {
 }
 
 /**
- * Intelligent date parser for leads.
- * Checks explicit previsao_fechamento field, or extracts embedded date from status string (e.g. "Proposta no cliente 17/03/26").
+ * Date parser for leads.
+ * Strictly parses explicit previsao_fechamento field.
  */
-export function extractLeadDate(lead: { previsao_fechamento?: string; status?: string }): Date | null {
-    // 1. Check explicit field previsao_fechamento
-    if (lead.previsao_fechamento && lead.previsao_fechamento.trim() !== '') {
-        const raw = lead.previsao_fechamento.trim();
+export function extractLeadDate(lead: { previsao_fechamento?: string }): Date | null {
+    if (!lead.previsao_fechamento || lead.previsao_fechamento.trim() === '') {
+        return null;
+    }
 
-        // 1a. Excel Serial Number (e.g. 46260 => 2026-08-26)
-        const serialNum = Number(raw);
-        if (!isNaN(serialNum) && serialNum > 20000 && serialNum < 70000) {
-            const parsedExcelDate = new Date((serialNum - (25567 + 2)) * 86400 * 1000);
-            if (!isNaN(parsedExcelDate.getTime())) {
-                return parsedExcelDate;
-            }
-        }
+    const raw = lead.previsao_fechamento.trim();
 
-        // 1b. YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-            const [y, m, d] = raw.split('-').map(Number);
-            return new Date(y, m - 1, d);
-        }
-
-        // 1c. DD/MM/YYYY or DD/MM/YY
-        const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
-        if (matchSlash) {
-            let y = parseInt(matchSlash[3], 10);
-            if (y < 100) y += 2000;
-            return new Date(y, parseInt(matchSlash[2], 10) - 1, parseInt(matchSlash[1], 10));
-        }
-
-        // 1d. Text formatted dates (e.g. "Wednesday, August 26, 2026" or "26 de Agosto de 2026")
-        const parsedJsDate = new Date(raw);
-        if (!isNaN(parsedJsDate.getTime())) {
-            return parsedJsDate;
+    // 1. Excel Serial Number (e.g. 46260 => 2026-08-26)
+    const serialNum = Number(raw);
+    if (!isNaN(serialNum) && serialNum > 20000 && serialNum < 70000) {
+        const parsedExcelDate = new Date((serialNum - (25567 + 2)) * 86400 * 1000);
+        if (!isNaN(parsedExcelDate.getTime())) {
+            return parsedExcelDate;
         }
     }
 
-    // 2. Extract embedded date from status field if previsao_fechamento is empty
-    if (lead.status) {
-        const matches = lead.status.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/g);
-        if (matches && matches.length > 0) {
-            for (const m of matches) {
-                const parts = m.split('/');
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10);
-                let year = parts[2] ? parseInt(parts[2], 10) : 2026;
-                if (year < 100) year += 2000;
+    // 2. YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        const [y, m, d] = raw.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
 
-                // Validate realistic date numbers
-                if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
-                    return new Date(year, month - 1, day);
-                }
-            }
-        }
+    // 3. DD/MM/YYYY or DD/MM/YY
+    const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (matchSlash) {
+        let y = parseInt(matchSlash[3], 10);
+        if (y < 100) y += 2000;
+        return new Date(y, parseInt(matchSlash[2], 10) - 1, parseInt(matchSlash[1], 10));
+    }
+
+    // 4. Text formatted dates
+    const parsedJsDate = new Date(raw);
+    if (!isNaN(parsedJsDate.getTime())) {
+        return parsedJsDate;
     }
 
     return null;
@@ -132,17 +114,6 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
                 contato_telefone: item.contato_telefone ? String(item.contato_telefone).trim() : undefined,
                 previsao_fechamento: item.previsao_fechamento ? String(item.previsao_fechamento).trim() : undefined,
             };
-
-            // If previsao_fechamento was blank, enrich with parsed date from status
-            if (!leadObj.previsao_fechamento) {
-                const extractedDate = extractLeadDate(leadObj);
-                if (extractedDate) {
-                    const yyyy = extractedDate.getFullYear();
-                    const mm = String(extractedDate.getMonth() + 1).padStart(2, '0');
-                    const dd = String(extractedDate.getDate()).padStart(2, '0');
-                    leadObj.previsao_fechamento = `${yyyy}-${mm}-${dd}`;
-                }
-            }
 
             return leadObj;
         });
