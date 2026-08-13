@@ -4,13 +4,37 @@ const POWER_AUTOMATE_WEBHOOK_URL =
     'https://defaultf398df9cfd0c4829a003c770a1c4a0.63.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/21/workflows/9ad9dafb5bac4037b04525986e5dd90d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=pMVdMdCn51gKzPLrvMDgyFCXgTsMHtlV3PuutquZB7Q';
 
 /**
- * Parses BRL financial numbers coming from Excel (e.g. "260758,68" or "1.606.531,58")
+ * Robust BRL financial numbers parser coming from Excel / Power Automate
+ * Handles formats like: " R$ 9.099.830,44", "349,020,12", "1.047,060,36", "4239525,6"
  */
 export function parseValorBRL(valor: any): number {
     if (typeof valor === 'number') return isNaN(valor) ? 0 : valor;
     if (!valor) return 0;
-    const str = String(valor).trim().replace(/\./g, '').replace(',', '.');
-    const num = Number(str);
+    const s = String(valor).trim();
+    if (!s) return 0;
+
+    // Strip "R$", currency symbols, spaces, keeping only numbers, dots, and commas
+    const clean = s.replace(/[^0-9.,]/g, '');
+    if (!clean) return 0;
+
+    let formatted = clean;
+    if (clean.includes(',')) {
+        const parts = clean.split(',');
+        const decimal = parts[parts.length - 1];
+        const integer = parts.slice(0, parts.length - 1).join('').replace(/\./g, '');
+        formatted = `${integer}.${decimal}`;
+    } else if (clean.includes('.')) {
+        const lastDotIndex = clean.lastIndexOf('.');
+        const decimalPart = clean.substring(lastDotIndex + 1);
+        if (decimalPart.length === 2) {
+            const intPart = clean.substring(0, lastDotIndex).replace(/\./g, '');
+            formatted = `${intPart}.${decimalPart}`;
+        } else {
+            formatted = clean.replace(/\./g, '');
+        }
+    }
+
+    const num = Number(formatted);
     return isNaN(num) ? 0 : num;
 }
 
@@ -97,7 +121,12 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
 
         return validItems.map((item: any, index: number) => {
             const rawUf = String(item.uf || '').trim().toUpperCase();
-            const rawCategoria = String(item.categoria || '').trim() || 'Lead';
+            let rawCategoria = String(item.categoria || '').trim() || 'Lead';
+
+            // Fix typos coming from Excel/SharePoint
+            if (rawCategoria.toLowerCase() === 'em trataivas') {
+                rawCategoria = 'Em tratativas';
+            }
 
             const leadObj = {
                 id: item.id ? Number(item.id) : index + 1,
