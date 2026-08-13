@@ -214,11 +214,12 @@ export function CidadesView() {
     const timelineData: TimelineStat[] = useMemo(() => {
         const map = new Map<string, number>();
         for (const l of leads) {
-            if (!l.previsao_fechamento) continue;
-            const ym = l.previsao_fechamento.substring(0, 7);
-            if (ym.length === 7) {
-                map.set(ym, (map.get(ym) || 0) + l.valor);
-            }
+            const dateObj = extractLeadDate(l);
+            if (!dateObj) continue;
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const ym = `${y}-${m}`;
+            map.set(ym, (map.get(ym) || 0) + l.valor);
         }
 
         const sortedMonths = Array.from(map.keys()).sort();
