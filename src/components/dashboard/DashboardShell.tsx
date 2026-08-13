@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchDashboardManagers } from '@/services/managers.service';
 import { getStoreProducts, getDropdownOptions } from '@/app/pipeline/actions';
+import { getFaturamento2025Action } from '@/app/settings/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
@@ -28,6 +29,7 @@ export function DashboardShell() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [storeProducts, setStoreProducts] = useState<any[]>([]);
     const [dropdownOpts, setDropdownOpts] = useState<Record<string, string[]>>({});
+    const [faturamento2025, setFaturamento2025] = useState<number>(630386397.11);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -44,9 +46,14 @@ export function DashboardShell() {
                 setIsLoading(true);
                 const data = await fetchDashboardManagers();
                 setManagers(data);
-                const [products, opts] = await Promise.all([getStoreProducts(), getDropdownOptions()]);
+                const [products, opts, fat2025] = await Promise.all([
+                    getStoreProducts(),
+                    getDropdownOptions(),
+                    getFaturamento2025Action(),
+                ]);
                 setStoreProducts(products);
                 setDropdownOpts(opts);
+                if (fat2025) setFaturamento2025(fat2025);
 
                 if (data.length > 0) {
                     const maxYear = Math.max(...data.map(m => m.year));
@@ -331,7 +338,7 @@ export function DashboardShell() {
                 ) : currentView === 'store' ? (
                     <StoreView />
                 ) : selectedManagerId === 'drm' ? (
-                    <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} />
+                    <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} faturamento2025={faturamento2025} />
                 ) : currentManager ? (
                     <SingleManagerView key={currentManager.id} manager={currentManager} />
                 ) : (

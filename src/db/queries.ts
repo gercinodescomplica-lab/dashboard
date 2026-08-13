@@ -1,5 +1,5 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato, proposta } from './schema';
+import { managers, projects, cx, visits, contrato, proposta, systemSettings } from './schema';
 import { eq, like, desc, or } from 'drizzle-orm';
 import { Manager, CXItem, Visit } from '../types/manager';
 
@@ -103,8 +103,9 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
  */
 export async function fetchVisibleManagersFromDB(): Promise<Manager[]> {
     const all = await fetchAllManagersFromDB();
-    return all.filter(m => m.showInDashboard !== false);
+    return all.filter(m => m.showInDashboard !== false && m.id !== 'projeto-triade');
 }
+
 
 /**
  * Fetches CX records for a specific manager.
@@ -482,3 +483,35 @@ export async function updateProposta(id: string, data: Partial<typeof proposta.$
 export async function deleteProposta(id: string) {
     return db.delete(proposta).where(eq(proposta.id, id));
 }
+
+export async function getFaturamento2025(): Promise<number> {
+    try {
+        const rows = await db.select().from(systemSettings).where(eq(systemSettings.key, 'faturamento_2025'));
+        if (rows.length > 0 && rows[0].value) {
+            const val = parseFloat(rows[0].value);
+            if (!isNaN(val)) return val;
+        }
+    } catch (err) {
+        console.error('Error fetching faturamento_2025:', err);
+    }
+    return 630386397.11;
+}
+
+export async function saveFaturamento2025(value: number): Promise<void> {
+    const valStr = value.toString();
+    await db
+        .insert(systemSettings)
+        .values({
+            key: 'faturamento_2025',
+            value: valStr,
+            updatedAt: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+            target: systemSettings.key,
+            set: {
+                value: valStr,
+                updatedAt: new Date().toISOString(),
+            },
+        });
+}
+

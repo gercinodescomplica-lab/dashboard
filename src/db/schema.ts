@@ -121,3 +121,10 @@ export const proposta = sqliteTable('proposta', {
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
+
+export const systemSettings = sqliteTable('system_settings', {
+    key: text('key').primaryKey(),
+    value: text('value').notNull(),
+    updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+

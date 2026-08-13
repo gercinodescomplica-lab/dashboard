@@ -218,3 +218,15 @@ export async function cloneManager(sourceId: string, newName: string): Promise<{
         throw err instanceof Error ? err : new Error('Erro ao clonar gerente.');
     }
 }
+
+export async function getFaturamento2025Action() {
+    const { getFaturamento2025 } = await import('@/db/queries');
+    return getFaturamento2025();
+}
+
+export async function saveFaturamento2025Action(value: number) {
+    const { saveFaturamento2025 } = await import('@/db/queries');
+    await saveFaturamento2025(value);
+    return { success: true };
+}
+

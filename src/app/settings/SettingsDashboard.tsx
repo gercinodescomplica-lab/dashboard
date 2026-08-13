@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
-import { Loader2, User, Save, FileText, Copy, Handshake, Network } from 'lucide-react';
+import { Loader2, User, Save, FileText, Copy, Handshake, Network, DollarSign } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
 import { ContractsEditor } from './ContractsEditor';
 import { ProposalsEditor } from './ProposalsEditor';
 import { OrgChartEditor } from './OrgChartEditor';
+import { FaturamentoEditor } from './FaturamentoEditor';
 import { saveManagerData, saveCXData, saveVisitsData, cloneManager } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -15,7 +16,7 @@ import Link from 'next/link';
 export function SettingsDashboard() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart'>('managers');
+    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart' | 'faturamento'>('managers');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -167,6 +168,18 @@ export function SettingsDashboard() {
                                 <p className={`text-xs truncate ${section === 'orgchart' ? 'text-purple-200' : 'text-zinc-500'}`}>Estrutura DRM</p>
                             </div>
                         </button>
+                        <button
+                            onClick={() => setSection('faturamento')}
+                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'faturamento' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${section === 'faturamento' ? 'bg-emerald-500' : 'bg-zinc-800'}`}>
+                                <DollarSign className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate text-sm">Faturamento 2025</p>
+                                <p className={`text-xs truncate ${section === 'faturamento' ? 'text-emerald-200' : 'text-zinc-500'}`}>Card Faturamento 2025</p>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -206,6 +219,8 @@ export function SettingsDashboard() {
                     <ProposalsEditor />
                 ) : section === 'orgchart' ? (
                     <OrgChartEditor />
+                ) : section === 'faturamento' ? (
+                    <FaturamentoEditor />
                 ) : selectedManager ? (
                     <ManagerEditor
                         key={selectedManager.id}
