@@ -74,8 +74,9 @@ export function CidadesView() {
     // ─── KPI Calculations ───────────────────────────────────────────────────
     const summary: CidadesSummary = useMemo(() => {
         const totalLeads = leads.length;
-        const pipelineTotal = leads.reduce((acc, l) => acc + l.valor, 0);
-        const ticketMedio = totalLeads > 0 ? pipelineTotal / totalLeads : 0;
+        const activeLeads = leads.filter(l => (l.categoria || '').trim().toLowerCase() !== 'perda');
+        const pipelineTotal = activeLeads.reduce((acc, l) => acc + l.valor, 0);
+        const ticketMedio = activeLeads.length > 0 ? pipelineTotal / activeLeads.length : 0;
 
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
