@@ -96,10 +96,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
         pipeline: false,
     });
 
-    const toggleMetric = (key: 'herdados' | 'novos' | 'pipeline') => {
+    const toggleMetric = (key: 'novos' | 'pipeline') => {
         setActiveMetrics((prev) => {
             const next = { ...prev, [key]: !prev[key] };
-            if (!next.herdados && !next.novos && !next.pipeline) {
+            if (!next.novos && !next.pipeline) {
                 return prev; // keep at least 1 active
             }
             return next;
@@ -110,11 +110,9 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
     if (!activeManagers || activeManagers.length === 0) return null;
 
     // ── Totals ──────────────────────────────────────────────────────────────
-    const totalHerdados = activeManagers.reduce((acc, m) => acc + (m.contratosHerdados ?? m.contratado), 0);
     const totalNovosNegocios = activeManagers.reduce((acc, m) => acc + (m.novosNegocios ?? 0), 0);
     const totalContratado2026 = activeManagers.reduce((acc, m) => acc + (m.contratado2026 ?? m.contratado), 0);
     const totalForecastProRata2026 = activeManagers.reduce((acc, m) => acc + (m.forecastProRata2026 ?? calcForecastProRata2026(m.contratado, m.pipeline)), 0);
-
 
     // ── Pipeline by quarter ──────────────────────────────────────────────────
     const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => ({
@@ -138,7 +136,6 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
 
         // Dynamically compute selected metrics total for each manager
         const totalSelected =
-            (activeMetrics.herdados ? herdados : 0) +
             (activeMetrics.novos ? novos : 0) +
             (activeMetrics.pipeline ? pipelineVal : 0);
 
@@ -163,14 +160,12 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
     // Pyramid structure: Top of pyramid (lowest totalSelected) at index 0 -> Base of pyramid (highest totalSelected) at bottom row!
     const pyramidRows = [...managersWithRank].sort((a, b) => a.totalSelected - b.totalSelected);
     const totalCount = pyramidRows.length;
-    const maxSelectedVal = Math.max(...managersWithRank.map(m => m.totalSelected), 1);
 
     // Active metric label for subtitle & base indicator
     const activeMetricLabel = (() => {
         const parts = [];
         if (activeMetrics.novos) parts.push('Novos Negócios');
         if (activeMetrics.pipeline) parts.push('Pipeline');
-        if (activeMetrics.herdados) parts.push('Herdados');
         return parts.join(' + ') || 'Valor Selecionado';
     })();
 
@@ -228,21 +223,8 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 </p>
                             </div>
 
-                            {/* Metric Toggles */}
+                            {/* Metric Toggles (Concluídos and Pipeline) */}
                             <div className="flex items-center gap-1.5 flex-wrap">
-                                <button
-                                    type="button"
-                                    onClick={() => toggleMetric('herdados')}
-                                    className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer select-none ${
-                                        activeMetrics.herdados
-                                            ? 'bg-zinc-800 text-zinc-100 border-zinc-600 shadow-sm'
-                                            : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700 opacity-60'
-                                    }`}
-                                >
-                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.herdados ? 'bg-zinc-300' : 'bg-zinc-700'}`} />
-                                    Herdados
-                                </button>
-
                                 <button
                                     type="button"
                                     onClick={() => toggleMetric('novos')}
@@ -282,7 +264,6 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 const widthPct = Math.round(minWidthPct + ((idx / Math.max(1, totalCount - 1)) * (100 - minWidthPct)));
 
                                 // Segment percentages within totalSelected
-                                const herdadosPct = m.totalSelected > 0 && activeMetrics.herdados ? (m.herdados / m.totalSelected) * 100 : 0;
                                 const novosPct = m.totalSelected > 0 && activeMetrics.novos ? (m.novos / m.totalSelected) * 100 : 0;
                                 const pipelinePct = m.totalSelected > 0 && activeMetrics.pipeline ? (m.pipelineVal / m.totalSelected) * 100 : 0;
 
@@ -304,12 +285,6 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                     
                                                     {/* Color fill layer across the tier band */}
                                                     <div className="absolute inset-0 flex opacity-85 group-hover:opacity-100 transition-opacity pointer-events-none">
-                                                        {activeMetrics.herdados && m.herdados > 0 && (
-                                                            <div
-                                                                className="h-full bg-zinc-600/60 group-hover:bg-zinc-500/70 border-r border-zinc-500/30 transition-colors shrink-0"
-                                                                style={{ width: `${herdadosPct}%` }}
-                                                            />
-                                                        )}
                                                         {activeMetrics.novos && m.novos > 0 && (
                                                             <div
                                                                 className="h-full bg-emerald-600/75 group-hover:bg-emerald-500/85 border-r border-emerald-400/40 shadow-[0_0_12px_rgba(52,211,153,0.5)] transition-colors shrink-0 z-10"
@@ -364,9 +339,6 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                 {activeMetrics.novos && (
                                                     <div className="flex justify-between gap-4"><span>Novos Concluídos (TCV):</span> <span className="font-mono text-emerald-300">{formatCurrency(m.novos)}</span></div>
                                                 )}
-                                                {activeMetrics.herdados && (
-                                                    <div className="flex justify-between gap-4"><span>Contratos Herdados:</span> <span className="font-mono text-zinc-300">{formatCurrency(m.herdados)}</span></div>
-                                                )}
                                                 {activeMetrics.pipeline && (
                                                     <div className="flex justify-between gap-4"><span>Pipeline em Aberto:</span> <span className="font-mono text-indigo-400">{formatCurrency(m.pipelineVal)}</span></div>
                                                 )}
@@ -391,7 +363,7 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                     <div className="lg:col-span-5 flex flex-col gap-3 h-full">
 
                         {/* Consolidated KPI Cards Column */}
-                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2 backdrop-blur-md flex-1">
+                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2.5 backdrop-blur-md flex-1 justify-around">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                                 <BarChart3 className="w-4 h-4 text-cyan-400" />
                                 Informações Consolidadas
@@ -404,25 +376,19 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 tip="Faturamento total realizado no ano de 2025. Editável nas Configurações."
                             />
                             <KpiCardSide
-                                label="2. Contratos Herdados"
-                                value={formatCurrency(totalHerdados)}
-                                accent="text-zinc-300"
-                                tip="Base de contratos legados trazida de anos anteriores."
-                            />
-                            <KpiCardSide
-                                label="3. Negócios Concluídos"
+                                label="2. Negócios Concluídos"
                                 value={formatCurrency(totalNovosNegocios)}
                                 accent="text-emerald-400"
                                 tip="Receita pro-rata 2026 de novos contratos fechados no pipeline (Status = Contratado)."
                             />
                             <KpiCardSide
-                                label="4. Contratado 2026"
+                                label="3. Contratado 2026"
                                 value={formatCurrency(totalContratado2026)}
                                 accent="text-blue-400"
                                 tip="Herdados + parcela pro-rata 2026 dos novos negócios."
                             />
                             <KpiCardSide
-                                label="5. Forecast Pro-rata 2026"
+                                label="4. Forecast Pro-rata 2026"
                                 value={formatCurrency(totalForecastProRata2026)}
                                 accent="text-violet-400"
                                 tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline."
