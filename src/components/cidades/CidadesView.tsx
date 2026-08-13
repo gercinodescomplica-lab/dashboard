@@ -195,7 +195,8 @@ export function CidadesView() {
     const ufStats: UfStat[] = useMemo(() => {
         const map = new Map<string, { count: number; valor: number }>();
         for (const l of leads) {
-            const uf = l.uf || 'Sem UF';
+            if (!l.uf || l.uf === 'Sem UF') continue; // Skip entries without valid UF
+            const uf = l.uf.trim().toUpperCase();
             const cur = map.get(uf) || { count: 0, valor: 0 };
             cur.count += 1;
             cur.valor += l.valor;
@@ -207,6 +208,7 @@ export function CidadesView() {
             valor: stat.valor,
         })).sort((a, b) => b.valor - a.valor);
     }, [leads]);
+
 
     // ─── Timeline 12 Months Projection ─────────────────────────────────────
     const timelineData: TimelineStat[] = useMemo(() => {
@@ -386,7 +388,7 @@ export function CidadesView() {
                 <div className="flex flex-col gap-6">
 
                     {/* KPI Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
                             <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <Briefcase className="w-3.5 h-3.5 text-indigo-400" /> Total Leads
@@ -433,14 +435,6 @@ export function CidadesView() {
                                 {formatCurrency(summary.proximos90Dias)}
                             </span>
                             <span className="text-[10px] text-zinc-400">Fechamento até 3 meses</span>
-                        </div>
-
-                        <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
-                            <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <MapPin className="w-3.5 h-3.5 text-rose-400" /> Leads sem UF
-                            </span>
-                            <span className="text-2xl font-bold font-mono text-rose-400 mt-1">{summary.leadsSemUf}</span>
-                            <span className="text-[10px] text-zinc-400">Estado não definido</span>
                         </div>
                     </div>
 

@@ -97,7 +97,23 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
             return [];
         }
 
-        return rawData.map((item: any, index: number) => {
+        const validItems = rawData.filter((item: any) => {
+            const cliente = String(item.cliente || '').trim();
+            const solicitacao = String(item.solicitacao || '').trim();
+            const status = String(item.status || '').trim();
+            const municipio = String(item.municipio || '').trim();
+            const uf = String(item.uf || '').trim();
+            const valor = parseValorBRL(item.valor);
+
+            // Ignore section divider / title rows (e.g., 'Propostas Perdidas' header row in Excel)
+            if (cliente.toLowerCase() === 'propostas perdidas' && !solicitacao && !status && !uf) {
+                return false;
+            }
+
+            return cliente !== '' || solicitacao !== '' || municipio !== '' || valor > 0;
+        });
+
+        return validItems.map((item: any, index: number) => {
             const rawUf = String(item.uf || '').trim().toUpperCase();
             const rawCategoria = String(item.categoria || '').trim() || 'Lead';
 
