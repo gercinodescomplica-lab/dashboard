@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
-import { Pencil, Trash2, Plus, Search, Handshake, Loader2, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useMemo, useTransition } from 'react';
+import { Pencil, Trash2, Plus, Search, Handshake, Loader2, ArrowUp, ArrowDown, ArrowUpDown, X } from 'lucide-react';
 import { PropostaRow } from '@/db/queries';
 import { searchPropostasAction, deletePropostaAction } from '../actions';
 import { ProposalModal } from './ProposalModal';
@@ -71,11 +71,6 @@ function formatDate(dateStr: string | null): string {
     const parts = dateStr.split('-');
     if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return dateStr;
-}
-
-function formatProbabilidade(p: number | null): string {
-    if (p === null || p === undefined) return '—';
-    return `${Math.round(p * 100)}%`;
 }
 
 const FASE_COLORS: Record<string, string> = {
@@ -183,6 +178,12 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
     const [sortKey, setSortKey] = useState<SortKey | null>(null);
     const [sortDir, setSortDir] = useState<SortDir>('asc');
 
+    // Column Filters state
+    const [selectedGerencia, setSelectedGerencia] = useState<string>('TODAS');
+    const [selectedProprietario, setSelectedProprietario] = useState<string>('TODOS');
+    const [selectedFase, setSelectedFase] = useState<string>('TODAS');
+    const [selectedStatus, setSelectedStatus] = useState<string>('TODOS');
+
     function handleSort(key: SortKey) {
         if (sortKey === key) {
             setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
@@ -209,6 +210,65 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
             setIsSearching(false);
         });
     }, [debouncedSearch]);
+
+    // Available filter options
+    const availableGerencias = useMemo(() => {
+        const set = new Set<string>();
+        propostas.forEach((p) => p.gerencia && set.add(p.gerencia));
+        return Array.from(set).sort();
+    }, [propostas]);
+
+    const availableProprietarios = useMemo(() => {
+        const set = new Set<string>();
+        propostas.forEach((p) => p.proprietario && set.add(p.proprietario));
+        return Array.from(set).sort();
+    }, [propostas]);
+
+    const availableFases = useMemo(() => {
+        const set = new Set<string>();
+        propostas.forEach((p) => p.fase && set.add(p.fase));
+        return Array.from(set).sort();
+    }, [propostas]);
+
+    const availableStatusOptions = useMemo(() => {
+        const set = new Set<string>();
+        propostas.forEach((p) => p.status && set.add(p.status));
+        return Array.from(set).sort();
+    }, [propostas]);
+
+    // Filtered Propostas
+    const filteredPropostas = useMemo(() => {
+        return propostas.filter((p) => {
+            if (selectedGerencia !== 'TODAS' && p.gerencia !== selectedGerencia) return false;
+            if (selectedProprietario !== 'TODOS' && p.proprietario !== selectedProprietario) return false;
+            if (selectedFase !== 'TODAS' && p.fase !== selectedFase) return false;
+            if (selectedStatus !== 'TODOS' && p.status !== selectedStatus) return false;
+            return true;
+        });
+    }, [propostas, selectedGerencia, selectedProprietario, selectedFase, selectedStatus]);
+
+    const sortedPropostas = useMemo(() => {
+        if (!sortKey) return filteredPropostas;
+        return [...filteredPropostas].sort((a, b) => {
+            const cmp = compareValues((a as any)[sortKey], (b as any)[sortKey], sortKey);
+            return sortDir === 'asc' ? cmp : -cmp;
+        });
+    }, [filteredPropostas, sortKey, sortDir]);
+
+    const hasActiveFilters =
+        selectedGerencia !== 'TODAS' ||
+        selectedProprietario !== 'TODOS' ||
+        selectedFase !== 'TODAS' ||
+        selectedStatus !== 'TODOS' ||
+        search !== '';
+
+    function clearFilters() {
+        setSelectedGerencia('TODAS');
+        setSelectedProprietario('TODOS');
+        setSelectedFase('TODAS');
+        setSelectedStatus('TODOS');
+        setSearch('');
+    }
 
     function handleEdit(row: PropostaRow) {
         setEditingProposta(row);
@@ -243,22 +303,15 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
         });
     }
 
-    const sortedPropostas = sortKey
-        ? [...propostas].sort((a, b) => {
-              const cmp = compareValues((a as any)[sortKey], (b as any)[sortKey], sortKey);
-              return sortDir === 'asc' ? cmp : -cmp;
-          })
-        : propostas;
-
-    const totalValor = propostas.reduce((s, p) => s + (p.valor ?? 0), 0);
-    const totalReceita = propostas.reduce((s, p) => s + (p.receitaEsperada ?? 0), 0);
+    const totalValor = filteredPropostas.reduce((s, p) => s + (p.valor ?? 0), 0);
+    const totalReceita = filteredPropostas.reduce((s, p) => s + (p.receitaEsperada ?? 0), 0);
 
     return (
         <div className="flex flex-col h-full gap-4">
             <div className="grid grid-cols-3 gap-3">
                 <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total de Propostas</p>
-                    <p className="text-2xl font-bold text-zinc-100">{propostas.length}</p>
+                    <p className="text-2xl font-bold text-zinc-100">{filteredPropostas.length}</p>
                 </div>
                 <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
                     <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Valor Total</p>
@@ -270,7 +323,7 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
                 </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800/80">
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
                     {isSearching && (
@@ -282,14 +335,89 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Buscar por número, cliente, oportunidade, proprietário..."
-                        className="w-full h-10 pl-9 pr-4 bg-zinc-900 border border-zinc-800 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+                        className="w-full h-10 pl-9 pr-4 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
                     />
                 </div>
+
+                {/* Dropdown Filters */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    {/* Filter GRC */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-zinc-400">GRC:</span>
+                        <select
+                            value={selectedGerencia}
+                            onChange={(e) => setSelectedGerencia(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer"
+                        >
+                            <option value="TODAS">Todas</option>
+                            {availableGerencias.map((g) => (
+                                <option key={g} value={g}>{g}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filter Proprietário */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-zinc-400">Proprietário:</span>
+                        <select
+                            value={selectedProprietario}
+                            onChange={(e) => setSelectedProprietario(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[140px] truncate"
+                        >
+                            <option value="TODOS">Todos</option>
+                            {availableProprietarios.map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filter Fase */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-zinc-400">Fase:</span>
+                        <select
+                            value={selectedFase}
+                            onChange={(e) => setSelectedFase(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[150px] truncate"
+                        >
+                            <option value="TODAS">Todas</option>
+                            {availableFases.map((f) => (
+                                <option key={f} value={f}>{f}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Filter Status */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-zinc-400">Status:</span>
+                        <select
+                            value={selectedStatus}
+                            onChange={(e) => setSelectedStatus(e.target.value)}
+                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-emerald-500 cursor-pointer max-w-[140px] truncate"
+                        >
+                            <option value="TODOS">Todos</option>
+                            {availableStatusOptions.map((s) => (
+                                <option key={s} value={s}>{s}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {hasActiveFilters && (
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="flex items-center gap-1 text-xs text-emerald-400 hover:text-emerald-300 px-2 py-1 transition-colors font-medium"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                            Limpar
+                        </button>
+                    )}
+                </div>
+
                 {!readOnly && (
                     <button
                         id="add-proposal-btn"
                         onClick={handleAdd}
-                        className="flex items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-lg transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-emerald-500/20"
+                        className="flex items-center gap-2 h-10 px-4 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg transition-all active:scale-95 whitespace-nowrap shadow-lg shadow-emerald-500/20 ml-auto"
                     >
                         <Plus className="w-4 h-4" />
                         Nova Proposta
@@ -299,21 +427,21 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
 
             <div className="flex-1 overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 flex flex-col">
                 <div className="overflow-x-auto overflow-y-auto flex-1">
-                    <table className="w-full text-sm min-w-[1200px]">
+                    <table className="w-full text-sm min-w-[1350px]">
                         <thead className="sticky top-0 z-10">
-                            <tr className="bg-zinc-900 border-b border-zinc-800">
+                            <tr className="bg-zinc-950 border-b border-zinc-800">
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Proposta" sortKey="numeroProposta" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
-                                <th className="px-4 py-3"><SortHeader label="Oportunidade" sortKey="nomeOportunidade" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
-                                <th className="px-4 py-3"><SortHeader label="Cliente" sortKey="cliente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
+                                <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Oportunidade" sortKey="nomeOportunidade" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
+                                <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Cliente" sortKey="cliente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="GRC" sortKey="gerencia" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Proprietário" sortKey="proprietario" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
-                                <th className="px-4 py-3"><SortHeader label="Fase" sortKey="fase" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
-                                <th className="px-4 py-3"><SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
+                                <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Fase" sortKey="fase" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
+                                <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Status" sortKey="status" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Valor" sortKey="valor" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Receita Esp." sortKey="receitaEsperada" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Probab." sortKey="probabilidade" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
                                 <th className="px-4 py-3 whitespace-nowrap"><SortHeader label="Fechamento" sortKey="dataFechamento" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} /></th>
-                                {!readOnly && <th className="text-center px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Ações</th>}
+                                {!readOnly && <th className="text-center px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">Ações</th>}
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-800/50">
@@ -322,7 +450,7 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
                                     <td colSpan={12} className="py-16 text-center text-zinc-500">
                                         <div className="flex flex-col items-center gap-3">
                                             <Handshake className="w-10 h-10 text-zinc-700" />
-                                            <p className="text-sm">Nenhuma proposta encontrada{search ? ` para "${search}"` : ''}.</p>
+                                            <p className="text-sm">Nenhuma proposta encontrada com os filtros aplicados.</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -330,22 +458,22 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
                                 sortedPropostas.map((row) => (
                                     <tr key={row.id} className="group hover:bg-zinc-800/40 transition-colors">
                                         <td className="px-4 py-3 font-mono text-xs text-emerald-300 whitespace-nowrap">{row.numeroProposta}</td>
-                                        <td className="px-4 py-3 text-zinc-200 max-w-[260px] truncate" title={row.nomeOportunidade}>{row.nomeOportunidade}</td>
-                                        <td className="px-4 py-3 text-zinc-300 max-w-[200px] truncate" title={row.cliente}>{row.cliente}</td>
-                                        <td className="px-4 py-3">
-                                            <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-zinc-800 text-zinc-300 border border-zinc-700/50">
+                                        <td className="px-4 py-3 text-zinc-200 whitespace-nowrap font-medium" title={row.nomeOportunidade}>{row.nomeOportunidade}</td>
+                                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap" title={row.cliente}>{row.cliente}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className="inline-block px-2 py-0.5 rounded-md text-xs font-bold bg-zinc-800 text-zinc-300 border border-zinc-700/50 whitespace-nowrap">
                                                 {row.gerencia || '—'}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap text-xs">{row.proprietario || '—'}</td>
-                                        <td className="px-4 py-3"><FaseBadge fase={row.fase} /></td>
-                                        <td className="px-4 py-3" title={row.observacao ?? ''}><StatusBadge status={row.status} /></td>
+                                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap font-medium text-xs">{row.proprietario || '—'}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap"><FaseBadge fase={row.fase} /></td>
+                                        <td className="px-4 py-3 whitespace-nowrap" title={row.observacao ?? ''}><StatusBadge status={row.status} /></td>
                                         <td className="px-4 py-3 text-right text-zinc-200 font-medium tabular-nums whitespace-nowrap">{formatCurrency(row.valor)}</td>
                                         <td className="px-4 py-3 text-right text-sky-400 tabular-nums whitespace-nowrap">{formatCurrency(row.receitaEsperada)}</td>
-                                        <td className="px-4 py-3"><ProbabilidadeBar p={row.probabilidade} /></td>
+                                        <td className="px-4 py-3 whitespace-nowrap"><ProbabilidadeBar p={row.probabilidade} /></td>
                                         <td className="px-4 py-3 text-zinc-400 text-xs whitespace-nowrap">{formatDate(row.dataFechamento)}</td>
                                         {!readOnly && (
-                                            <td className="px-4 py-3">
+                                            <td className="px-4 py-3 whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <button
                                                         id={`edit-proposal-${row.id}`}
@@ -372,9 +500,9 @@ export function ProposalsTable({ initialData, managersList, readOnly = false }: 
                         </tbody>
                     </table>
                 </div>
-                {propostas.length > 0 && (
+                {sortedPropostas.length === 0 ? null : (
                     <div className="flex-none border-t border-zinc-800/80 px-4 py-2 text-xs text-zinc-600">
-                        {propostas.length} proposta{propostas.length !== 1 ? 's' : ''} exibida{propostas.length !== 1 ? 's' : ''}
+                        {sortedPropostas.length} proposta{sortedPropostas.length !== 1 ? 's' : ''} exibida{sortedPropostas.length !== 1 ? 's' : ''}
                     </div>
                 )}
             </div>

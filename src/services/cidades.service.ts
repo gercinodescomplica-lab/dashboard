@@ -121,14 +121,28 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
 
         return validItems.map((item: any, index: number) => {
             const rawUf = String(item.uf || '').trim().toUpperCase();
-            let rawCategoria = String(item.categoria || '').trim() || 'Lead';
+            let rawCategoria = String(item.categoria_padrao || item.categoria || '').trim() || 'Lead';
 
             // Fix typos coming from Excel/SharePoint
             if (rawCategoria.toLowerCase() === 'em trataivas') {
                 rawCategoria = 'Em tratativas';
             }
 
-            const leadObj = {
+            // Clean city name extraction
+            let municipioClean = String(item.municipio || '').trim();
+            if (!municipioClean || municipioClean === '#VALUE!' || municipioClean === '#VALOR!') {
+                const clienteStr = String(item.cliente || '').trim();
+                const matchDe = clienteStr.match(/de\s+([A-ZÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇÑa-záàâãéèêíïóôõöúçñ\s\-]+)/i);
+                if (matchDe) {
+                    municipioClean = matchDe[1].replace(/\s*\([A-Z]{2}\)\s*/i, '').trim();
+                } else {
+                    municipioClean = clienteStr
+                        .replace(/^(Prefeitura|Câmara Municipal|Assembleia Legislativa|Secretaria|Governo)\s+(do|da|de|dos|das)?\s+/i, '')
+                        .trim();
+                }
+            }
+
+            const leadObj: LeadCidade = {
                 id: item.id ? Number(item.id) : index + 1,
                 cliente: String(item.cliente || '').trim(),
                 solicitacao: String(item.solicitacao || '').trim(),
@@ -136,12 +150,20 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
                 categoria: rawCategoria,
                 valor: parseValorBRL(item.valor),
                 uf: rawUf,
-                municipio: String(item.municipio || '').trim(),
+                municipio: municipioClean,
                 regiao: item.regiao ? String(item.regiao).trim() : undefined,
                 contato_nome: item.contato_nome ? String(item.contato_nome).trim() : undefined,
                 contato_email: item.contato_email ? String(item.contato_email).trim() : undefined,
                 contato_telefone: item.contato_telefone ? String(item.contato_telefone).trim() : undefined,
                 previsao_fechamento: item.previsao_fechamento ? String(item.previsao_fechamento).trim() : undefined,
+
+                // Campos Padronizados Power Automate
+                categoria_padrao: item.categoria_padrao ? String(item.categoria_padrao).trim() : undefined,
+                etapa_padrao: item.etapa_padrao ? String(item.etapa_padrao).trim() : undefined,
+                situacao_padrao: item.situacao_padrao ? String(item.situacao_padrao).trim() : undefined,
+                motivo_padrao: item.motivo_padrao ? String(item.motivo_padrao).trim() : undefined,
+                familia_demanda: item.familia_demanda ? String(item.familia_demanda).trim() : undefined,
+                solicitacao_padrao: item.solicitacao_padrao ? String(item.solicitacao_padrao).trim() : undefined,
             };
 
             return leadObj;

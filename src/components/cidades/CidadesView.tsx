@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchCidadesLeads, extractLeadDate } from '@/services/cidades.service';
-import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat } from '@/types/cidades';
+import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat, MotivoPerdaStat } from '@/types/cidades';
 import { formatCurrency } from '@/lib/format';
 import { BrazilHeatMap } from './BrazilHeatMap';
 import {
@@ -29,6 +29,11 @@ import {
     AlertCircle,
     CalendarClock,
     ArrowUpRight,
+    TrendingDown,
+    AlertTriangle,
+    FileSpreadsheet,
+    Layers,
+    Tag,
 } from 'lucide-react';
 import {
     ResponsiveContainer,
@@ -41,13 +46,25 @@ import {
     BarChart,
     Bar,
     Cell,
+    PieChart as RechartsPieChart,
+    Pie,
 } from 'recharts';
+
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 export function CidadesView() {
     const [leads, setLeads] = useState<LeadCidade[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'dashboard' | 'mapa' | 'tabela'>('dashboard');
+
+    // Modal state for Perdas
+    const [selectedMotivoModal, setSelectedMotivoModal] = useState<string | null>(null);
 
     // Filters for Table & Navigation
     const [searchQuery, setSearchQuery] = useState('');
@@ -77,6 +94,15 @@ export function CidadesView() {
         const activeLeads = leads.filter(l => (l.categoria || '').trim().toLowerCase() !== 'perda');
         const pipelineTotal = activeLeads.reduce((acc, l) => acc + l.valor, 0);
         const ticketMedio = activeLeads.length > 0 ? pipelineTotal / activeLeads.length : 0;
+
+        // Unique Cities calculation
+        const cidadesSet = new Set<string>();
+        leads.forEach(l => {
+            if (l.municipio && l.municipio.trim() && l.municipio !== '#VALUE!' && l.municipio !== '#VALOR!') {
+                cidadesSet.add(`${l.municipio.trim().toLowerCase()}_${(l.uf || '').toLowerCase()}`);
+            }
+        });
+        const cidadesAtendidas = cidadesSet.size;
 
         const now = new Date();
         const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -109,11 +135,51 @@ export function CidadesView() {
 
         return {
             totalLeads,
+            cidadesAtendidas,
             pipelineTotal,
             ticketMedio,
             previsaoMesAtual,
             proximos90Dias,
             leadsSemUf,
+        };
+    }, [leads]);
+
+    // ─── Motivos de Perda Breakdown ─────────────────────────────────────────
+    const perdasData = useMemo(() => {
+        const perdasLeads = leads.filter(l => {
+            const cat = (l.categoria_padrao || l.categoria || '').toLowerCase();
+            const sit = (l.situacao_padrao || '').toLowerCase();
+            return cat.includes('perda') || sit.includes('perdid');
+        });
+
+        const map = new Map<string, { count: number; valorTotal: number }>();
+        let valorTotalPerdido = 0;
+
+        for (const lead of perdasLeads) {
+            const motivo = (lead.motivo_padrao || 'Não informado').trim();
+            const cur = map.get(motivo) || { count: 0, valorTotal: 0 };
+            cur.count += 1;
+            cur.valorTotal += lead.valor;
+            valorTotalPerdido += lead.valor;
+            map.set(motivo, cur);
+        }
+
+        const list: MotivoPerdaStat[] = Array.from(map.entries())
+            .map(([motivo, data]) => ({
+                motivo,
+                count: data.count,
+                valorTotal: data.valorTotal,
+            }))
+            .sort((a, b) => b.valorTotal - a.valorTotal || b.count - a.count);
+
+        const maiorMotivo = list.length > 0 ? list[0] : null;
+
+        return {
+            perdasLeads,
+            totalPerdasCount: perdasLeads.length,
+            valorTotalPerdido,
+            list,
+            maiorMotivo,
         };
     }, [leads]);
 
@@ -390,13 +456,21 @@ export function CidadesView() {
                 <div className="flex flex-col gap-6">
 
                     {/* KPI Cards Row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
                             <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <Briefcase className="w-3.5 h-3.5 text-indigo-400" /> Total Leads
                             </span>
                             <span className="text-2xl font-bold font-mono text-zinc-100 mt-1">{summary.totalLeads}</span>
                             <span className="text-[10px] text-zinc-400">Registros mapeados</span>
+                        </div>
+
+                        <div className="flex flex-col gap-1 bg-gradient-to-br from-indigo-900/40 via-zinc-900/60 to-zinc-900/40 border border-indigo-500/30 rounded-2xl p-4 shadow-lg">
+                            <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                                <Building2 className="w-4 h-4 text-indigo-400" /> Cidades Atendidas
+                            </span>
+                            <span className="text-2xl font-bold font-mono text-zinc-100 mt-1">{summary.cidadesAtendidas}</span>
+                            <span className="text-[10px] text-zinc-400">Municípios distintos atados</span>
                         </div>
 
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
@@ -406,7 +480,7 @@ export function CidadesView() {
                             <span className="text-xl font-bold font-mono text-emerald-400 mt-1 truncate">
                                 {formatCurrency(summary.pipelineTotal)}
                             </span>
-                            <span className="text-[10px] text-zinc-400">Soma de todas oportunidades</span>
+                            <span className="text-[10px] text-zinc-400">Soma de oportunidades</span>
                         </div>
 
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
@@ -416,7 +490,7 @@ export function CidadesView() {
                             <span className="text-xl font-bold font-mono text-blue-400 mt-1 truncate">
                                 {formatCurrency(summary.ticketMedio)}
                             </span>
-                            <span className="text-[10px] text-zinc-400">Valor médio por negócio</span>
+                            <span className="text-[10px] text-zinc-400">Valor médio / negócio</span>
                         </div>
 
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
@@ -426,7 +500,7 @@ export function CidadesView() {
                             <span className="text-xl font-bold font-mono text-violet-400 mt-1 truncate">
                                 {formatCurrency(summary.previsaoMesAtual)}
                             </span>
-                            <span className="text-[10px] text-zinc-400">Previsão no mês vigente</span>
+                            <span className="text-[10px] text-zinc-400">Previsão mês vigente</span>
                         </div>
 
                         <div className="flex flex-col gap-1 bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4">
@@ -436,7 +510,7 @@ export function CidadesView() {
                             <span className="text-xl font-bold font-mono text-amber-400 mt-1 truncate">
                                 {formatCurrency(summary.proximos90Dias)}
                             </span>
-                            <span className="text-[10px] text-zinc-400">Fechamento até 3 meses</span>
+                            <span className="text-[10px] text-zinc-400">Fechamento em 3 meses</span>
                         </div>
                     </div>
 
@@ -580,6 +654,142 @@ export function CidadesView() {
 
                     </div>
 
+                    {/* ── SEÇÃO EXCLUSIVA: ANÁLISE DE MOTIVOS DE PERDA ───────────────────────── */}
+                    <div className="bg-gradient-to-br from-red-950/20 via-zinc-900/60 to-zinc-900/40 border border-red-500/20 rounded-2xl p-5 shadow-xl">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-red-500/20 pb-3 mb-4 gap-2">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-red-500/10 text-red-400 rounded-lg border border-red-500/20">
+                                    <TrendingDown className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                                        Diagnóstico de Motivos de Perda
+                                    </h3>
+                                    <p className="text-xs text-zinc-400">
+                                        Análise detalhada de causa raiz das propostas não convertidas ({perdasData.totalPerdasCount} oportunidades) · <span className="text-red-400 underline font-semibold">Clique para ver o detalhamento sucinto</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <span className="text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-1 rounded-full">
+                                Perda Total: {formatCurrency(perdasData.valorTotalPerdido)}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                            {/* Card Maior Motivo */}
+                            <button
+                                type="button"
+                                onClick={() => perdasData.maiorMotivo && setSelectedMotivoModal(perdasData.maiorMotivo.motivo)}
+                                className="bg-zinc-950/80 hover:bg-zinc-900 border border-red-500/30 hover:border-red-500/60 rounded-xl p-4 flex flex-col justify-between shadow-inner text-left transition-all cursor-pointer group"
+                            >
+                                <div>
+                                    <span className="text-[11px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                                        <AlertTriangle className="w-4 h-4 text-red-500 animate-pulse" /> Maior Causa de Perda
+                                    </span>
+                                    <h4 className="text-lg font-bold text-zinc-100 mt-2 group-hover:text-red-300 transition-colors">
+                                        {perdasData.maiorMotivo?.motivo || 'N/A'}
+                                    </h4>
+                                    <p className="text-xs text-zinc-400 mt-1">
+                                        Responsável pela maior fatia financeira e volume de oportunidades perdidas.
+                                    </p>
+
+                                    <div className="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between">
+                                        <span className="text-xs text-zinc-400">Oportunidades:</span>
+                                        <span className="text-sm font-bold text-zinc-100">{perdasData.maiorMotivo?.count || 0} Lead(s)</span>
+                                    </div>
+                                    <div className="mt-1 flex items-center justify-between">
+                                        <span className="text-xs text-zinc-400">Impacto Financeiro:</span>
+                                        <span className="text-base font-bold font-mono text-red-400">
+                                            {formatCurrency(perdasData.maiorMotivo?.valorTotal || 0)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 flex items-center justify-between">
+                                    <p className="text-[11px] text-red-300">
+                                        🔍 Clique para ver o detalhamento sucinto
+                                    </p>
+                                    <ArrowUpRight className="w-4 h-4 text-red-400 shrink-0" />
+                                </div>
+                            </button>
+
+                            {/* Gráfico de Barras dos Motivos de Perda */}
+                            <div className="lg:col-span-2 bg-zinc-950/60 border border-zinc-800/80 rounded-xl p-4 flex flex-col justify-between">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
+                                        Distribuição dos Motivos de Perda (Valor R$)
+                                    </span>
+                                    <span className="text-[11px] text-zinc-500">Clique na barra para detalhar</span>
+                                </div>
+
+                                <div className="w-full h-[180px]">
+                                    {perdasData.list.length > 0 ? (
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <BarChart data={perdasData.list} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+                                                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                                                <XAxis type="number" stroke="#71717a" fontSize={10} tickFormatter={(v) => `R$ ${(v / 1000000).toFixed(1)}M`} />
+                                                <YAxis type="category" dataKey="motivo" stroke="#a1a1aa" fontSize={10} width={130} />
+                                                <Tooltip
+                                                    contentStyle={{
+                                                        backgroundColor: '#09090b',
+                                                        borderColor: '#ef4444',
+                                                        borderRadius: '12px',
+                                                        fontSize: '12px',
+                                                        color: '#f4f4f5',
+                                                        boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.2)',
+                                                    }}
+                                                    content={({ active, payload }) => {
+                                                        if (!active || !payload || !payload.length) return null;
+                                                        const data = payload[0].payload as MotivoPerdaStat;
+                                                        const matchingLeads = perdasData.perdasLeads.filter(
+                                                            l => (l.motivo_padrao || 'Não informado').trim() === data.motivo
+                                                        );
+
+                                                        return (
+                                                            <div className="bg-zinc-950 border border-red-500/40 p-3 rounded-xl shadow-2xl max-w-xs">
+                                                                <p className="text-xs font-bold text-red-400 mb-1">{data.motivo}</p>
+                                                                <p className="text-xs text-zinc-200 font-mono font-bold">
+                                                                    {formatCurrency(data.valorTotal)} <span className="text-zinc-400 font-normal">({data.count} Lead(s))</span>
+                                                                </p>
+                                                                <div className="mt-2 pt-2 border-t border-zinc-800 space-y-1">
+                                                                    <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Motivos Sucintos / Status:</p>
+                                                                    {matchingLeads.slice(0, 3).map((l, i) => (
+                                                                        <p key={i} className="text-[11px] text-zinc-300 truncate">
+                                                                            • <strong>{l.cliente || 'Cliente'}:</strong> {l.status || 'Perdido'}
+                                                                        </p>
+                                                                    ))}
+                                                                    {matchingLeads.length > 3 && (
+                                                                        <p className="text-[10px] text-indigo-400 font-semibold pt-0.5">
+                                                                            + {matchingLeads.length - 3} mais... (Clique para ver todos)
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }}
+                                                />
+                                                <Bar
+                                                    dataKey="valorTotal"
+                                                    fill="#ef4444"
+                                                    radius={[0, 6, 6, 0]}
+                                                    onClick={(entry: any) => entry && entry.motivo && setSelectedMotivoModal(entry.motivo)}
+                                                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                                                />
+                                            </BarChart>
+                                        </ResponsiveContainer>
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center text-zinc-500 text-xs">
+                                            Nenhuma perda registrada
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
                     {/* Categories Cards Breakdown */}
                     <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5">
                         <div className="flex items-center justify-between mb-4 border-b border-zinc-800/60 pb-3">
@@ -601,7 +811,7 @@ export function CidadesView() {
                                             {c.categoria}
                                         </span>
                                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 group-hover:bg-indigo-500/20 group-hover:text-indigo-300">
-                                            {c.count} lead(s)
+                                            {c.count} Lead(s)
                                         </span>
                                     </div>
                                     <span className="text-lg font-bold font-mono text-zinc-100 mt-2">
@@ -735,7 +945,7 @@ export function CidadesView() {
                                             <p className="text-xs font-semibold text-zinc-200 group-hover:text-indigo-300 transition-colors">
                                                 {st.uf === 'Sem UF' ? 'Não Informado' : `Estado (${st.uf})`}
                                             </p>
-                                            <p className="text-[10px] text-zinc-400">{st.count} lead(s)</p>
+                                            <p className="text-[10px] text-zinc-400">{st.count} Lead(s)</p>
                                         </div>
                                     </div>
                                     <span className="text-xs font-bold font-mono text-zinc-100">
@@ -809,7 +1019,7 @@ export function CidadesView() {
                                         setSelectedCategoria('TODAS');
                                         setSearchQuery('');
                                     }}
-                                    className="px-2.5 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs transition-colors"
+                                    className="text-xs text-indigo-400 hover:underline px-2 py-1"
                                 >
                                     Limpar Filtros
                                 </button>
@@ -818,11 +1028,11 @@ export function CidadesView() {
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto rounded-xl border border-zinc-800/80">
+                    <div className="overflow-x-auto rounded-xl border border-zinc-800">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-zinc-900/90 text-zinc-400 text-[11px] uppercase tracking-wider border-b border-zinc-800">
-                                    <th className="p-3 w-12 text-center">UF</th>
+                                <tr className="bg-zinc-950 text-zinc-400 text-[11px] uppercase tracking-wider border-b border-zinc-800">
+                                    <th className="p-3 text-center">UF</th>
                                     <th className="p-3">Cliente / Solicitação</th>
                                     <th className="p-3">Contato</th>
                                     <th className="p-3">Município</th>
@@ -888,6 +1098,78 @@ export function CidadesView() {
                     </div>
                 </div>
             )}
+
+            {/* ── MODAL DETALHAMENTO DE MOTIVO DE PERDA ────────────────────────── */}
+            <Dialog open={selectedMotivoModal !== null} onOpenChange={(v) => !v && setSelectedMotivoModal(null)}>
+                <DialogContent className="bg-zinc-950 border border-red-500/30 text-zinc-100 max-w-2xl max-h-[85vh] flex flex-col p-0 overflow-hidden shadow-2xl">
+                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800 bg-red-950/20 shrink-0">
+                        <div className="flex items-center gap-2 text-red-400 mb-1">
+                            <TrendingDown className="w-5 h-5" />
+                            <span className="text-xs font-bold uppercase tracking-wider">Detalhamento Sucinto da Perda</span>
+                        </div>
+                        <DialogTitle className="text-xl font-bold text-zinc-100">{selectedMotivoModal}</DialogTitle>
+                        <p className="text-xs text-zinc-400 mt-1">
+                            Lista de oportunidades não convertidas pertencentes a este motivo padronizado com o status/descrição original do Excel.
+                        </p>
+                    </DialogHeader>
+
+                    <div className="overflow-y-auto flex-1 px-6 py-4 space-y-3">
+                        {(() => {
+                            const matchingLeads = perdasData.perdasLeads.filter(
+                                l => (l.motivo_padrao || 'Não informado').trim() === selectedMotivoModal
+                            );
+                            if (matchingLeads.length === 0) {
+                                return <p className="text-center text-zinc-500 py-8 text-sm">Nenhum registro encontrado para este motivo.</p>;
+                            }
+
+                            return matchingLeads.map((lead) => (
+                                <div key={lead.id} className="bg-zinc-900/90 border border-zinc-800/80 rounded-xl p-4 flex flex-col gap-2">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
+                                                    {lead.uf || 'UF N/A'}
+                                                </span>
+                                                <h4 className="text-sm font-bold text-zinc-100">
+                                                    {lead.cliente || lead.municipio || 'Cliente Não Informado'}
+                                                </h4>
+                                            </div>
+                                            <p className="text-xs text-zinc-400 mt-0.5">
+                                                <strong>Solicitação:</strong> {lead.solicitacao || 'N/A'}
+                                            </p>
+                                        </div>
+
+                                        <span className="text-sm font-bold font-mono text-red-400 shrink-0">
+                                            {lead.valor > 0 ? formatCurrency(lead.valor) : 'Valor N/A'}
+                                        </span>
+                                    </div>
+
+                                    {/* Status sucinto original do Excel */}
+                                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5 mt-1">
+                                        <p className="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-0.5">
+                                            Status Sucinto / Motivo Informado:
+                                        </p>
+                                        <p className="text-xs font-semibold text-zinc-200">
+                                            "{lead.status || 'Motivo de perda não detalhado'}"
+                                        </p>
+                                    </div>
+                                </div>
+                            ));
+                        })()}
+                    </div>
+
+                    <div className="px-6 py-3 border-t border-zinc-800 bg-zinc-950 shrink-0 flex justify-between items-center text-xs">
+                        <span className="text-zinc-500">Inteligência Comercial DRM</span>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedMotivoModal(null)}
+                            className="px-4 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg font-semibold transition-colors"
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );

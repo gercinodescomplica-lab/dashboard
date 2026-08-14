@@ -7,11 +7,12 @@ import {
     calculateGap,
     calculateAchievementPercentage,
     sumQuarterProjects,
+    sumNovosNegocios,
     getStatusColor,
     determinePerformanceStatus,
     calcForecastProRata2026,
 } from '@/lib/calc';
-import { Building2, Info, Calendar, Layers, ArrowUp, BarChart3 } from 'lucide-react';
+import { Building2, Info, Calendar, Layers, ArrowUp, BarChart3, ChevronRight, FileCheck } from 'lucide-react';
 import {
     Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -44,6 +45,14 @@ interface ModalState {
 
 const CLOSED_MODAL: ModalState = { open: false, title: '', subtitle: '', projects: [], total: 0, accentColor: 'text-indigo-400' };
 
+const Q_DESCRIPTIONS: Record<QKey, { name: string; period: string }> = {
+    q1: { name: '1º Trimestre', period: 'Jan – Mar' },
+    q2: { name: '2º Trimestre', period: 'Abr – Jun' },
+    q3: { name: '3º Trimestre', period: 'Jul – Set' },
+    q4: { name: '4º Trimestre', period: 'Out – Dez' },
+    nao_mapeado: { name: 'Sem Data', period: 'Não Mapeado' },
+};
+
 function InfoTip({ text }: { text: string }) {
     return (
         <Tooltip>
@@ -63,12 +72,12 @@ function KpiCardSide({ label, value, accent, tip }: {
     label: string; value: string; accent?: string; tip?: string;
 }) {
     return (
-        <div className="flex flex-col gap-0.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-4 py-2.5 min-w-0 hover:border-zinc-700/80 transition-colors">
+        <div className="flex flex-col gap-0.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-4 py-2 min-w-0 hover:border-zinc-700/80 transition-colors">
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
                 <span>{label}</span>
                 {tip && <InfoTip text={tip} />}
             </p>
-            <p className={`text-lg sm:text-xl font-bold font-mono truncate ${accent ?? 'text-zinc-100'}`}>{value}</p>
+            <p className={`text-base sm:text-lg font-bold font-mono truncate ${accent ?? 'text-zinc-100'}`}>{value}</p>
         </div>
     );
 }
@@ -111,18 +120,27 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
 
     // ── Totals ──────────────────────────────────────────────────────────────
     const totalHerdados = activeManagers.reduce((acc, m) => acc + (m.contratosHerdados ?? m.contratado), 0);
-    const totalNovosNegocios = activeManagers.reduce((acc, m) => acc + (m.novosNegocios ?? 0), 0);
+    const totalNovosNegociosProRata = activeManagers.reduce((acc, m) => acc + (m.novosNegocios ?? 0), 0);
+    const totalNovosNegociosTCV = activeManagers.reduce((acc, m) => acc + sumNovosNegocios(m.pipeline), 0);
     const totalContratado2026 = activeManagers.reduce((acc, m) => acc + (m.contratado2026 ?? m.contratado), 0);
     const totalForecastProRata2026 = activeManagers.reduce((acc, m) => acc + (m.forecastProRata2026 ?? calcForecastProRata2026(m.contratado, m.pipeline)), 0);
 
     // ── Pipeline by quarter ──────────────────────────────────────────────────
-    const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => ({
-        key: q,
-        label: q === 'nao_mapeado' ? 'N/M' : q.toUpperCase(),
-        total: activeManagers.reduce((acc, m) => acc + sumQuarterProjects(
-            (m.pipeline[q]?.projects || []).filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido')
-        ), 0),
-    }));
+    const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => {
+        const projects = activeManagers.flatMap(m => (m.pipeline[q]?.projects || []))
+            .filter(p => p.temperature !== 'historico' && p.temperature !== 'perdido');
+        const total = projects.reduce((sum, p) => sum + (p.value || 0), 0);
+        return {
+            key: q,
+            label: q === 'nao_mapeado' ? 'N/M' : q.toUpperCase(),
+            name: Q_DESCRIPTIONS[q].name,
+            period: Q_DESCRIPTIONS[q].period,
+            total,
+            count: projects.length,
+        };
+    });
+
+    const sumAllPipelineQuarters = qTotals.reduce((acc, q) => acc + q.total, 0);
     const maxQTotal = Math.max(...qTotals.map((q) => q.total), 1);
 
     // ── Manager Metrics Prep ─────────────────────────────────────────────────
@@ -194,7 +212,7 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
 
     return (
         <TooltipProvider>
-            <div className="flex flex-col gap-3 h-full">
+            <div className="flex flex-col gap-3.5 h-full overflow-y-auto">
 
                 {/* ── Header ──────────────────────────────────── */}
                 <div className="flex flex-row items-center justify-between gap-3 bg-zinc-900/40 border border-zinc-800/80 rounded-xl px-4 py-2.5 backdrop-blur-md shrink-0">
@@ -210,10 +228,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                 </div>
 
                 {/* ── Main Split View (Left: Dynamic Seamless Pyramid, Right: Consolidated Data & Pipeline) ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 flex-1 min-h-0">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 w-full">
 
                     {/* ── LEFT COLUMN (7 Cols): Pirâmide Dinâmica Ajustável ── */}
-                    <div className="lg:col-span-7 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col backdrop-blur-md h-full justify-between overflow-hidden">
+                    <div className="lg:col-span-7 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col backdrop-blur-md justify-between overflow-hidden">
                         <div className="flex items-center justify-between mb-2.5 border-b border-zinc-800/60 pb-2.5 flex-wrap gap-2 shrink-0">
                             <div>
                                 <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
@@ -383,10 +401,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                     </div>
 
                     {/* ── RIGHT COLUMN (5 Cols): Informações Consolidadas & Pipeline ── */}
-                    <div className="lg:col-span-5 flex flex-col gap-3 h-full">
+                    <div className="lg:col-span-5 flex flex-col gap-3.5">
 
-                        {/* Consolidated KPI Cards Column (Contratos Herdados Card Removed, 4 Cards Total) */}
-                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2.5 backdrop-blur-md flex-1 justify-around">
+                        {/* Consolidated KPI Cards Column (6 Cards Total) */}
+                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2 backdrop-blur-md">
                             <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
                                 <BarChart3 className="w-4 h-4 text-cyan-400" />
                                 Informações Consolidadas
@@ -399,50 +417,110 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 tip="Faturamento total realizado no ano de 2025. Editável nas Configurações."
                             />
                             <KpiCardSide
-                                label="2. Novos Negócios Concluídos"
-                                value={formatCurrency(totalNovosNegocios)}
-                                accent="text-emerald-400"
-                                tip="Receita pro-rata 2026 de novos contratos fechados no pipeline (Status = Contratado)."
+                                label="2. Contratos Herdados"
+                                value={formatCurrency(totalHerdados)}
+                                accent="text-zinc-300"
+                                tip="Base de contratos legados trazida de anos anteriores."
                             />
                             <KpiCardSide
-                                label="3. Contratado 2026"
+                                label="3. Novos Contratos (Valor Total)"
+                                value={formatCurrency(totalNovosNegociosTCV)}
+                                accent="text-emerald-400"
+                                tip="Valor total acumulado de novos contratos fechados (TCV total sem pro-rata)."
+                            />
+                            <KpiCardSide
+                                label="4. Novos Negócios Concluídos (Pro-rata 2026)"
+                                value={formatCurrency(totalNovosNegociosProRata)}
+                                accent="text-emerald-300"
+                                tip="Receita pro-rata 2026 reconhecida dos novos contratos fechados no pipeline."
+                            />
+                            <KpiCardSide
+                                label="5. Contratado 2026"
                                 value={formatCurrency(totalContratado2026)}
                                 accent="text-blue-400"
                                 tip="Herdados + parcela pro-rata 2026 dos novos negócios."
                             />
                             <KpiCardSide
-                                label="4. Forecast Pro-rata 2026"
+                                label="6. Forecast Pro-rata 2026"
                                 value={formatCurrency(totalForecastProRata2026)}
                                 accent="text-violet-400"
                                 tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline."
                             />
                         </div>
 
-                        {/* Pipeline por Trimestre (Quarterly Pipeline Column) */}
-                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 backdrop-blur-md shrink-0">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2 flex items-center justify-between">
-                                <span>Pipeline por Trimestre</span>
-                                <span className="text-[10px] text-zinc-600 font-normal flex items-center gap-1"><Calendar className="w-3 h-3" /> Clique para ver</span>
-                            </h4>
-                            <div className="grid grid-cols-5 gap-1.5">
-                                {qTotals.map((q) => (
-                                    <button
-                                        key={q.label}
-                                        type="button"
-                                        onClick={() => openQuarterModal(q.key, q.label, q.total)}
-                                        className="bg-zinc-800/80 hover:bg-zinc-800 rounded-lg p-2 border border-zinc-800 hover:border-indigo-500/50 transition-all text-left group cursor-pointer"
-                                    >
-                                        <span className="text-[10px] font-bold text-zinc-400 block uppercase">{q.label}</span>
-                                        <span className="text-xs font-bold font-mono text-indigo-400 group-hover:text-indigo-300 truncate block mt-0.5">
-                                            {formatCurrency(q.total)}
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
                     </div>
 
+                </div>
+
+                {/* ── EXPANDED PIPELINE POR TRIMESTRE (Visão Ampla Destaque Executivo) ── */}
+                <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shrink-0 mt-1">
+                    <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-3 flex-wrap gap-2">
+                        <div>
+                            <h4 className="text-sm sm:text-base font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                                <Calendar className="w-5 h-5 text-indigo-400" />
+                                Pipeline por Trimestre (Visão Ampla 2026)
+                            </h4>
+                            <p className="text-xs text-zinc-400 mt-0.5">Distribuição do volume comercial mapeado por período de fechamento · Clique para detalhamento</p>
+                        </div>
+                        <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+                            Total Pipeline: {formatCurrency(sumAllPipelineQuarters)}
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {qTotals.map((q) => {
+                            const pctOfTotal = sumAllPipelineQuarters > 0 ? (q.total / sumAllPipelineQuarters) * 100 : 0;
+                            const barWidthPct = maxQTotal > 0 ? (q.total / maxQTotal) * 100 : 0;
+
+                            return (
+                                <button
+                                    key={q.label}
+                                    type="button"
+                                    onClick={() => openQuarterModal(q.key, `${q.label} (${q.name})`, q.total)}
+                                    className="bg-zinc-900/80 hover:bg-zinc-850 border border-zinc-800 hover:border-indigo-500/60 rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 text-left group cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] relative overflow-hidden"
+                                >
+                                    {/* Accent Top Border Highlight */}
+                                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                                    <div>
+                                        <div className="flex items-center justify-between w-full mb-1">
+                                            <span className="text-xs font-extrabold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                                {q.label}
+                                            </span>
+                                            <span className="text-[11px] font-semibold text-zinc-400">
+                                                {q.period}
+                                            </span>
+                                        </div>
+
+                                        <p className="text-xs font-bold text-zinc-300 mt-1 line-clamp-1 group-hover:text-white transition-colors">
+                                            {q.name}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-3">
+                                        <div className="flex items-baseline justify-between gap-1 mb-1.5">
+                                            <span className="text-base sm:text-lg font-bold font-mono text-zinc-100 group-hover:text-indigo-300 transition-colors">
+                                                {formatCurrency(q.total)}
+                                            </span>
+                                        </div>
+
+                                        {/* Progress bar relative to max quarter */}
+                                        <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
+                                                style={{ width: `${Math.max(5, barWidthPct)}%` }}
+                                            />
+                                        </div>
+
+                                        <div className="flex items-center justify-between mt-2 text-[10px] text-zinc-400">
+                                            <span>{q.count} oport.</span>
+                                            <span className="font-mono text-indigo-400 font-semibold">{pctOfTotal.toFixed(1)}% do total</span>
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
             </div>

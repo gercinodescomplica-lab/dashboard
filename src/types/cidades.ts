@@ -12,15 +12,30 @@ export interface LeadCidade {
     contato_email?: string;
     contato_telefone?: string;
     previsao_fechamento?: string;
+
+    // Campos Padronizados Power Automate
+    categoria_padrao?: string;
+    etapa_padrao?: string;
+    situacao_padrao?: string;
+    motivo_padrao?: string;
+    familia_demanda?: string;
+    solicitacao_padrao?: string;
 }
 
 export interface CidadesSummary {
     totalLeads: number;
+    cidadesAtendidas: number;
     pipelineTotal: number;
     ticketMedio: number;
     previsaoMesAtual: number;
     proximos90Dias: number;
     leadsSemUf: number;
+}
+
+export interface MotivoPerdaStat {
+    motivo: string;
+    count: number;
+    valorTotal: number;
 }
 
 export interface CategoriaStat {
@@ -50,3 +65,4 @@ export interface TimelineStat {
     valor: number;
     acumulado: number;
 }
+
