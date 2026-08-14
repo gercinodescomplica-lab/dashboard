@@ -214,19 +214,6 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
         <TooltipProvider>
             <div className="flex flex-col gap-3.5 h-full overflow-y-auto">
 
-                {/* ── Header ──────────────────────────────────── */}
-                <div className="flex flex-row items-center justify-between gap-3 bg-zinc-900/40 border border-zinc-800/80 rounded-xl px-4 py-2.5 backdrop-blur-md shrink-0">
-                    <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center shrink-0">
-                            <Building2 className="w-5 h-5 text-zinc-400" />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-zinc-100 leading-tight">DRM — Visão Geral</h3>
-                            <p className="text-xs text-zinc-400">Diretoria de Relacionamento e Mercado · {year}</p>
-                        </div>
-                    </div>
-                </div>
-
                 {/* ── Main Split View (Left: Dynamic Seamless Pyramid, Right: Consolidated Data & Pipeline) ── */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 w-full">
 
@@ -423,7 +410,7 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 tip="Base de contratos legados trazida de anos anteriores."
                             />
                             <KpiCardSide
-                                label="3. Novos Contratos (Valor Total)"
+                                label="3. Novos Negócios Concluídos (Valor Total)"
                                 value={formatCurrency(totalNovosNegociosTCV)}
                                 accent="text-emerald-400"
                                 tip="Valor total acumulado de novos contratos fechados (TCV total sem pro-rata)."
