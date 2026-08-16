@@ -57,6 +57,36 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 
+const UF_NAMES: Record<string, string> = {
+    'AC': 'Acre',
+    'AL': 'Alagoas',
+    'AP': 'Amapá',
+    'AM': 'Amazonas',
+    'BA': 'Bahia',
+    'CE': 'Ceará',
+    'DF': 'Distrito Federal',
+    'ES': 'Espírito Santo',
+    'GO': 'Goiás',
+    'MA': 'Maranhão',
+    'MT': 'Mato Grosso',
+    'MS': 'Mato Grosso do Sul',
+    'MG': 'Minas Gerais',
+    'PA': 'Pará',
+    'PB': 'Paraíba',
+    'PR': 'Paraná',
+    'PE': 'Pernambuco',
+    'PI': 'Piauí',
+    'RJ': 'Rio de Janeiro',
+    'RN': 'Rio Grande do Norte',
+    'RS': 'Rio Grande do Sul',
+    'RO': 'Rondônia',
+    'RR': 'Roraima',
+    'SC': 'Santa Catarina',
+    'SP': 'São Paulo',
+    'SE': 'Sergipe',
+    'TO': 'Tocantins',
+};
+
 export function CidadesView() {
     const [leads, setLeads] = useState<LeadCidade[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -924,35 +954,38 @@ export function CidadesView() {
                         <div className="flex items-center justify-between mb-4 border-b border-zinc-800/60 pb-3">
                             <div>
                                 <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider">
-                                    Ranking por Estado (UF)
+                                    Ranking de Estados
                                 </h3>
                                 <p className="text-xs text-zinc-400">Clique para filtrar na tabela</p>
                             </div>
                         </div>
 
                         <div className="flex flex-col gap-2.5 overflow-y-auto flex-1 pr-1">
-                            {ufStats.map((st, idx) => (
-                                <button
-                                    key={st.uf}
-                                    onClick={() => handleUfClick(st.uf)}
-                                    className="flex items-center justify-between bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/60 hover:border-indigo-500/50 rounded-xl p-3 transition-all text-left cursor-pointer group"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className="w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs">
-                                            {st.uf}
-                                        </span>
-                                        <div>
-                                            <p className="text-xs font-semibold text-zinc-200 group-hover:text-indigo-300 transition-colors">
-                                                {st.uf === 'Sem UF' ? 'Não Informado' : `Estado (${st.uf})`}
-                                            </p>
-                                            <p className="text-[10px] text-zinc-400">{st.count} Lead(s)</p>
+                            {ufStats.map((st, idx) => {
+                                const stateFullName = st.uf === 'Sem UF' ? 'Não Informado' : (UF_NAMES[st.uf.trim().toUpperCase()] || st.uf);
+                                return (
+                                    <button
+                                        key={st.uf}
+                                        onClick={() => handleUfClick(st.uf)}
+                                        className="flex items-center justify-between bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/60 hover:border-indigo-500/50 rounded-xl p-3 transition-all text-left cursor-pointer group"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <span className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-xs shrink-0">
+                                                {st.uf}
+                                            </span>
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold text-zinc-200 group-hover:text-indigo-300 transition-colors truncate">
+                                                    {stateFullName}
+                                                </p>
+                                                <p className="text-[10px] text-zinc-400">{st.count} Lead(s)</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <span className="text-xs font-bold font-mono text-zinc-100">
-                                        {formatCurrency(st.valor)}
-                                    </span>
-                                </button>
-                            ))}
+                                        <span className="text-xs font-bold font-mono text-zinc-100 shrink-0 ml-2">
+                                            {formatCurrency(st.valor)}
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
