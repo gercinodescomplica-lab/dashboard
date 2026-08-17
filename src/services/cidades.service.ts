@@ -43,29 +43,29 @@ export function parseValorBRL(valor: any): number {
  * Strictly parses explicit previsao_fechamento field.
  */
 export function extractLeadDate(lead: { previsao_fechamento?: string }): Date | null {
-    if (!lead.previsao_fechamento || lead.previsao_fechamento.trim() === '') {
+    if (!lead.previsao_fechamento || String(lead.previsao_fechamento).trim() === '') {
         return null;
     }
 
-    const raw = lead.previsao_fechamento.trim();
+    const raw = String(lead.previsao_fechamento).trim();
 
-    // 1. Excel Serial Number (e.g. 46260 => 2026-08-26)
+    // 1. Excel Serial Number (e.g. 46336 => 10/11/2026)
     const serialNum = Number(raw);
     if (!isNaN(serialNum) && serialNum > 20000 && serialNum < 70000) {
-        const parsedExcelDate = new Date((serialNum - (25567 + 2)) * 86400 * 1000);
-        if (!isNaN(parsedExcelDate.getTime())) {
-            return parsedExcelDate;
+        const utcDate = new Date((serialNum - 25569) * 86400 * 1000);
+        if (!isNaN(utcDate.getTime())) {
+            return new Date(utcDate.getUTCFullYear(), utcDate.getUTCMonth(), utcDate.getUTCDate());
         }
     }
 
-    // 2. YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-        const [y, m, d] = raw.split('-').map(Number);
-        return new Date(y, m - 1, d);
+    // 2. YYYY-MM-DD or ISO
+    const matchIso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (matchIso) {
+        return new Date(Number(matchIso[1]), Number(matchIso[2]) - 1, Number(matchIso[3]));
     }
 
     // 3. DD/MM/YYYY or DD/MM/YY
-    const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    const matchSlash = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
     if (matchSlash) {
         let y = parseInt(matchSlash[3], 10);
         if (y < 100) y += 2000;

@@ -1108,11 +1108,10 @@ export function CidadesView() {
                                                 <p className="text-zinc-300 line-clamp-2">{lead.status || '-'}</p>
                                             </td>
                                             <td className="p-3 font-mono text-zinc-400">
-                                                {lead.previsao_fechamento ? (
-                                                    new Date(lead.previsao_fechamento).toLocaleDateString('pt-BR')
-                                                ) : (
-                                                    '-'
-                                                )}
+                                                {(() => {
+                                                    const d = extractLeadDate(lead);
+                                                    return d ? d.toLocaleDateString('pt-BR') : '-';
+                                                })()}
                                             </td>
                                             <td className="p-3 text-right font-mono font-bold text-emerald-400">
                                                 {formatCurrency(lead.valor)}
