@@ -42,3 +42,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Claude Code (config, memória local e docs de orientação — não versionar)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
