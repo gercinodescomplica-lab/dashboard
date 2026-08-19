@@ -386,10 +386,10 @@ export function DashboardShell() {
                 ) : selectedManagerId === 'drm' ? (
                     <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} faturamento2025={faturamento2025} lightActive={storeLightActive} />
                 ) : currentManager ? (
-                    <SingleManagerView key={currentManager.id} manager={currentManager} />
+                    <SingleManagerView key={currentManager.id} manager={currentManager} lightActive={storeLightActive} />
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-2xl">
-                        <Users className="w-12 h-12 mb-4 text-zinc-700" />
+                    <div className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl transition-colors duration-200 ${storeLightActive ? 'text-zinc-500 border-zinc-300' : 'text-zinc-500 border-zinc-800'}`}>
+                        <Users className={`w-12 h-12 mb-4 ${storeLightActive ? 'text-zinc-300' : 'text-zinc-700'}`} />
                         <p className="text-lg font-medium">Selecione um gerente para visualizar.</p>
                     </div>
                 )}

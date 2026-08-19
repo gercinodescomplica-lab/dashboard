@@ -1007,7 +1007,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
 
                     {/* Interactive Map (2 cols) */}
                     <div className="lg:col-span-2">
-                        <BrazilHeatMap leads={leads} onSelectUf={handleUfClick} />
+                        <BrazilHeatMap leads={leads} onSelectUf={handleUfClick} lightActive={lightActive} />
                     </div>
 
                     {/* State Ranking Sidebar (1 col) */}
