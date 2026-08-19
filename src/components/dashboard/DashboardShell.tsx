@@ -177,10 +177,10 @@ export function DashboardShell() {
                         className="text-left group transition-all cursor-pointer flex items-center gap-3"
                     >
                         {/* Logotipo AIBertinho — não muda com o tema */}
-                        <Image src="/avatars/aibertinho.png" alt="AIBertinho Logo" width={40} height={40} className="rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" priority />
+                        <Image src="/avatars/aibertinho.png" alt="AiBertinho v2 Logo" width={40} height={40} className="rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" priority />
                         <div>
-                            <h1 className={`text-2xl font-bold tracking-tight transition-colors ${storeLightActive ? 'text-zinc-900 group-hover:text-indigo-600' : 'text-zinc-100 group-hover:text-indigo-400'}`}>
-                                AIBertinho
+                            <h1 className={`text-2xl font-bold tracking-tight transition-colors flex items-center gap-2 ${storeLightActive ? 'text-zinc-900 group-hover:text-indigo-600' : 'text-zinc-100 group-hover:text-indigo-400'}`}>
+                                AiBertinho <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">v2.01</span>
                             </h1>
                             <p className={`text-sm font-medium ${storeLightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
                                 Visão Executiva de Gerentes

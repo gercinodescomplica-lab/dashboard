@@ -1169,11 +1169,10 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                                 <p className={`line-clamp-2 ${T.rowText}`}>{lead.status || '-'}</p>
                                             </td>
                                             <td className={`p-3 font-mono ${T.subtext}`}>
-                                                {lead.previsao_fechamento ? (
-                                                    new Date(lead.previsao_fechamento).toLocaleDateString('pt-BR')
-                                                ) : (
-                                                    '-'
-                                                )}
+                                                {(() => {
+                                                    const d = extractLeadDate(lead);
+                                                    return d ? d.toLocaleDateString('pt-BR') : '-';
+                                                })()}
                                             </td>
                                             <td className="p-3 text-right font-mono font-bold text-emerald-500">
                                                 {formatCurrency(lead.valor)}

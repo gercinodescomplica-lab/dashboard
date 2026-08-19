@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AIBertinho — DRM",
+  title: "AiBertinho v2.01 — DRM",
   description: "Dashboard comercial da Diretoria de Relacionamento e Mercado",
   icons: {
     icon: [
