@@ -200,6 +200,88 @@ curl -X GET https://seu-dominio.com/api/external/v1/contracts/analytics \
 
 ---
 
+### 5. Sincronizar tarefas do Planner — push manual (Power Automate → CX)
+Recebe a lista de tarefas do Microsoft Planner (montada pelo fluxo do Power Automate,
+ação "Compor") e faz upsert na tabela `cx`, associando cada tarefa a um gerente via
+o prefixo do título (ex: `"SEGES - Nova caixa de e-mail"` → cliente `SEGES` →
+gerente cujo `servedClients` contém `SEGES`).
+
+> Este endpoint é o caminho **manual/de backup** (útil pra forçar uma sincronização
+> via Postman/PowerShell). O caminho principal em produção é o pull automático
+> descrito na seção 6 — o AIBertinho puxa os dados sozinho, sem precisar de
+> recorrência configurada no Power Automate.
+
+- **URL:** `/api/external/v1/planner-sync`
+- **Método:** `POST`
+- **Corpo (Body):** array cru das tarefas (o mesmo formato que a ação "Compor" do
+  fluxo já produz) **ou** `{ "tasks": [...] }`.
+
+Campos aceitos por tarefa: `id` (obrigatório — vira `external_id`, chave de
+deduplicação/atualização), `title` (obrigatório), `datainicio`, `datafim`,
+`prioridade` (`Média`/`Importante`/`Urgente`), `percentComplete`, `Description`.
+
+**Importante:** tarefas com o mesmo `id` já importado são **atualizadas** (não
+duplicadas) — então o fluxo pode rodar em recorrência (a cada 15/30 min) e mudanças
+de status/descrição feitas no Planner continuam refletindo no dashboard a cada
+execução.
+
+#### Exemplo:
+```bash
+curl -X POST https://seu-dominio.com/api/external/v1/planner-sync \
+  -H "Authorization: Bearer <TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '[{"id":"abc123","title":"SEGES - Nova caixa de e-mail","datainicio":"2026-08-01T00:00:00Z","prioridade":"Importante","percentComplete":"50","Description":"01/08/2026 - aberto"}]'
+```
+
+#### Estrutura da Resposta:
+```json
+{
+  "success": true,
+  "summary": {
+    "total": 8,
+    "created": 5,
+    "updated": 3,
+    "unmatched": [
+      { "id": "xyz789", "title": "ÓRGÃO-SEM-GERENTE - Algo", "acronym": "ÓRGÃO-SEM-GERENTE" }
+    ],
+    "byManager": { "Bruno Ítalo": 4, "Ju Ferreira": 4 }
+  }
+}
+```
+
+`unmatched` lista tarefas cujo prefixo do título não bateu com nenhum `servedClients`
+de gerente — não são gravadas. `byManager` é só um resumo por gerente das tarefas
+processadas (criadas + atualizadas) nesta chamada.
+
+---
+
+### 6. Sincronização automática do Planner — pull no carregamento da página
+Não é um endpoint chamado de fora — é o AIBertinho que, toda vez que o dashboard é
+carregado (`fetchDashboardManagers`, disparado pelo `DashboardShell` no mount/F5),
+chama sozinho a URL do trigger **"Quando uma solicitação HTTP for recebida"** do
+fluxo no Power Automate (fluxo precisa terminar com uma ação **"Resposta"**
+devolvendo o JSON de tarefas), e reaproveita a mesma lógica de matching/upsert do
+endpoint da seção 5.
+
+- **Sem cron:** não existe agendamento nenhum — a sincronização só acontece quando
+  alguém abre/atualiza o dashboard.
+- **Não bloqueia o carregamento:** roda em segundo plano (Next.js `after()`) depois
+  da página já ter sido enviada pro navegador. Dados novos aparecem no próximo F5,
+  não no mesmo carregamento que disparou o pull.
+- **Throttle:** no máximo 1 chamada ao fluxo a cada `PLANNER_SYNC_THROTTLE_MINUTES`
+  (padrão 15 min), guardado em `system_settings`. Vários F5 seguidos não disparam o
+  fluxo várias vezes.
+- **Variáveis de ambiente:**
+  | Variável | Obrigatória | Descrição |
+  |---|---|---|
+  | `PLANNER_FLOW_URL` | Sim (senão o pull é um no-op) | URL da solicitação HTTP POST gerada pelo trigger do fluxo no Power Automate |
+  | `PLANNER_SYNC_THROTTLE_MINUTES` | Não (padrão 15) | Intervalo mínimo, em minutos, entre pulls |
+
+Implementação: `src/lib/planner-pull.ts` (throttle + fetch + parse) e
+`src/lib/planner-sync.ts` (matching/upsert, compartilhado com o endpoint da seção 5).
+
+---
+
 ## Códigos de Erro
 
 - **401 Unauthorized:** Cabeçalho de autorização ausente ou mal formatado.

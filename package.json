@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:migrate": "tsx migrate.ts",
     "cx:import": "tsx scripts/import-cx-planner.ts",
+    "cx:clear": "tsx scripts/clear-cx.ts",
     "db:sync-prod": "tsx scripts/sync-prod-to-local.ts"
   },
   "dependencies": {

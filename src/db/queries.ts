@@ -1,6 +1,6 @@
 import { db } from './index';
 import { managers, projects, cx, visits, contrato, proposta, systemSettings } from './schema';
-import { eq, like, desc, or } from 'drizzle-orm';
+import { eq, like, desc, or, inArray } from 'drizzle-orm';
 import { Manager, CXItem, Visit } from '../types/manager';
 
 /**
@@ -322,6 +322,26 @@ export async function fetchManagerById(id: string) {
     return rows[0] ?? null;
 }
 
+// Used to match Planner task titles ("SEGES - ...") to a manager via servedClients.
+// Kept separate from fetchManagerById since it needs the parsed servedClients list,
+// not the full Manager shape.
+export async function fetchManagersForClientMatch() {
+    const rows = await db
+        .select({ id: managers.id, name: managers.name, servedClients: managers.servedClients })
+        .from(managers);
+    return rows.map((m) => {
+        let servedClients: string[] = [];
+        if (m.servedClients) {
+            try {
+                servedClients = JSON.parse(m.servedClients);
+            } catch {
+                servedClients = [];
+            }
+        }
+        return { id: m.id, name: m.name, servedClients };
+    });
+}
+
 // ─── CX Queries ────────────────────────────────────────────────────────────────
 
 export async function createCXItem(data: typeof cx.$inferInsert) {
@@ -337,6 +357,25 @@ export async function fetchCXItemById(id: number) {
 export async function updateCXItem(id: number, data: Partial<typeof cx.$inferInsert>) {
     const rows = await db.update(cx).set(data).where(eq(cx.id, id)).returning();
     return rows[0];
+}
+
+// Looks up existing CX rows by Planner task id (external_id) so a sync can
+// decide insert vs. update. external_id is not scoped per manager (a task
+// could in theory be reassigned), so this checks across all managers.
+export async function fetchCXByExternalIds(externalIds: string[]) {
+    if (externalIds.length === 0) return [];
+    // status/criticidade vêm junto (além de id/externalId) para o
+    // planner-sync poder comparar valor antigo x novo e registrar o que
+    // mudou no histórico (ver src/lib/planner-sync.ts).
+    return db
+        .select({
+            id: cx.id,
+            externalId: cx.externalId,
+            status: cx.status,
+            criticidade: cx.criticidade,
+        })
+        .from(cx)
+        .where(inArray(cx.externalId, externalIds));
 }
 
 // ─── Project Queries ───────────────────────────────────────────────────────────
@@ -503,6 +542,38 @@ export async function saveFaturamento2025(value: number): Promise<void> {
         .insert(systemSettings)
         .values({
             key: 'faturamento_2025',
+            value: valStr,
+            updatedAt: new Date().toISOString(),
+        })
+        .onConflictDoUpdate({
+            target: systemSettings.key,
+            set: {
+                value: valStr,
+                updatedAt: new Date().toISOString(),
+            },
+        });
+}
+
+const PLANNER_LAST_SYNCED_KEY = 'planner_last_synced_at';
+
+/** Epoch ms of the last successful (or attempted) Planner pull-sync, or null if it never ran. */
+export async function getPlannerLastSyncedAt(): Promise<number | null> {
+    const rows = await db
+        .select()
+        .from(systemSettings)
+        .where(eq(systemSettings.key, PLANNER_LAST_SYNCED_KEY));
+    if (rows.length === 0) return null;
+    const ts = Number(rows[0].value);
+    return Number.isFinite(ts) ? ts : null;
+}
+
+/** Records when the Planner pull-sync last ran, used to throttle src/lib/planner-pull.ts. */
+export async function savePlannerLastSyncedAt(epochMs: number): Promise<void> {
+    const valStr = epochMs.toString();
+    await db
+        .insert(systemSettings)
+        .values({
+            key: PLANNER_LAST_SYNCED_KEY,
             value: valStr,
             updatedAt: new Date().toISOString(),
         })

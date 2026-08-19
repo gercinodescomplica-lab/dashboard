@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
-import { LayoutDashboard, Calendar, Package, BarChart3, Building2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, Calendar, Package, BarChart3, Building2, Sun, Moon } from 'lucide-react';
+import { applyBodyTheme } from '@/lib/themeSync';
 
 export interface StoreProduct {
     id: number;
@@ -22,11 +23,20 @@ const MONTH_MAP: Record<string, number> = {
 const MONTH_NAMES_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 
-const DIR_COLORS: Record<string, string> = {
+// Tema escuro (estado atual — não alterado)
+const DIR_COLORS_DARK: Record<string, string> = {
     DDS: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
     DIT: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
     DRM: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     PRE: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+};
+
+// Tema claro — clonado dos prints (Painel geral / Roadmap / Listagem de produtos)
+const DIR_COLORS_LIGHT: Record<string, string> = {
+    DDS: 'bg-cyan-50 text-cyan-700 border-cyan-200',
+    DIT: 'bg-amber-50 text-amber-700 border-amber-200',
+    DRM: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    PRE: 'bg-yellow-50 text-yellow-700 border-yellow-200',
 };
 
 const DIR_DOT_COLORS: Record<string, string> = {
@@ -40,19 +50,166 @@ const DIR_NAMES: Record<string, string> = {
     PRE: 'Produtos e Resultados Estratégicos'
 };
 
-const STAT_COLORS = {
+const STAT_COLORS_DARK = {
     store: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50',
     breve: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50',
     backlog: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/50',
 };
 
+const STAT_COLORS_LIGHT = {
+    store: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    breve: 'bg-amber-50 text-amber-700 border-amber-200',
+    backlog: 'bg-zinc-100 text-zinc-600 border-zinc-200',
+};
+
 const STAT_LABELS = { store: 'Na Store', breve: 'Em breve', backlog: 'Backlog' };
 
-export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }: { PRODUCTS?: StoreProduct[]; EXTRA_OPTIONS?: Record<string, string[]> }) {
+// Tags/pontos das fases do roadmap (done/in/next/backlog)
+const PHASE_TAG_COLORS_DARK: Record<string, string> = {
+    done: 'bg-emerald-500/10 text-emerald-400',
+    in: 'bg-amber-500/10 text-amber-400',
+    next: 'bg-blue-500/10 text-blue-400',
+    backlog: 'bg-zinc-500/10 text-zinc-400',
+};
+const PHASE_TAG_COLORS_LIGHT: Record<string, string> = {
+    done: 'bg-emerald-50 text-emerald-700',
+    in: 'bg-amber-50 text-amber-700',
+    next: 'bg-blue-50 text-blue-700',
+    backlog: 'bg-zinc-100 text-zinc-600',
+};
+const PHASE_DOT_COLORS_DARK: Record<string, string> = {
+    done: 'bg-emerald-500',
+    in: 'bg-amber-500 border-2 border-amber-300',
+    next: 'bg-blue-500',
+    backlog: 'bg-zinc-600',
+};
+const PHASE_DOT_COLORS_LIGHT: Record<string, string> = {
+    done: 'bg-emerald-500',
+    in: 'bg-amber-500 border-2 border-amber-200',
+    next: 'bg-blue-500',
+    backlog: 'bg-zinc-300',
+};
+
+export default function PipelineStoreView({
+    PRODUCTS = [],
+    EXTRA_OPTIONS = {},
+    theme: themeProp,
+    onThemeChange,
+}: {
+    PRODUCTS?: StoreProduct[];
+    EXTRA_OPTIONS?: Record<string, string[]>;
+    /** Tema controlado externamente (ex.: pelo DashboardShell, pra sincronizar com o cabeçalho). Se omitido, o componente controla o próprio estado (uso standalone em /store). */
+    theme?: 'dark' | 'light';
+    onThemeChange?: (theme: 'dark' | 'light') => void;
+}) {
     const [view, setView] = useState<'overview' | 'roadmap' | 'produtos'>('overview');
     const [roadmapFilter, setRoadmapFilter] = useState('all');
     const [prodFilter, setProdFilter] = useState('all');
     const [selectedProdId, setSelectedProdId] = useState<number | null>(null);
+    // Tema visual do painel Store (escuro = estado atual/padrão, claro = clone dos prints). Não afeta nenhuma regra/lógica.
+    const [internalTheme, setInternalTheme] = useState<'dark' | 'light'>('dark');
+    // Persistência apenas para o uso standalone (página pública /store, sem controle externo do DashboardShell).
+    // Usa a mesma chave global do resto do sistema, então reflete o tema escolhido em qualquer outra área.
+    useEffect(() => {
+        if (themeProp !== undefined) return;
+        try {
+            const saved = localStorage.getItem('aibertinho-theme');
+            if (saved === 'light' || saved === 'dark') {
+                setInternalTheme(saved);
+                applyBodyTheme(saved);
+                return;
+            }
+        } catch {
+            // localStorage indisponível — mantém o padrão escuro.
+        }
+        applyBodyTheme('dark');
+    }, [themeProp]);
+    const theme = themeProp ?? internalTheme;
+    const isDark = theme === 'dark';
+    const toggleTheme = () => {
+        const next: 'dark' | 'light' = isDark ? 'light' : 'dark';
+        if (onThemeChange) {
+            onThemeChange(next);
+        } else {
+            setInternalTheme(next);
+            try {
+                localStorage.setItem('aibertinho-theme', next);
+            } catch {
+                // localStorage indisponível — segue apenas em memória.
+            }
+            applyBodyTheme(next);
+        }
+    };
+
+    const DIR_COLORS = isDark ? DIR_COLORS_DARK : DIR_COLORS_LIGHT;
+    const STAT_COLORS = isDark ? STAT_COLORS_DARK : STAT_COLORS_LIGHT;
+    const PHASE_TAG_COLORS = isDark ? PHASE_TAG_COLORS_DARK : PHASE_TAG_COLORS_LIGHT;
+    const PHASE_DOT_COLORS = isDark ? PHASE_DOT_COLORS_DARK : PHASE_DOT_COLORS_LIGHT;
+
+    const T = {
+        rootBg: isDark ? 'bg-zinc-950' : 'bg-white',
+        rootText: isDark ? 'text-zinc-100' : 'text-zinc-900',
+        rootBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+
+        sidebarBg: isDark ? 'bg-zinc-900' : 'bg-white',
+        sidebarBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        navActive: isDark ? 'bg-zinc-800 text-white' : 'bg-zinc-100 text-zinc-900',
+        navInactive: isDark ? 'text-zinc-400 hover:bg-zinc-800 hover:text-white' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900',
+        accentText: isDark ? 'text-indigo-400' : 'text-indigo-600',
+
+        headerBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        headerBg: isDark ? 'bg-zinc-950/80' : 'bg-white/80',
+        headerTitle: isDark ? 'text-zinc-100' : 'text-zinc-900',
+        mobileNavActive: isDark ? 'bg-zinc-800 text-white' : 'bg-zinc-900 text-white',
+        mobileNavInactive: isDark ? 'text-zinc-400 border border-zinc-800' : 'text-zinc-500 border border-zinc-200',
+        toggleBtn: isDark ? 'bg-zinc-800 text-amber-300 hover:bg-zinc-700 border-zinc-700' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border-zinc-200',
+
+        cardBg: isDark ? 'bg-zinc-900' : 'bg-white',
+        cardBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        subtext: isDark ? 'text-zinc-400' : 'text-zinc-500',
+        panelHeading: isDark ? 'text-zinc-300' : 'text-zinc-700',
+        track: isDark ? 'bg-zinc-800' : 'bg-zinc-100',
+
+        numTotal: isDark ? 'text-white' : 'text-zinc-900',
+        numStore: isDark ? 'text-emerald-400' : 'text-emerald-600',
+        numBreve: isDark ? 'text-amber-400' : 'text-amber-600',
+        numBacklog: isDark ? 'text-zinc-400' : 'text-zinc-700',
+
+        pillActive: isDark ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-orange-500 text-white border-orange-500',
+        pillInactive: isDark ? 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500' : 'bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400',
+
+        phaseLabel: isDark ? 'text-zinc-200' : 'text-zinc-800',
+        timelineLine: isDark ? 'bg-zinc-800' : 'bg-zinc-200',
+        chipBubbleBg: isDark ? 'bg-zinc-900' : 'bg-white',
+        chipBubbleBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        emptyPhase: isDark ? 'text-zinc-600' : 'text-zinc-400',
+        tooltipBg: isDark ? 'bg-zinc-950' : 'bg-white',
+        tooltipBorder: isDark ? 'border-zinc-700' : 'border-zinc-200',
+        tooltipText: isDark ? 'text-zinc-200' : 'text-zinc-700',
+        tooltipLabel: isDark ? 'text-zinc-500' : 'text-zinc-400',
+
+        tableWrapBg: isDark ? 'bg-zinc-900' : 'bg-white',
+        tableWrapBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        theadBg: isDark ? 'bg-zinc-950' : 'bg-zinc-50',
+        theadBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        tbodyDivide: isDark ? 'divide-zinc-800/50' : 'divide-zinc-200',
+        rowHover: isDark ? 'hover:bg-zinc-800/50' : 'hover:bg-zinc-50',
+        rowIndex: isDark ? 'text-zinc-500' : 'text-zinc-400',
+        rowName: isDark ? 'text-zinc-200' : 'text-zinc-900',
+        rowNameHover: isDark ? 'group-hover:text-indigo-400' : 'group-hover:text-indigo-600',
+        rowFase: isDark ? 'text-zinc-400' : 'text-zinc-500',
+
+        modalBg: isDark ? 'bg-zinc-950' : 'bg-white',
+        modalBorder: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        modalClose: isDark ? 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800' : 'bg-zinc-100 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200',
+        modalTitle: isDark ? 'text-white' : 'text-zinc-900',
+        modalDivider: isDark ? 'border-zinc-800' : 'border-zinc-200',
+        modalLabel: isDark ? 'text-zinc-500' : 'text-zinc-400',
+        modalValue: isDark ? 'text-zinc-200' : 'text-zinc-800',
+        marketplaceBadge: isDark ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/50' : 'bg-emerald-50 text-emerald-700 border-emerald-200',
+
+        scrollbarThumb: isDark ? '#3f3f46' : '#d4d4d8',
+    };
 
     const PHASES = React.useMemo(() => {
         const now = new Date();
@@ -138,15 +295,15 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
     const activeProd = PRODUCTS.find(p => p.id === selectedProdId);
 
     return (
-        <div className="w-full h-full flex bg-zinc-950 text-zinc-100 rounded-2xl overflow-hidden border border-zinc-800">
+        <div className={`w-full h-full flex ${T.rootBg} ${T.rootText} rounded-2xl overflow-hidden border ${T.rootBorder} transition-colors duration-200`}>
             {/* Sidebar */}
-            <div className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col overflow-y-auto hidden md:flex">
-                <div className="p-6 border-b border-zinc-800">
+            <div className={`w-64 ${T.sidebarBg} border-r ${T.sidebarBorder} flex flex-col overflow-y-auto hidden md:flex transition-colors duration-200`}>
+                <div className={`p-6 border-b ${T.sidebarBorder}`}>
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center font-bold text-white shadow-lg text-lg">P</div>
                         <div>
                             <div className="font-bold text-base leading-tight">Prodam Store</div>
-                            <div className="text-[10px] text-indigo-400 tracking-wider uppercase mt-1">Gestão de Produto</div>
+                            <div className={`text-[10px] ${T.accentText} tracking-wider uppercase mt-1`}>Gestão de Produto</div>
                         </div>
                     </div>
                 </div>
@@ -157,14 +314,14 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                         <div className="space-y-1">
                             <button
                                 onClick={() => setView('overview')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'overview' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'overview' ? T.navActive : T.navInactive}`}
                             >
                                 <BarChart3 className="w-4 h-4" />
                                 Painel Geral
                             </button>
                             <button
                                 onClick={() => setView('roadmap')}
-                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'roadmap' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}
+                                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'roadmap' ? T.navActive : T.navInactive}`}
                             >
                                 <Calendar className="w-4 h-4" />
                                 Roadmap
@@ -176,7 +333,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                         <div className="text-[10px] font-bold text-zinc-500 tracking-wider uppercase px-3 mb-2">Produtos</div>
                         <button
                             onClick={() => setView('produtos')}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'produtos' ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:bg-zinc-800 hover:text-white'}`}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${view === 'produtos' ? T.navActive : T.navInactive}`}
                         >
                             <Package className="w-4 h-4" />
                             Todos os Produtos
@@ -184,7 +341,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                     </div>
                 </div>
 
-                <div className="p-4 border-t border-zinc-800 text-xs text-zinc-500">
+                <div className={`p-4 border-t ${T.sidebarBorder} text-xs text-zinc-500`}>
                     Novembro 2025 - {new Date().getFullYear()}
                 </div>
 
@@ -192,17 +349,31 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
 
             {/* Content Area */}
             <div className="flex-1 flex flex-col relative overflow-hidden">
-                <div className="h-16 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur flex items-center px-6 justify-between flex-shrink-0">
-                    <div className="font-bold text-lg text-zinc-100">
+                <div className={`h-16 border-b ${T.headerBorder} ${T.headerBg} backdrop-blur flex items-center px-6 justify-between flex-shrink-0 transition-colors duration-200`}>
+                    <div className={`font-bold text-lg ${T.headerTitle}`}>
                         {view === 'overview' && 'Painel Geral'}
                         {view === 'roadmap' && 'Roadmap de Lançamentos'}
                         {view === 'produtos' && 'Listagem de Produtos'}
                     </div>
-                    {/* Mobile nav quick toggles */}
-                    <div className="md:hidden flex gap-2">
-                         <button onClick={() => setView('overview')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'overview' ? 'bg-zinc-800 text-white' : 'text-zinc-400 border border-zinc-800'}`}>Geral</button>
-                         <button onClick={() => setView('roadmap')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'roadmap' ? 'bg-zinc-800 text-white' : 'text-zinc-400 border border-zinc-800'}`}>Roadmap</button>
-                         <button onClick={() => setView('produtos')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'produtos' ? 'bg-zinc-800 text-white' : 'text-zinc-400 border border-zinc-800'}`}>Produtos</button>
+                    <div className="flex items-center gap-3">
+                        {/* Mobile nav quick toggles */}
+                        <div className="md:hidden flex gap-2">
+                             <button onClick={() => setView('overview')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'overview' ? T.mobileNavActive : T.mobileNavInactive}`}>Geral</button>
+                             <button onClick={() => setView('roadmap')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'roadmap' ? T.mobileNavActive : T.mobileNavInactive}`}>Roadmap</button>
+                             <button onClick={() => setView('produtos')} className={`px-3 py-1.5 text-xs rounded-md ${view === 'produtos' ? T.mobileNavActive : T.mobileNavInactive}`}>Produtos</button>
+                        </div>
+                        {/* Alternância de tema — só renderizada aqui quando não há um cabeçalho externo controlando o tema (uso standalone em /store). Dentro do DashboardShell, o botão vive no header principal. */}
+                        {themeProp === undefined && (
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                title={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                                aria-label={isDark ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                                className={`w-9 h-9 flex items-center justify-center rounded-lg border transition-colors ${T.toggleBtn}`}
+                            >
+                                {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -211,31 +382,31 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                     {view === 'overview' && (
                         <div className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl border-l-4 border-l-indigo-500">
+                                <div className={`${T.cardBg} border ${T.cardBorder} p-5 rounded-xl border-l-4 border-l-indigo-500 transition-colors duration-200`}>
                                     <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Total no portfólio</div>
-                                    <div className="text-3xl font-black text-white">{PRODUCTS.length}</div>
-                                    <div className="text-sm text-zinc-400 mt-1">produtos mapeados</div>
+                                    <div className={`text-3xl font-black ${T.numTotal}`}>{PRODUCTS.length}</div>
+                                    <div className={`text-sm ${T.subtext} mt-1`}>produtos mapeados</div>
                                 </div>
-                                <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl border-l-4 border-l-emerald-500">
+                                <div className={`${T.cardBg} border ${T.cardBorder} p-5 rounded-xl border-l-4 border-l-emerald-500 transition-colors duration-200`}>
                                     <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Na Store</div>
-                                    <div className="text-3xl font-black text-emerald-400">{storeProds}</div>
-                                    <div className="text-sm text-zinc-400 mt-1">disponíveis hoje</div>
+                                    <div className={`text-3xl font-black ${T.numStore}`}>{storeProds}</div>
+                                    <div className={`text-sm ${T.subtext} mt-1`}>disponíveis hoje</div>
                                 </div>
-                                <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl border-l-4 border-l-amber-500">
+                                <div className={`${T.cardBg} border ${T.cardBorder} p-5 rounded-xl border-l-4 border-l-amber-500 transition-colors duration-200`}>
                                     <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Em breve</div>
-                                    <div className="text-3xl font-black text-amber-400">{breveProds}</div>
-                                    <div className="text-sm text-zinc-400 mt-1">com previsão</div>
+                                    <div className={`text-3xl font-black ${T.numBreve}`}>{breveProds}</div>
+                                    <div className={`text-sm ${T.subtext} mt-1`}>com previsão</div>
                                 </div>
-                                <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-xl border-l-4 border-l-zinc-500">
+                                <div className={`${T.cardBg} border ${T.cardBorder} p-5 rounded-xl border-l-4 border-l-zinc-500 transition-colors duration-200`}>
                                     <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Backlog</div>
-                                    <div className="text-3xl font-black text-zinc-400">{backProds}</div>
-                                    <div className="text-sm text-zinc-400 mt-1">sem data definida</div>
+                                    <div className={`text-3xl font-black ${T.numBacklog}`}>{backProds}</div>
+                                    <div className={`text-sm ${T.subtext} mt-1`}>sem data definida</div>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                                    <h3 className="text-sm font-bold text-zinc-300 mb-6 uppercase tracking-wider">Por Diretoria</h3>
+                                <div className={`${T.cardBg} border ${T.cardBorder} rounded-xl p-6 transition-colors duration-200`}>
+                                    <h3 className={`text-sm font-bold ${T.panelHeading} mb-6 uppercase tracking-wider`}>Por Diretoria</h3>
                                     <div className="space-y-4">
                                         {['DDS', 'DIT', 'DRM', 'PRE'].map(dir => {
                                             const count = PRODUCTS.filter(p => p.d === dir).length;
@@ -247,9 +418,9 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                                             <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[dir]}`}></div>
                                                             {dir}
                                                         </span>
-                                                        <span className="text-zinc-400">{count} ({pct}%)</span>
+                                                        <span className={T.subtext}>{count} ({pct}%)</span>
                                                     </div>
-                                                    <div className="w-full bg-zinc-800 rounded-full h-2">
+                                                    <div className={`w-full ${T.track} rounded-full h-2`}>
                                                         <div className={`h-2 rounded-full ${DIR_DOT_COLORS[dir]} opacity-80`} style={{ width: `${pct}%` }}></div>
                                                     </div>
                                                 </div>
@@ -258,8 +429,8 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                     </div>
                                 </div>
 
-                                <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
-                                    <h3 className="text-sm font-bold text-zinc-300 mb-6 uppercase tracking-wider">Status</h3>
+                                <div className={`${T.cardBg} border ${T.cardBorder} rounded-xl p-6 transition-colors duration-200`}>
+                                    <h3 className={`text-sm font-bold ${T.panelHeading} mb-6 uppercase tracking-wider`}>Status</h3>
                                     <div className="space-y-4">
                                         {[
                                             { s: 'store', label: 'Na Store', color: 'bg-emerald-500', count: storeProds },
@@ -274,9 +445,9 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                                             <div className={`w-2 h-2 rounded-full ${stat.color}`}></div>
                                                             {stat.label}
                                                         </span>
-                                                        <span className="text-zinc-400">{stat.count} ({pct}%)</span>
+                                                        <span className={T.subtext}>{stat.count} ({pct}%)</span>
                                                     </div>
-                                                    <div className="w-full bg-zinc-800 rounded-full h-2">
+                                                    <div className={`w-full ${T.track} rounded-full h-2`}>
                                                         <div className={`h-2 rounded-full ${stat.color} opacity-80`} style={{ width: `${pct}%` }}></div>
                                                     </div>
                                                 </div>
@@ -297,7 +468,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                     <button
                                         key={f}
                                         onClick={() => setRoadmapFilter(f)}
-                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${roadmapFilter === f ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${roadmapFilter === f ? T.pillActive : T.pillInactive}`}
                                     >
                                         {f !== 'all' && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f] ?? 'bg-zinc-500'}`}></div>}
                                         {f === 'all' ? 'Todas' : f}
@@ -312,27 +483,26 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                     return (
                                         <div key={idx} className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                                             {/* Phase Info */}
-                                            <div className="sm:w-36 flex-shrink-0 flex items-center sm:items-end justify-between sm:justify-start sm:flex-col pt-3 border-b-2 sm:border-b-0 border-zinc-800 pb-2 sm:pb-0">
-                                                <div className="font-bold text-zinc-200 text-sm sm:text-right flex items-center gap-2 sm:block sm:mb-1">
+                                            <div className={`sm:w-36 flex-shrink-0 flex items-center sm:items-end justify-between sm:justify-start sm:flex-col pt-3 border-b-2 sm:border-b-0 ${T.headerBorder} pb-2 sm:pb-0`}>
+                                                <div className={`font-bold ${T.phaseLabel} text-sm sm:text-right flex items-center gap-2 sm:block sm:mb-1`}>
                                                     {ph.f} {ph.now ? ' - ' : ''}
                                                     {ph.now && <span className="px-2 py-0.5 rounded-full bg-amber-500 text-[9px] text-white uppercase sm:ml-0 inline-block align-middle animate-pulse">Agora</span>}
                                                 </div>
-                                                <div className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${ph.t === 'done' ? 'bg-emerald-500/10 text-emerald-400' : ph.t === 'in' ? 'bg-amber-500/10 text-amber-400' : ph.t === 'next' ? 'bg-blue-500/10 text-blue-400' : 'bg-zinc-500/10 text-zinc-400'
-                                                    }`}>
+                                                <div className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${PHASE_TAG_COLORS[ph.t] ?? PHASE_TAG_COLORS.backlog}`}>
                                                     {ph.lb}
                                                 </div>
                                             </div>
 
                                             {/* Timeline Visual (Desktop only) */}
                                             <div className="hidden sm:flex flex-col items-center flex-shrink-0 pt-4">
-                                                <div className={`w-3 h-3 rounded-full flex-shrink-0 relative ${ph.t === 'done' ? 'bg-emerald-500' : ph.t === 'in' ? 'bg-amber-500 border-2 border-amber-300' : ph.t === 'next' ? 'bg-blue-500' : 'bg-zinc-600'}`}></div>
-                                                {idx < PHASES.length - 1 && <div className="w-[2px] bg-zinc-800 flex-1 mt-2 mb-[-1rem] relative z-0"></div>}
+                                                <div className={`w-3 h-3 rounded-full flex-shrink-0 relative ${PHASE_DOT_COLORS[ph.t] ?? PHASE_DOT_COLORS.backlog}`}></div>
+                                                {idx < PHASES.length - 1 && <div className={`w-[2px] ${T.timelineLine} flex-1 mt-2 mb-[-1rem] relative z-0`}></div>}
                                             </div>
 
                                             {/* Chips Bubble */}
-                                            <div className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl p-4 sm:mt-1">
+                                            <div className={`flex-1 ${T.chipBubbleBg} border ${T.chipBubbleBorder} rounded-xl p-4 sm:mt-1 transition-colors duration-200`}>
                                                 {items.length === 0 ? (
-                                                    <div className="text-xs text-zinc-600 italic">Nenhum produto listado nesta fase.</div>
+                                                    <div className={`text-xs ${T.emptyPhase} italic`}>Nenhum produto listado nesta fase.</div>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-2">
                                                         {items.map(p => (
@@ -344,8 +514,8 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                                                     <div className={`w-1.5 h-1.5 rounded-full ${DIR_DOT_COLORS[p.d] ?? 'bg-zinc-500'}`}></div>
                                                                     {p.n}
                                                                 </button>
-                                                                <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-md bg-zinc-950 border border-zinc-700 text-[11px] font-medium text-zinc-200 whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150 z-20 shadow-lg">
-                                                                    <span className="text-[9px] uppercase tracking-wider text-zinc-500 mr-1.5">Responsável:</span>
+                                                                <div className={`pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-md ${T.tooltipBg} border ${T.tooltipBorder} text-[11px] font-medium ${T.tooltipText} whitespace-nowrap opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150 z-20 shadow-lg`}>
+                                                                    <span className={`text-[9px] uppercase tracking-wider ${T.tooltipLabel} mr-1.5`}>Responsável:</span>
                                                                     {p.r && p.r.trim() ? p.r : 'Não definido'}
                                                                 </div>
                                                             </div>
@@ -379,7 +549,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                         <button
                                             key={f}
                                             onClick={() => setProdFilter(f)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${prodFilter === f ? 'bg-zinc-100 text-black border-zinc-100' : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500'}`}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 border ${prodFilter === f ? T.pillActive : T.pillInactive}`}
                                         >
                                             {isDir && <div className={`w-2 h-2 rounded-full ${DIR_DOT_COLORS[f] ?? 'bg-zinc-500'}`}></div>}
                                             {label}
@@ -388,22 +558,22 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                 })}
                             </div>
 
-                            <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-x-auto custom-scrollbar">
+                            <div className={`${T.tableWrapBg} border ${T.tableWrapBorder} rounded-xl overflow-x-auto custom-scrollbar transition-colors duration-200`}>
                                 <table className="w-full text-left border-collapse min-w-[600px]">
                                     <thead>
-                                        <tr className="bg-zinc-950 text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                                            <th className="px-4 py-3 border-b border-zinc-800 w-12 text-center">#</th>
-                                            <th className="px-4 py-3 border-b border-zinc-800">Produto</th>
-                                            <th className="px-4 py-3 border-b border-zinc-800">Diretoria</th>
-                                            <th className="px-4 py-3 border-b border-zinc-800">Status</th>
-                                            <th className="px-4 py-3 border-b border-zinc-800">Fase</th>
+                                        <tr className={`${T.theadBg} text-xs font-bold text-zinc-500 uppercase tracking-wider`}>
+                                            <th className={`px-4 py-3 border-b ${T.theadBorder} w-12 text-center`}>#</th>
+                                            <th className={`px-4 py-3 border-b ${T.theadBorder}`}>Produto</th>
+                                            <th className={`px-4 py-3 border-b ${T.theadBorder}`}>Diretoria</th>
+                                            <th className={`px-4 py-3 border-b ${T.theadBorder}`}>Status</th>
+                                            <th className={`px-4 py-3 border-b ${T.theadBorder}`}>Fase</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-zinc-800/50">
+                                    <tbody className={`divide-y ${T.tbodyDivide}`}>
                                         {filteredTableProds.map((p, i) => (
-                                            <tr key={p.id} onClick={() => setSelectedProdId(p.id)} className="hover:bg-zinc-800/50 cursor-pointer transition-colors group">
-                                                <td className="px-4 py-3 text-sm text-zinc-500 text-center">{i + 1}</td>
-                                                <td className="px-4 py-3 text-sm font-bold text-zinc-200 group-hover:text-indigo-400">{p.n}</td>
+                                            <tr key={p.id} onClick={() => setSelectedProdId(p.id)} className={`${T.rowHover} cursor-pointer transition-colors group`}>
+                                                <td className={`px-4 py-3 text-sm ${T.rowIndex} text-center`}>{i + 1}</td>
+                                                <td className={`px-4 py-3 text-sm font-bold ${T.rowName} ${T.rowNameHover}`}>{p.n}</td>
                                                 <td className="px-4 py-3">
                                                     <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md border ${DIR_COLORS[p.d]}`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${DIR_DOT_COLORS[p.d]}`}></span>
@@ -415,7 +585,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                                         {STAT_LABELS[p.s as keyof typeof STAT_LABELS]}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm font-medium text-zinc-400">{p.f}</td>
+                                                <td className={`px-4 py-3 text-sm font-medium ${T.rowFase}`}>{p.f}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -429,11 +599,11 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
             {/* Modal */}
             {activeProd && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedProdId(null)}>
-                    <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-md shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => setSelectedProdId(null)} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">×</button>
-                        
-                        <h2 className="text-xl font-black text-white pr-8 mb-4">{activeProd.n}</h2>
-                        
+                    <div className={`${T.modalBg} border ${T.modalBorder} rounded-2xl w-full max-w-md shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-200`} onClick={e => e.stopPropagation()}>
+                        <button onClick={() => setSelectedProdId(null)} className={`absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg ${T.modalClose} transition-colors`}>×</button>
+
+                        <h2 className={`text-xl font-black ${T.modalTitle} pr-8 mb-4`}>{activeProd.n}</h2>
+
                         <div className="flex flex-wrap gap-2 mb-6">
                             <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-md border ${DIR_COLORS[activeProd.d]}`}>
                                 <span className={`w-1.5 h-1.5 rounded-full ${DIR_DOT_COLORS[activeProd.d]}`}></span>
@@ -443,32 +613,32 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                                 {STAT_LABELS[activeProd.s as keyof typeof STAT_LABELS]}
                             </span>
                             {activeProd.mkt && (
-                                <span className="inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/50">
+                                <span className={`inline-flex items-center text-xs font-bold px-2.5 py-1 rounded-full border ${T.marketplaceBadge}`}>
                                     🏪 Marketplace
                                 </span>
                             )}
                         </div>
 
-                        <div className="space-y-4 pt-4 border-t border-zinc-800">
+                        <div className={`space-y-4 pt-4 border-t ${T.modalDivider}`}>
                             <div>
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Categoria</div>
-                                <div className="text-sm font-medium text-zinc-200">{activeProd.cat}</div>
+                                <div className={`text-[10px] font-bold ${T.modalLabel} uppercase tracking-wider mb-1`}>Categoria</div>
+                                <div className={`text-sm font-medium ${T.modalValue}`}>{activeProd.cat}</div>
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Diretoria</div>
-                                <div className="text-sm font-medium text-zinc-200">{DIR_NAMES[activeProd.d]}</div>
+                                <div className={`text-[10px] font-bold ${T.modalLabel} uppercase tracking-wider mb-1`}>Diretoria</div>
+                                <div className={`text-sm font-medium ${T.modalValue}`}>{DIR_NAMES[activeProd.d]}</div>
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Fase de entrega</div>
-                                <div className="text-sm font-medium text-zinc-200">{activeProd.f}</div>
+                                <div className={`text-[10px] font-bold ${T.modalLabel} uppercase tracking-wider mb-1`}>Fase de entrega</div>
+                                <div className={`text-sm font-medium ${T.modalValue}`}>{activeProd.f}</div>
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Pessoa responsável</div>
-                                <div className="text-sm font-medium text-zinc-200">{activeProd.r && activeProd.r.trim() ? activeProd.r : '—'}</div>
+                                <div className={`text-[10px] font-bold ${T.modalLabel} uppercase tracking-wider mb-1`}>Pessoa responsável</div>
+                                <div className={`text-sm font-medium ${T.modalValue}`}>{activeProd.r && activeProd.r.trim() ? activeProd.r : '—'}</div>
                             </div>
                             <div>
-                                <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-1">Disponível no Marketplace</div>
-                                <div className="text-sm font-medium text-zinc-200">{activeProd.mkt ? 'Sim' : 'Não'}</div>
+                                <div className={`text-[10px] font-bold ${T.modalLabel} uppercase tracking-wider mb-1`}>Disponível no Marketplace</div>
+                                <div className={`text-sm font-medium ${T.modalValue}`}>{activeProd.mkt ? 'Sim' : 'Não'}</div>
                             </div>
                         </div>
                     </div>
@@ -483,7 +653,7 @@ export default function PipelineStoreView({ PRODUCTS = [], EXTRA_OPTIONS = {} }:
                     background: transparent;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background-color: #3f3f46;
+                    background-color: ${T.scrollbarThumb};
                     border-radius: 10px;
                 }
             `}</style>
