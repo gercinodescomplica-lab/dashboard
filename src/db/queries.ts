@@ -124,6 +124,10 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         createdAt: r.createdAt,
         externalId: r.externalId,
         manualEditAt: r.manualEditAt,
+        dataInicio: r.dataInicio,
+        dataFim: r.dataFim,
+        percentComplete: r.percentComplete,
+        prioridadeTexto: r.prioridadeTexto,
     }));
 }
 
@@ -378,6 +382,51 @@ export async function fetchCXByExternalIds(externalIds: string[]) {
         })
         .from(cx)
         .where(inArray(cx.externalId, externalIds));
+}
+
+// Board de CX (/settings/cx-planner) — mostra os itens de TODOS os
+// gerentes juntos (diferente de fetchCXByManager, que é por gerente), com
+// o nome do gerente já resolvido para exibir no card sem N+1 lookups.
+export type CXBoardItem = CXItem & {
+    managerId: string;
+    managerName: string;
+};
+
+export async function fetchAllCXItemsForBoard(): Promise<CXBoardItem[]> {
+    const rows = await db
+        .select({
+            id: cx.id,
+            managerId: cx.managerId,
+            managerName: managers.name,
+            cliente: cx.cliente,
+            titulo: cx.titulo,
+            problema: cx.problema,
+            solucaoProposta: cx.solucaoProposta,
+            status: cx.status,
+            criticidade: cx.criticidade,
+            isVisible: cx.isVisible,
+            createdAt: cx.createdAt,
+            externalId: cx.externalId,
+            manualEditAt: cx.manualEditAt,
+            dataInicio: cx.dataInicio,
+            dataFim: cx.dataFim,
+            percentComplete: cx.percentComplete,
+            prioridadeTexto: cx.prioridadeTexto,
+        })
+        .from(cx)
+        .innerJoin(managers, eq(cx.managerId, managers.id))
+        .orderBy(desc(cx.createdAt));
+
+    return rows.map((r) => ({
+        ...r,
+        status: r.status as CXItem['status'],
+        criticidade: (r.criticidade as CXItem['criticidade']) ?? 'baixa',
+        isVisible: r.isVisible ?? true,
+    }));
+}
+
+export async function deleteCXItem(id: number): Promise<void> {
+    await db.delete(cx).where(eq(cx.id, id));
 }
 
 // ─── Project Queries ───────────────────────────────────────────────────────────
