@@ -1,11 +1,10 @@
 import { CXPlannerGate } from './CXPlannerGate';
+import { CXPlannerBoard } from './CXPlannerBoard';
 
 export default function CXPlannerPage() {
     return (
         <CXPlannerGate>
-            <div className="min-h-screen bg-zinc-950 text-zinc-50 flex items-center justify-center">
-                <p className="text-zinc-400">Board de CX em construção.</p>
-            </div>
+            <CXPlannerBoard />
         </CXPlannerGate>
     );
 }
