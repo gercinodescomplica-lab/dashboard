@@ -4,7 +4,7 @@ import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertTriangle } from 'lucide-react';
 
 interface CXEditorProps {
     items: CXItem[];
@@ -69,6 +69,15 @@ export function CXEditor({ items, onChange }: CXEditorProps) {
                         <div className="flex justify-between items-center bg-zinc-900/40 p-3 rounded-lg -mx-1 -mt-1 mb-2">
                             <div className="flex items-center gap-6">
                                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">CX #{i + 1}</span>
+                                {item.externalId && item.manualEditAt && (
+                                    <span
+                                        title={`Editado manualmente em ${new Date(item.manualEditAt).toLocaleString('pt-BR')} — o próximo upload do Planner para esta tarefa vai sobrescrever título/problema/status/criticidade com o que estiver lá.`}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/30 cursor-help"
+                                    >
+                                        <AlertTriangle className="w-3 h-3" />
+                                        Rever — diverge do Planner
+                                    </span>
+                                )}
                                 <label className="flex items-center gap-2 cursor-pointer group">
                                     <input
                                         type="checkbox"

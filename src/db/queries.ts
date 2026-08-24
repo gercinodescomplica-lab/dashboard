@@ -122,6 +122,8 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         criticidade: (r.criticidade as CXItem['criticidade']) ?? 'baixa',
         isVisible: r.isVisible ?? true,
         createdAt: r.createdAt,
+        externalId: r.externalId,
+        manualEditAt: r.manualEditAt,
     }));
 }
 

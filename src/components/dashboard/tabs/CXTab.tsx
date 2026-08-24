@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo } from 'react';
 import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
-import { ChevronUp, ChevronDown, ArrowUpDown, Search, X, Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { uploadPlannerTasks } from '@/services/planner-upload.service';
+import { ChevronUp, ChevronDown, ArrowUpDown, Search, X } from 'lucide-react';
 
 interface CXTabProps {
     items: CXItem[];
@@ -63,20 +62,9 @@ const STATUS_WEIGHT: Record<CXStatus, number> = { pendente: 1, analise: 2, resol
 
 type SortKey = 'criticidade' | 'status' | null;
 type SortDirection = 'asc' | 'desc';
-type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
 const CRITICIDADES: CXCriticidade[] = ['alta', 'media', 'baixa'];
 const STATUSES: CXStatus[] = ['pendente', 'analise', 'resolvido'];
-
-// Aceita tanto um array cru de tarefas quanto { tasks: [...] } — mesmo
-// formato flexível que os endpoints /planner-sync já aceitam.
-function extractTasksArray(parsed: unknown, filename: string): unknown[] {
-    if (Array.isArray(parsed)) return parsed;
-    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as { tasks?: unknown }).tasks)) {
-        return (parsed as { tasks: unknown[] }).tasks;
-    }
-    throw new Error(`"${filename}" não é uma lista de tarefas nem um objeto { tasks: [...] }.`);
-}
 
 export function CXTab({ items, lightActive = false }: CXTabProps) {
     const T = {
@@ -109,60 +97,6 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
     const [statusFilter, setStatusFilter] = useState<Set<CXStatus>>(new Set());
     const [query, setQuery] = useState('');
     const [expandedRows, setExpandedRows] = useState<Set<number | string>>(new Set());
-
-    // ── Upload manual do JSON do Planner ────────────────────────────────
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [uploadState, setUploadState] = useState<UploadState>('idle');
-    const [uploadMessage, setUploadMessage] = useState<string | null>(null);
-
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        setUploadState('uploading');
-        setUploadMessage(null);
-
-        try {
-            const allTasks: unknown[] = [];
-            for (const file of Array.from(files)) {
-                const text = await file.text();
-                let parsed: unknown;
-                try {
-                    parsed = JSON.parse(text);
-                } catch {
-                    throw new Error(`"${file.name}" não é um JSON válido.`);
-                }
-                allTasks.push(...extractTasksArray(parsed, file.name));
-            }
-
-            if (allTasks.length === 0) {
-                throw new Error('Nenhuma tarefa encontrada no(s) arquivo(s) selecionado(s).');
-            }
-
-            const result = await uploadPlannerTasks({ tasks: allTasks });
-            if (!result.success) {
-                setUploadState('error');
-                setUploadMessage(result.error);
-                return;
-            }
-
-            const s = result.summary;
-            setUploadState('done');
-            setUploadMessage(
-                `${s.total} tarefa${s.total === 1 ? '' : 's'} processada${s.total === 1 ? '' : 's'} — ` +
-                `${s.created} criada${s.created === 1 ? '' : 's'}, ${s.updated} atualizada${s.updated === 1 ? '' : 's'}` +
-                (s.unmatched.length > 0 ? `, ${s.unmatched.length} sem gerente` : '') +
-                '. Atualizando a página...'
-            );
-            setTimeout(() => window.location.reload(), 1800);
-        } catch (err) {
-            setUploadState('error');
-            setUploadMessage(err instanceof Error ? err.message : 'Erro inesperado ao processar o upload.');
-        } finally {
-            // Permite selecionar o(s) mesmo(s) arquivo(s) de novo depois.
-            e.target.value = '';
-        }
-    };
 
     // Planner-imported CX logs are long, newline-separated update trails —
     // clamp them by default and let the user expand the ones worth reading
@@ -251,60 +185,9 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
     const hasActiveFilter = critFilter.size > 0 || statusFilter.size > 0 || query.length > 0;
     const clearFilters = () => { setCritFilter(new Set()); setStatusFilter(new Set()); setQuery(''); };
 
-    const uploadButton = (
-        <>
-            <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadState === 'uploading'}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                title="Envia o(s) JSON exportado(s) do Planner e sincroniza o CX de todos os gerentes"
-            >
-                {uploadState === 'uploading' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                Upload Planner
-            </button>
-            <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                multiple
-                onChange={handleFileChange}
-                className="hidden"
-            />
-        </>
-    );
-
-    const uploadBanner = uploadState !== 'idle' && (
-        <div
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium border ${uploadState === 'uploading'
-                ? (lightActive ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30')
-                : uploadState === 'done'
-                    ? (lightActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30')
-                    : (lightActive ? 'bg-red-50 text-red-700 border-red-200' : 'bg-red-500/10 text-red-300 border-red-500/30')
-                }`}
-        >
-            {uploadState === 'uploading' && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
-            {uploadState === 'done' && <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />}
-            {uploadState === 'error' && <AlertCircle className="w-3.5 h-3.5 shrink-0" />}
-            <span>{uploadState === 'uploading' ? 'Processando arquivo(s)...' : uploadMessage}</span>
-            {uploadState === 'done' && (
-                <button onClick={() => window.location.reload()} className="ml-auto underline hover:no-underline shrink-0">
-                    Atualizar agora
-                </button>
-            )}
-            {uploadState === 'error' && (
-                <button onClick={() => setUploadState('idle')} className="ml-auto underline hover:no-underline shrink-0">
-                    Fechar
-                </button>
-            )}
-        </div>
-    );
-
     if (visibleItems.length === 0) {
         return (
             <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-end gap-3">{uploadButton}</div>
-                {uploadBanner}
                 <div className={`flex items-center justify-center py-20 ${lightActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     Nenhum registro de CX para este gerente.
                 </div>
@@ -314,8 +197,6 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
 
     return (
         <div className="flex flex-col gap-4">
-            {uploadBanner}
-
             {/* Filtros */}
             <div className={`flex flex-col gap-3 p-3 rounded-xl border transition-colors duration-200 ${T.filterPanel}`}>
                 <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
@@ -340,7 +221,6 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                             <X className="w-3 h-3" /> Limpar
                         </button>
                     )}
-                    {uploadButton}
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">

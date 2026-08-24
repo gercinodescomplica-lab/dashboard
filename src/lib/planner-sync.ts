@@ -180,6 +180,10 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     status: newStatus,
                     criticidade: newCriticidade,
                     externalId: t.id,
+                    // A linha volta a espelhar o Planner — qualquer edição
+                    // manual feita no Settings antes deste sync deixa de
+                    // divergir, então o aviso de "editado manualmente" some.
+                    manualEditAt: null,
                 }).where(eq(cx.id, existingRow.id));
                 summary.updated++;
             } else {
