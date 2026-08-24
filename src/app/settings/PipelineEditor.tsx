@@ -1,12 +1,14 @@
-import { Project, QuarterData, PipelineData, Manager } from '@/types/manager';
+import { useState } from 'react';
+import { Project, QuarterData, PipelineData, Manager, ProjectHistoryItem } from '@/types/manager';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Copy, Sparkles, Info } from 'lucide-react';
+import { Plus, Trash2, Copy, Sparkles, Info, History } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/lib/format';
 import { calculateProject2026Value } from '@/lib/calc';
 import {
     Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { ProjectHistoryModal } from './ProjectHistoryModal';
 
 interface Props {
     pipeline: PipelineData;
@@ -22,6 +24,11 @@ interface FlatProject {
 }
 
 export function PipelineEditor({ pipeline, onChange }: Props) {
+    const [historyModalTarget, setHistoryModalTarget] = useState<{
+        qKey: QuarterKey;
+        index: number;
+        project: Project;
+    } | null>(null);
     const handleAdd = () => {
         const newProj: Project = { name: 'Novo Projeto', orgao: '', value: 0, temperature: 'morno' };
         const newQ1 = [...(pipeline.q1?.projects || []), newProj];
@@ -248,10 +255,28 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
 
                             {/* Actions */}
                             <div className="flex flex-col gap-2 w-full md:w-auto mt-4 md:mt-0 self-stretch md:self-auto ml-2 border-t border-zinc-800 md:border-0 pt-3 md:pt-4">
-                                <Button size="sm" className="w-12 flex-shrink-0 bg-indigo-950/50 hover:bg-indigo-900/50 text-indigo-400 border border-indigo-900/50 h-9 px-0" onClick={() => handleDuplicate(item.qKey, item.originalIndex)}>
+                                <Button
+                                    size="sm"
+                                    type="button"
+                                    title="Histórico de Alterações"
+                                    className={`w-12 flex-shrink-0 h-9 px-0 relative ${
+                                        (item.project.history?.length ?? 0) > 0
+                                            ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-800'
+                                    }`}
+                                    onClick={() => setHistoryModalTarget({ qKey: item.qKey, index: item.originalIndex, project: item.project })}
+                                >
+                                    <History className="w-4 h-4 mx-auto" />
+                                    {(item.project.history?.length ?? 0) > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-zinc-950 font-bold font-mono text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                                            {item.project.history!.length}
+                                        </span>
+                                    )}
+                                </Button>
+                                <Button size="sm" type="button" title="Duplicar Projeto" className="w-12 flex-shrink-0 bg-indigo-950/50 hover:bg-indigo-900/50 text-indigo-400 border border-indigo-900/50 h-9 px-0" onClick={() => handleDuplicate(item.qKey, item.originalIndex)}>
                                     <Copy className="w-4 h-4 mx-auto" />
                                 </Button>
-                                <Button size="sm" variant="destructive" className="w-12 flex-shrink-0 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 h-9 px-0" onClick={() => handleDelete(item.qKey, item.originalIndex)}>
+                                <Button size="sm" type="button" title="Excluir Projeto" variant="destructive" className="w-12 flex-shrink-0 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 h-9 px-0" onClick={() => handleDelete(item.qKey, item.originalIndex)}>
                                     <Trash2 className="w-4 h-4 mx-auto" />
                                 </Button>
                             </div>
@@ -264,6 +289,19 @@ export function PipelineEditor({ pipeline, onChange }: Props) {
                 <Plus className="w-5 h-5 mr-2" />
                 Criar Novo Projeto
             </Button>
+
+            {/* Modal de Histórico */}
+            {historyModalTarget && (
+                <ProjectHistoryModal
+                    open={Boolean(historyModalTarget)}
+                    onClose={() => setHistoryModalTarget(null)}
+                    project={historyModalTarget.project}
+                    quarterKey={historyModalTarget.qKey}
+                    onSaveHistory={(newHistory: ProjectHistoryItem[]) => {
+                        handleUpdate(historyModalTarget.qKey, historyModalTarget.index, 'history', newHistory);
+                    }}
+                />
+            )}
         </div>
     );
 }

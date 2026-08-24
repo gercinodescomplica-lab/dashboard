@@ -1,8 +1,10 @@
-import { Project, QuarterData, OpportunityTemperature, Manager } from '@/types/manager';
+import { useState } from 'react';
+import { Project, QuarterData, OpportunityTemperature, Manager, ProjectHistoryItem } from '@/types/manager';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, ArrowRightLeft } from 'lucide-react';
+import { Plus, Trash2, ArrowRightLeft, History } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { sumQuarterProjects } from '@/lib/calc';
+import { ProjectHistoryModal } from './ProjectHistoryModal';
 
 interface Props {
     qKey: 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado';
@@ -13,6 +15,7 @@ interface Props {
 }
 
 export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProject }: Props) {
+    const [historyModalIndex, setHistoryModalIndex] = useState<number | null>(null);
 
     // Auto sync total
     const updateProjects = (newProjects: Project[]) => {
@@ -132,6 +135,24 @@ export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProj
                                     <option value="q4">Mover p/ Q4</option>
                                     <option value="nao_mapeado">Mover p/ Não Mapeado</option>
                                 </select>
+                                <Button
+                                    size="sm"
+                                    type="button"
+                                    title="Histórico de Alterações"
+                                    className={`w-12 flex-shrink-0 h-9 px-0 relative ${
+                                        (p.history?.length ?? 0) > 0
+                                            ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                                            : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-400 border border-zinc-800'
+                                    }`}
+                                    onClick={() => setHistoryModalIndex(idx)}
+                                >
+                                    <History className="w-4 h-4 mx-auto" />
+                                    {(p.history?.length ?? 0) > 0 && (
+                                        <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-zinc-950 font-bold font-mono text-[9px] w-4 h-4 rounded-full flex items-center justify-center shadow">
+                                            {p.history!.length}
+                                        </span>
+                                    )}
+                                </Button>
                                 <Button size="sm" variant="destructive" className="w-12 flex-shrink-0 bg-red-950/50 hover:bg-red-900 text-red-400 border border-red-900/50 h-9 px-0" onClick={() => handleDelete(idx)}>
                                     <Trash2 className="w-4 h-4 mx-auto" />
                                 </Button>
@@ -145,6 +166,19 @@ export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProj
                 <Plus className="w-5 h-5 mr-2" />
                 Criar Novo Projeto
             </Button>
+
+            {/* Modal de Histórico */}
+            {historyModalIndex !== null && quarterData.projects[historyModalIndex] && (
+                <ProjectHistoryModal
+                    open={historyModalIndex !== null}
+                    onClose={() => setHistoryModalIndex(null)}
+                    project={quarterData.projects[historyModalIndex]}
+                    quarterKey={qKey}
+                    onSaveHistory={(newHistory: ProjectHistoryItem[]) => {
+                        handleUpdate(historyModalIndex, 'history', newHistory);
+                    }}
+                />
+            )}
         </div>
     );
 }
