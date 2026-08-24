@@ -59,18 +59,29 @@ function splitTitle(title: string): { acronym: string; assunto: string } {
     return { acronym: normalizeAcronym(parts[0]), assunto: parts.slice(1).join(' - ').trim() };
 }
 
-function mapStatus(percentComplete?: string | number): 'pendente' | 'analise' | 'resolvido' {
+export function mapStatus(percentComplete?: string | number): 'pendente' | 'analise' | 'resolvido' {
     const n = typeof percentComplete === 'number' ? percentComplete : parseInt(percentComplete ?? '0', 10);
     if (n >= 100) return 'resolvido';
     if (n > 0) return 'analise';
     return 'pendente';
 }
 
-function mapCriticidade(prio?: string): 'baixa' | 'media' | 'alta' {
+export function mapCriticidade(prio?: string): 'baixa' | 'media' | 'alta' {
     const p = (prio ?? '').toLowerCase();
     if (p.includes('urgente')) return 'alta';
     if (p.includes('importante')) return 'media';
     return 'baixa';
+}
+
+// Guarda o percentComplete bruto do Planner (0-100) para o board de CX ler —
+// diferente de mapStatus, que só usa esse valor para decidir pendente/
+// análise/resolvido. null quando o Planner não mandou o campo (em vez de
+// assumir 0, que enganaria "0% preenchido" com "sem dado").
+function parsePercentComplete(pc?: string | number): number | null {
+    if (pc === undefined) return null;
+    const n = typeof pc === 'number' ? pc : parseInt(pc, 10);
+    if (!Number.isFinite(n)) return null;
+    return Math.max(0, Math.min(100, n));
 }
 
 // Rótulos amigáveis (iguais aos exibidos na aba CX) só pra compor a nota de
@@ -184,6 +195,10 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     // manual feita no Settings antes deste sync deixa de
                     // divergir, então o aviso de "editado manualmente" some.
                     manualEditAt: null,
+                    dataInicio: t.datainicio ?? null,
+                    dataFim: t.datafim ?? null,
+                    percentComplete: parsePercentComplete(t.percentComplete),
+                    prioridadeTexto: t.prioridade ?? null,
                 }).where(eq(cx.id, existingRow.id));
                 summary.updated++;
             } else {
@@ -198,6 +213,10 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     solucaoProposta: '',
                     isVisible: true,
                     createdAt: t.datainicio || new Date().toISOString(),
+                    dataInicio: t.datainicio ?? null,
+                    dataFim: t.datafim ?? null,
+                    percentComplete: parsePercentComplete(t.percentComplete),
+                    prioridadeTexto: t.prioridade ?? null,
                 });
                 summary.created++;
             }
