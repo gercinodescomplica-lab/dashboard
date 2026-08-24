@@ -15,10 +15,18 @@ export const STATUS_COLUMNS: { key: CXStatus; label: string }[] = [
 export const PRIORIDADE_OPTIONS = ['Urgente', 'Importante', 'Média'] as const;
 export type PrioridadeTexto = (typeof PRIORIDADE_OPTIONS)[number];
 
+// Mesma paleta baixa/média/alta já usada em CXEditor.tsx (CRITICIDADE_OPTIONS)
+// e CXTab.tsx (CRITICIDADE_CONFIG) — vermelho/amarelo/verde, sem inventar cor
+// nova. Urgente é o único que mapeia pra 'alta'; Importante e Média mapeiam
+// os dois pra criticidade 'media' (ver mapCriticidade em planner-sync.ts),
+// mas continuam com cores distintas aqui pra dar pra diferenciar as duas
+// visualmente no board — Importante fica no amarelo (mesma cor de 'media'),
+// Média fica no verde (o tom mais "de baixa urgência" das 3, coerente com
+// ser a opção mais comum e menos crítica dos dados reais).
 export const PRIORIDADE_CONFIG: Record<PrioridadeTexto, { badge: string; border: string }> = {
     Urgente: { badge: 'bg-red-500/20 text-red-400 border-red-500/30', border: 'border-l-red-500' },
     Importante: { badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', border: 'border-l-yellow-500' },
-    Média: { badge: 'bg-blue-500/20 text-blue-400 border-blue-500/30', border: 'border-l-blue-500' },
+    Média: { badge: 'bg-green-500/20 text-green-400 border-green-500/30', border: 'border-l-green-500' },
 };
 
 // Fallback neutro pra item null/não-reconhecido — "Média" é o meio-termo das

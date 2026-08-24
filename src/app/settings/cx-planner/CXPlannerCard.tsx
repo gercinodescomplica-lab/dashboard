@@ -31,55 +31,59 @@ export function CXPlannerCard({ item, onClick }: CXPlannerCardProps) {
     const style = prioridadeStyle(item.prioridadeTexto);
     const overdue = isOverdue(item.dataFim, item.status);
     const percent = Math.max(0, Math.min(100, item.percentComplete ?? 0));
-    const inicioBR = formatDateOnlyBR(item.dataInicio);
     const fimBR = formatDateOnlyBR(item.dataFim);
-    // Só conta como "histórico" quando o log tem mais de uma entrada — um
-    // problema recém-criado com um parágrafo só não é um "histórico".
-    const logEntryCount = parseCXLogEntries(item.problema).length;
+    // Data da última edição: a entrada mais recente do log em `problema` (o
+    // sync do Planner sempre prepende a atualização mais nova no topo — ver
+    // syncPlannerTasks em planner-sync.ts — então a primeira entrada com
+    // data é a mais recente). Itens criados direto no board (sem entradas
+    // datadas no texto) caem no fallback de `createdAt`.
+    const logEntries = parseCXLogEntries(item.problema);
+    const firstDatedEntry = logEntries.find((e) => e.date);
+    const lastEditedDisplay = firstDatedEntry
+        ? firstDatedEntry.date!.split(/\s+/)[0]
+        : formatDateOnlyBR(item.createdAt);
 
     return (
         <button
             type="button"
             onClick={onClick}
-            className={`w-full text-left bg-zinc-900 border border-zinc-800 border-l-4 ${style.border} rounded-lg p-2.5 flex flex-col gap-1.5 hover:border-zinc-700 transition-colors`}
+            className={`w-full text-left bg-zinc-900 border border-zinc-800 border-l-4 ${style.border} rounded-lg p-2 flex flex-col gap-1 hover:border-zinc-700 transition-colors`}
         >
             <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold text-zinc-400 truncate">{item.managerName} · {item.cliente}</span>
+                <span className="text-[10.5px] font-semibold text-zinc-400 truncate">{item.managerName} · {item.cliente}</span>
                 <div className="flex items-center gap-1 shrink-0">
                     {item.isVisible === false && (
-                        <span
-                            title="Oculto do painel do gerente"
-                            className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border bg-zinc-800/60 text-zinc-500 border-zinc-700"
-                        >
-                            <EyeOff className="w-2.5 h-2.5" /> Oculto
+                        <span title="Oculto do painel do gerente" className="text-zinc-600">
+                            <EyeOff className="w-3 h-3" />
                         </span>
                     )}
                     {item.prioridadeTexto && (
-                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${style.badge}`}>
+                        <span className={`px-1.5 py-px rounded-full text-[9px] font-bold uppercase tracking-wider border ${style.badge}`}>
                             {item.prioridadeTexto}
                         </span>
                     )}
                 </div>
             </div>
-            <p className="text-[13px] font-medium text-zinc-200 line-clamp-1">{item.titulo || item.problema}</p>
+            <p className="text-[13px] font-medium text-zinc-200 line-clamp-1 leading-snug">{item.titulo || item.problema}</p>
             <div className="flex items-center gap-2">
-                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="flex-1 h-1 bg-zinc-800 rounded-full overflow-hidden min-w-6">
                     <div className="h-full bg-indigo-500" style={{ width: `${percent}%` }} />
                 </div>
-                <span className="text-[10px] text-zinc-500 shrink-0">{percent}%</span>
+                <span className="text-[9px] text-zinc-600 shrink-0 tabular-nums">{percent}%</span>
             </div>
-            {(inicioBR || fimBR || logEntryCount > 1) && (
-                <div className="flex items-center justify-between gap-2 text-[10px] font-mono">
-                    {(inicioBR || fimBR) ? (
-                        <span className={`flex items-center gap-1 truncate ${overdue ? 'text-red-400 font-bold' : 'text-zinc-500'}`}>
-                            <CalendarClock className="w-3 h-3 shrink-0" />
-                            {inicioBR ? `${inicioBR}` : ''}{inicioBR && fimBR ? ' → ' : ''}{fimBR ? fimBR : ''}
-                            {overdue ? ' · ATRASADO' : ''}
+            {(fimBR || lastEditedDisplay) && (
+                <div className="flex items-center justify-between gap-2">
+                    {fimBR ? (
+                        <span
+                            title={overdue ? `Prazo vencido em ${fimBR}` : `Prazo: ${fimBR}`}
+                            className={`flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold font-mono ${overdue ? 'bg-red-500/20 text-red-400' : 'bg-zinc-800 text-zinc-200'}`}
+                        >
+                            <CalendarClock className="w-3.5 h-3.5" /> {fimBR}
                         </span>
                     ) : <span />}
-                    {logEntryCount > 1 && (
-                        <span title="Entradas no histórico" className="flex items-center gap-1 text-zinc-600 shrink-0">
-                            <History className="w-3 h-3" /> {logEntryCount}
+                    {lastEditedDisplay && (
+                        <span title={`Última atualização: ${lastEditedDisplay}`} className="flex items-center gap-1 shrink-0 text-zinc-400 text-[10.5px] font-mono">
+                            <History className="w-3 h-3" /> {lastEditedDisplay}
                         </span>
                     )}
                 </div>
