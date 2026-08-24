@@ -17,6 +17,7 @@ import { CXBoardItem } from '@/db/queries';
 import { CXStatus } from '@/types/manager';
 import { CXPlannerFormValues } from './actions';
 import { PRIORIDADE_OPTIONS, PRIORIDADE_CONFIG, PRIORIDADE_FALLBACK, STATUS_COLUMNS, PrioridadeTexto } from './board-config';
+import { parseCXLogEntries } from '@/lib/cx-log';
 
 interface ManagerOption {
     id: string;
@@ -148,6 +149,13 @@ export function CXPlannerItemModal({
 
     const canSave = values.managerId.trim().length > 0 && values.cliente.trim().length > 0 && values.problema.trim().length > 0;
 
+    // Histórico fiel ao que o Planner registrou pra este item — parseado a
+    // partir do `problema` como ele veio carregado (não do texto sendo
+    // digitado agora), pra servir de referência estável enquanto o campo de
+    // baixo é editado. Só exibido quando há mais de uma entrada — um
+    // problema recém-criado com um parágrafo só não precisa dessa seção.
+    const logEntries = item ? parseCXLogEntries(item.problema) : [];
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-zinc-100">
@@ -193,6 +201,18 @@ export function CXPlannerItemModal({
 
                     <div className="space-y-1.5">
                         <Label className="text-zinc-400">Descrição do problema</Label>
+                        {logEntries.length > 1 && (
+                            <div className="max-h-32 overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 flex flex-col gap-2 mb-1.5">
+                                {logEntries.map((entry, idx) => (
+                                    <div key={idx} className="flex flex-col gap-0.5 border-l-2 border-zinc-800 pl-2">
+                                        {entry.date && (
+                                            <span className="text-[10px] font-mono font-semibold text-indigo-400/80">{entry.date}</span>
+                                        )}
+                                        <span className="text-xs text-zinc-400 break-words">{entry.text}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                         {/* problema guarda um histórico com múltiplas entradas
                             datadas separadas por quebra de linha (CXTab.tsx
                             parseia isso pra exibir entradas distintas). Um
