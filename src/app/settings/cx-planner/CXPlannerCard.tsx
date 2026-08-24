@@ -10,7 +10,7 @@ interface CXPlannerCardProps {
 
 function isOverdue(dataFim: string | null | undefined, status: string): boolean {
     if (!dataFim || status === 'resolvido') return false;
-    const deadline = new Date(dataFim);
+    const deadline = new Date(dataFim + 'T00:00:00');
     if (Number.isNaN(deadline.getTime())) return false;
     return deadline < new Date(new Date().toDateString());
 }
