@@ -2,11 +2,10 @@
 // da tabela `cx` — entradas datadas separadas por quebra de linha (ex: vindas
 // do histórico de sincronização do Planner, ver src/lib/planner-sync.ts).
 //
-// Extraído do parsing que já existe em CXTab.tsx (a aba de CX que o gerente
-// vê) para o board /settings/cx-planner também conseguir exibir o mesmo
-// histórico de forma fiel — CXTab.tsx continua com sua própria cópia
-// intocada (não é este arquivo que ele usa), então nada muda pra tela final
-// dos gerentes.
+// Usado pelo board /settings/cx-planner (CXPlannerCard/CXPlannerItemModal)
+// e também por CXTab.tsx (a aba de CX que o gerente vê no dashboard
+// público) — mesma formatação de data/prazo nos dois lugares, pra não
+// divergir visualmente entre o que o time de CX vê e o que o gerente vê.
 //
 // Formatos de data que o export do Planner mistura: "27/07/2026 - texto",
 // "05.08.26 12:33 texto", "04/08/2026 14:47h - texto".
@@ -35,4 +34,15 @@ export function formatDateOnlyBR(v: string | null | undefined): string | null {
     if (!m) return null;
     const [, yyyy, mm, dd] = m;
     return `${dd}/${mm}/${yyyy.slice(2)}`;
+}
+
+// Prazo vencido = dataFim (aceita "YYYY-MM-DD" ou o prefixo de um ISO
+// datetime) é antes de hoje E o item ainda não foi resolvido — um item
+// resolvido não fica "atrasado" mesmo que o prazo já tenha passado.
+export function isOverdueDate(dataFim: string | null | undefined, status: string): boolean {
+    const dateOnly = (dataFim ?? '').slice(0, 10);
+    if (!dateOnly || status === 'resolvido') return false;
+    const deadline = new Date(dateOnly + 'T00:00:00');
+    if (Number.isNaN(deadline.getTime())) return false;
+    return deadline < new Date(new Date().toDateString());
 }

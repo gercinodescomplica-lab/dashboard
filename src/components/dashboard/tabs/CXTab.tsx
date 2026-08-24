@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 import { ChevronUp, ChevronDown, ArrowUpDown, Search, X } from 'lucide-react';
+import { formatDateOnlyBR, isOverdueDate } from '@/lib/cx-log';
 
 interface CXTabProps {
     items: CXItem[];
@@ -56,6 +57,24 @@ const CRITICIDADE_CONFIG: Record<CXCriticidade, { label: string; style: string; 
         chipStyleLight: 'bg-red-100 text-red-800 border-red-400',
     },
 };
+
+// Mesma paleta usada no board /settings/cx-planner (PRIORIDADE_CONFIG em
+// src/app/settings/cx-planner/board-config.ts) — duplicada aqui (só as
+// classes de cor, sem importar o módulo do admin) pra prioridade_texto
+// (Urgente/Importante/Média) ficar com a mesma cor nos dois lugares.
+// Diferente de CRITICIDADE_CONFIG acima: Importante e Média mapeiam pra
+// mesma criticidade ('media'), mas têm cor própria aqui pra dar pra
+// diferenciar as duas visualmente.
+const PRIORIDADE_BADGE: Record<string, { chip: string; chipLight: string }> = {
+    urgente: { chip: 'bg-red-500/20 text-red-300 border-red-500/50', chipLight: 'bg-red-100 text-red-800 border-red-400' },
+    importante: { chip: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/50', chipLight: 'bg-yellow-100 text-yellow-800 border-yellow-400' },
+    média: { chip: 'bg-green-500/20 text-green-300 border-green-500/50', chipLight: 'bg-green-100 text-green-800 border-green-400' },
+};
+
+function prioridadeBadgeStyle(p: string, light: boolean): string {
+    const cfg = PRIORIDADE_BADGE[p.toLowerCase()];
+    return light ? (cfg?.chipLight ?? PRIORIDADE_BADGE.média.chipLight) : (cfg?.chip ?? PRIORIDADE_BADGE.média.chip);
+}
 
 const CRITICIDADE_WEIGHT: Record<CXCriticidade, number> = { baixa: 1, media: 2, alta: 3 };
 const STATUS_WEIGHT: Record<CXStatus, number> = { pendente: 1, analise: 2, resolvido: 3 };
@@ -338,14 +357,31 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                             </td>
                                         )}
                                         <td className="py-3 pr-4 text-center">
-                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold ${lightActive ? CRITICIDADE_CONFIG[item.criticidade || 'baixa'].styleLight : CRITICIDADE_CONFIG[item.criticidade || 'baixa'].style}`}>
-                                                {CRITICIDADE_CONFIG[item.criticidade || 'baixa'].label}
-                                            </span>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] uppercase tracking-wider font-bold ${lightActive ? CRITICIDADE_CONFIG[item.criticidade || 'baixa'].styleLight : CRITICIDADE_CONFIG[item.criticidade || 'baixa'].style}`}>
+                                                    {CRITICIDADE_CONFIG[item.criticidade || 'baixa'].label}
+                                                </span>
+                                                {item.prioridadeTexto && (
+                                                    <span className={`inline-block px-1.5 py-px rounded-full text-[9px] font-bold uppercase tracking-wider border ${prioridadeBadgeStyle(item.prioridadeTexto, lightActive)}`}>
+                                                        {item.prioridadeTexto}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="py-3 text-center">
-                                            <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${lightActive ? status.styleLight : status.style}`}>
-                                                {status.label}
-                                            </span>
+                                            <div className="flex flex-col items-center gap-1">
+                                                <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${lightActive ? status.styleLight : status.style}`}>
+                                                    {status.label}
+                                                </span>
+                                                {(item.dataFim || typeof item.percentComplete === 'number') && (
+                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : (lightActive ? 'text-zinc-500' : 'text-zinc-500')}`}>
+                                                        {typeof item.percentComplete === 'number' ? `${item.percentComplete}%` : ''}
+                                                        {item.dataFim && typeof item.percentComplete === 'number' ? ' · ' : ''}
+                                                        {item.dataFim ? `Prazo ${formatDateOnlyBR(item.dataFim)}` : ''}
+                                                        {item.dataFim && isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 );
