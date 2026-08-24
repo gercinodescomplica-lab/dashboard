@@ -60,6 +60,16 @@ export async function saveCXData(managerId: string, items: CXItem[]) {
                         createdAt: item.createdAt ?? new Date().toISOString(),
                         externalId: item.externalId ?? null,
                         manualEditAt,
+                        // CX Planner fields (dataInicio/dataFim/percentComplete/
+                        // prioridadeTexto) — must be carried through or every
+                        // admin "Salvar Tudo" on this manager wipes them, since
+                        // this is a delete-all-then-reinsert. They already arrive
+                        // intact on `item` (CXItem carries them, fetchCXByManager
+                        // selects them).
+                        dataInicio: item.dataInicio ?? null,
+                        dataFim: item.dataFim ?? null,
+                        percentComplete: item.percentComplete ?? null,
+                        prioridadeTexto: item.prioridadeTexto ?? null,
                     };
                 })
             );

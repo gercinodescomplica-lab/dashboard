@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Loader2, Plus, RefreshCw } from 'lucide-react';
 import { CXBoardItem } from '@/db/queries';
 import { CXStatus } from '@/types/manager';
 import {
@@ -30,18 +30,37 @@ export function CXPlannerBoard() {
     const [editingItem, setEditingItem] = useState<CXBoardItem | null>(null);
     const [defaultStatusForNew, setDefaultStatusForNew] = useState<CXStatus>('pendente');
     const [dragOverStatus, setDragOverStatus] = useState<CXStatus | null>(null);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Shared by the initial mount load and the manual "Atualizar" button —
+    // with several concurrent editors on this board, each open tab holds an
+    // increasingly stale snapshot; this gives editors an easy way to pull
+    // the latest state before starting an edit (see finding #5 of the final
+    // review — full real-time sync is out of scope for this fix pass).
+    const loadBoard = useCallback(async () => {
+        const [boardItems, managers] = await Promise.all([
+            fetchCXPlannerBoardItems(),
+            fetchManagersForDropdown(),
+        ]);
+        setItems(boardItems);
+        setManagerOptions(managers);
+    }, []);
 
     useEffect(() => {
         (async () => {
-            const [boardItems, managers] = await Promise.all([
-                fetchCXPlannerBoardItems(),
-                fetchManagersForDropdown(),
-            ]);
-            setItems(boardItems);
-            setManagerOptions(managers);
+            await loadBoard();
             setIsLoading(false);
         })();
-    }, []);
+    }, [loadBoard]);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            await loadBoard();
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
 
     const openCreate = (status: CXStatus) => {
         setEditingItem(null);
@@ -57,14 +76,20 @@ export function CXPlannerBoard() {
     const handleSave = async (values: CXPlannerFormValues) => {
         if (editingItem) {
             const updated = await updateCXPlannerItem(editingItem.id!, values);
-            if (updated) {
-                setItems((prev) => prev.map((i) => (i.id === editingItem.id ? updated : i)));
+            if (!updated) {
+                // createCXPlannerItem/updateCXPlannerItem return null when the
+                // target manager was deleted meanwhile (or similar) — throwing
+                // here lets the modal's try/catch surface an error instead of
+                // silently closing as if the save succeeded.
+                throw new Error('Não foi possível salvar: gerente ou item não encontrado.');
             }
+            setItems((prev) => prev.map((i) => (i.id === editingItem.id ? updated : i)));
         } else {
             const created = await createCXPlannerItem(values);
-            if (created) {
-                setItems((prev) => [...prev, created]);
+            if (!created) {
+                throw new Error('Não foi possível criar o item: gerente não encontrado.');
             }
+            setItems((prev) => [...prev, created]);
         }
     };
 
@@ -99,9 +124,21 @@ export function CXPlannerBoard() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-50 p-6">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold">CX Planner</h1>
-                <p className="text-zinc-500 text-sm">Board de CX do time — arraste os cards entre as colunas ou clique para editar.</p>
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold">CX Planner</h1>
+                    <p className="text-zinc-500 text-sm">Board de CX do time — arraste os cards entre as colunas ou clique para editar.</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    title="Buscar estado mais recente do board"
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:text-zinc-100 transition-colors disabled:opacity-50"
+                >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Atualizar
+                </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

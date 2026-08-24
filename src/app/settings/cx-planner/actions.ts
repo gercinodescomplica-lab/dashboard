@@ -23,6 +23,7 @@ export type CXPlannerFormValues = {
     dataFim: string;
     percentComplete: number;
     prioridadeTexto: string;
+    isVisible: boolean;
 };
 
 // Objeto de patch aceito por updateCXItem (src/db/queries.ts) — definido
@@ -80,7 +81,7 @@ export async function createCXPlannerItem(input: CXPlannerFormValues): Promise<C
         dataFim: normalizeDate(input.dataFim),
         percentComplete: input.percentComplete,
         prioridadeTexto: input.prioridadeTexto || null,
-        isVisible: true,
+        isVisible: input.isVisible ?? true,
         externalId: null,
         manualEditAt: null,
         createdAt: new Date().toISOString(),

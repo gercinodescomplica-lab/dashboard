@@ -69,7 +69,7 @@ export function mapStatus(percentComplete?: string | number): 'pendente' | 'anal
 export function mapCriticidade(prio?: string): 'baixa' | 'media' | 'alta' {
     const p = (prio ?? '').toLowerCase();
     if (p.includes('urgente')) return 'alta';
-    if (p.includes('importante')) return 'media';
+    if (p.includes('importante') || p.includes('media') || p.includes('média')) return 'media';
     return 'baixa';
 }
 
@@ -98,6 +98,17 @@ const CRITICIDADE_LABEL: Record<'baixa' | 'media' | 'alta', string> = {
     media: 'Média',
     alta: 'Alta',
 };
+
+// Real Planner exports send full ISO datetimes ("2026-08-05T10:00:00Z") for
+// datainicio/datafim, not bare "YYYY-MM-DD" — but dataInicio/dataFim are
+// stored and consumed downstream (CXPlannerCard, the date <Input>) as plain
+// dates. Slicing to the first 10 chars is safe for both shapes: an ISO
+// datetime's date portion is always chars 0-9, and a bare "YYYY-MM-DD"
+// string sliced to 10 chars is unchanged.
+function toDateOnly(v?: string): string | null {
+    if (!v) return null;
+    return v.slice(0, 10);
+}
 
 function todayBR(): string {
     const d = new Date();
@@ -195,8 +206,8 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     // manual feita no Settings antes deste sync deixa de
                     // divergir, então o aviso de "editado manualmente" some.
                     manualEditAt: null,
-                    dataInicio: t.datainicio ?? null,
-                    dataFim: t.datafim ?? null,
+                    dataInicio: toDateOnly(t.datainicio),
+                    dataFim: toDateOnly(t.datafim),
                     percentComplete: parsePercentComplete(t.percentComplete),
                     prioridadeTexto: t.prioridade ?? null,
                 }).where(eq(cx.id, existingRow.id));
@@ -213,8 +224,8 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     solucaoProposta: '',
                     isVisible: true,
                     createdAt: t.datainicio || new Date().toISOString(),
-                    dataInicio: t.datainicio ?? null,
-                    dataFim: t.datafim ?? null,
+                    dataInicio: toDateOnly(t.datainicio),
+                    dataFim: toDateOnly(t.datafim),
                     percentComplete: parsePercentComplete(t.percentComplete),
                     prioridadeTexto: t.prioridade ?? null,
                 });
