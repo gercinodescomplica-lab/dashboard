@@ -49,6 +49,16 @@ export const cx = sqliteTable('cx', {
     // (limpa o campo a cada sync) e src/app/settings/actions.ts (seta o campo
     // quando detecta que um item sincronizado foi alterado antes de salvar).
     manualEditAt: text('manual_edit_at'),
+    // Campos de fidelidade total ao Planner (ver
+    // docs/superpowers/specs/2026-08-24-cx-planner-admin-design.md). Vêm do
+    // sync (src/lib/planner-sync.ts) e são editáveis direto no board
+    // /settings/cx-planner. status/criticidade acima continuam sendo a fonte
+    // usada pela tela final do gerente e por /settings — aqui é só o dado
+    // bruto adicional, nada os substitui.
+    dataInicio: text('data_inicio'),
+    dataFim: text('data_fim'),
+    percentComplete: integer('percent_complete'),
+    prioridadeTexto: text('prioridade_texto'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

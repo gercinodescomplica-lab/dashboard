@@ -57,6 +57,12 @@ export interface CXItem {
   // no Settings desde o último sync; limpo pelo próprio sync ao rodar de
   // novo. Só usado para exibir um aviso pro admin — não editável na UI.
   manualEditAt?: string | null;
+  // Fidelidade total ao Planner (board /settings/cx-planner) — ver
+  // docs/superpowers/specs/2026-08-24-cx-planner-admin-design.md.
+  dataInicio?: string | null;
+  dataFim?: string | null;
+  percentComplete?: number | null;
+  prioridadeTexto?: string | null;
 }
 
 export interface Visit {
