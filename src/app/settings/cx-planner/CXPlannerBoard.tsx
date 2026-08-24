@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, Plus, RefreshCw, Search, X } from 'lucide-react';
 import { CXBoardItem } from '@/db/queries';
 import { CXStatus } from '@/types/manager';
 import {
@@ -31,6 +31,10 @@ export function CXPlannerBoard() {
     const [defaultStatusForNew, setDefaultStatusForNew] = useState<CXStatus>('pendente');
     const [dragOverStatus, setDragOverStatus] = useState<CXStatus | null>(null);
     const [isRefreshing, setIsRefreshing] = useState(false);
+    const [query, setQuery] = useState('');
+    const [managerFilter, setManagerFilter] = useState('');
+    const [clienteFilter, setClienteFilter] = useState('');
+    const [statusFilter, setStatusFilter] = useState<CXStatus | ''>('');
 
     // Shared by the initial mount load and the manual "Atualizar" button —
     // with several concurrent editors on this board, each open tab holds an
@@ -114,6 +118,62 @@ export function CXPlannerBoard() {
         }
     };
 
+    // Opções dos selects de Gerente/Cliente — derivadas dos dados que
+    // realmente estão no board agora (não de uma lista fixa), pra nunca
+    // oferecer um filtro que não bate com nada. managerOptions já cobre
+    // todo mundo cadastrado; cliente é texto livre então precisa ser
+    // extraído dos itens.
+    const clienteOptions = useMemo(
+        () => Array.from(new Set(items.map((i) => i.cliente).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+        [items]
+    );
+
+    // Filtro combinado (AND entre todos): busca livre + os 3 selects. Nenhum
+    // filtro aqui inventa categoria — gerente/cliente/status vêm direto dos
+    // valores reais dos itens (ver clienteOptions acima e STATUS_COLUMNS), e
+    // "data" não virou um select de faixas fixas (ex: "atrasados"/"próximos
+    // 7 dias") porque isso deixaria de fora qualquer item cuja data não
+    // coubesse em nenhum balde — em vez disso, data início/prazo entram na
+    // busca de texto abaixo, então qualquer data digitada (ex: "05/08")
+    // encontra o item, sem nenhum item ficar sem categoria pra cair. `items`
+    // (não filtrado) continua sendo a fonte usada pelas mutações acima; só a
+    // renderização das colunas usa a lista filtrada.
+    const filteredItems = useMemo(() => {
+        const q = query.trim().toLowerCase();
+
+        return items.filter((item) => {
+            if (managerFilter && item.managerId !== managerFilter) return false;
+            if (clienteFilter && item.cliente !== clienteFilter) return false;
+            if (statusFilter && item.status !== statusFilter) return false;
+
+            if (!q) return true;
+            const haystack = [
+                item.managerName,
+                item.cliente,
+                item.titulo,
+                item.problema,
+                item.solucaoProposta,
+                item.prioridadeTexto,
+                item.dataInicio,
+                item.dataFim,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase();
+            return haystack.includes(q);
+        });
+    }, [items, query, managerFilter, clienteFilter, statusFilter]);
+
+    const hasActiveFilter = Boolean(query || managerFilter || clienteFilter || statusFilter);
+    const clearFilters = () => {
+        setQuery('');
+        setManagerFilter('');
+        setClienteFilter('');
+        setStatusFilter('');
+    };
+
+    const selectClassName = 'bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500/50 transition-colors';
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
@@ -141,9 +201,71 @@ export function CXPlannerBoard() {
                 </button>
             </div>
 
+            <div className="mb-4 flex flex-col gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-900/40">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                        <input
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Buscar por título, descrição, prioridade ou data..."
+                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                        />
+                    </div>
+                    <div className="text-xs text-zinc-500 whitespace-nowrap">
+                        Mostrando <span className="font-semibold text-zinc-300">{filteredItems.length}</span> de {items.length}
+                    </div>
+                    {hasActiveFilter && (
+                        <button
+                            type="button"
+                            onClick={clearFilters}
+                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
+                        >
+                            <X className="w-3 h-3" /> Limpar filtros
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                    <select
+                        value={managerFilter}
+                        onChange={(e) => setManagerFilter(e.target.value)}
+                        className={selectClassName}
+                    >
+                        <option value="">Todos os gerentes</option>
+                        {managerOptions.map((m) => (
+                            <option key={m.id} value={m.id}>{m.name}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={clienteFilter}
+                        onChange={(e) => setClienteFilter(e.target.value)}
+                        className={selectClassName}
+                    >
+                        <option value="">Todos os clientes</option>
+                        {clienteOptions.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as CXStatus | '')}
+                        className={selectClassName}
+                    >
+                        <option value="">Todos os status</option>
+                        {STATUS_COLUMNS.map((s) => (
+                            <option key={s.key} value={s.key}>{s.label}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {STATUS_COLUMNS.map((col) => {
-                    const colItems = items.filter((i) => i.status === col.key);
+                    const colItems = filteredItems.filter((i) => i.status === col.key);
                     return (
                         <div
                             key={col.key}
@@ -174,7 +296,9 @@ export function CXPlannerBoard() {
                                     </div>
                                 ))}
                                 {colItems.length === 0 && (
-                                    <p className="text-xs text-zinc-700 text-center py-6">Nenhum item.</p>
+                                    <p className="text-xs text-zinc-700 text-center py-6">
+                                        {hasActiveFilter ? 'Nenhum item corresponde aos filtros.' : 'Nenhum item.'}
+                                    </p>
                                 )}
                             </div>
                         </div>
