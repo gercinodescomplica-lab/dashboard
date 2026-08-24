@@ -28,7 +28,7 @@ async function main() {
     const args = managerId ? [managerId] : [];
 
     const countRes = await client.execute({ sql: `SELECT COUNT(*) as n FROM cx${where}`, args });
-    const count = Number((countRes.rows[0] as any).n);
+    const count = Number((countRes.rows[0] as { n: number | string }).n);
     console.log(`→ ${count} registro(s) de CX ${managerId ? `do gerente "${managerId}"` : '(todos os gerentes)'} encontrados`);
 
     if (count === 0) {
