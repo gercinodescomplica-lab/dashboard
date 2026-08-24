@@ -15,31 +15,40 @@ interface ProposalModalProps {
     statusOptions: string[];
     onClose: () => void;
     onSuccess: () => void;
+    lightActive?: boolean;
 }
 
 function FormField({
     label,
     children,
     required,
+    lightActive,
 }: {
     label: string;
     children: React.ReactNode;
     required?: boolean;
+    lightActive?: boolean;
 }) {
     return (
         <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+            <label className={`text-xs font-semibold uppercase tracking-wider ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                {label}{required && <span className={`ml-0.5 ${lightActive ? 'text-rose-500' : 'text-rose-400'}`}>*</span>}
             </label>
             {children}
         </div>
     );
 }
 
-const inputCls =
-    'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all';
-const selectCls =
-    'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none';
+function getInputCls(lightActive: boolean) {
+    return lightActive
+        ? 'h-9 w-full px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all'
+        : 'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all';
+}
+function getSelectCls(lightActive: boolean) {
+    return lightActive
+        ? 'h-9 w-full px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none'
+        : 'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all appearance-none';
+}
 
 export function ProposalModal({
     open,
@@ -51,7 +60,10 @@ export function ProposalModal({
     statusOptions,
     onClose,
     onSuccess,
+    lightActive = false,
 }: ProposalModalProps) {
+    const inputCls = getInputCls(lightActive);
+    const selectCls = getSelectCls(lightActive);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
 
@@ -178,20 +190,20 @@ export function ProposalModal({
                 onClick={onClose}
             />
 
-            <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden mx-4">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 flex-none">
+            <div className={`relative w-full max-w-3xl max-h-[90vh] flex flex-col border rounded-2xl shadow-2xl overflow-hidden mx-4 ${lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-950 border-zinc-800'}`}>
+                <div className={`flex items-center justify-between px-6 py-4 border-b flex-none ${lightActive ? 'border-zinc-200' : 'border-zinc-800'}`}>
                     <div>
-                        <h2 className="text-lg font-bold text-zinc-100">
+                        <h2 className={`text-lg font-bold ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>
                             {mode === 'add' ? 'Nova Proposta' : 'Editar Proposta'}
                         </h2>
                         {mode === 'edit' && proposta && (
-                            <p className="text-xs text-zinc-500 mt-0.5 font-mono">{proposta.numeroProposta}</p>
+                            <p className={`text-xs mt-0.5 font-mono ${lightActive ? 'text-zinc-500' : 'text-zinc-500'}`}>{proposta.numeroProposta}</p>
                         )}
                     </div>
                     <button
                         id="proposal-modal-close"
                         onClick={onClose}
-                        className="p-2 rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${lightActive ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -199,7 +211,7 @@ export function ProposalModal({
 
                 <form id="proposal-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
                     <div className="px-6 py-5 grid grid-cols-2 gap-4">
-                        <FormField label="Número da Proposta" required>
+                        <FormField label="Número da Proposta" required lightActive={lightActive}>
                             <input
                                 id="field-numeroProposta"
                                 className={inputCls}
@@ -210,7 +222,7 @@ export function ProposalModal({
                                 disabled={mode === 'edit'}
                             />
                         </FormField>
-                        <FormField label="Fase">
+                        <FormField label="Fase" lightActive={lightActive}>
                             <select
                                 id="field-fase"
                                 className={selectCls}
@@ -225,7 +237,7 @@ export function ProposalModal({
                         </FormField>
 
                         <div className="col-span-2">
-                            <FormField label="Nome da Oportunidade" required>
+                            <FormField label="Nome da Oportunidade" required lightActive={lightActive}>
                                 <input
                                     id="field-nomeOportunidade"
                                     className={inputCls}
@@ -238,7 +250,7 @@ export function ProposalModal({
                         </div>
 
                         <div className="col-span-2">
-                            <FormField label="Cliente" required>
+                            <FormField label="Cliente" required lightActive={lightActive}>
                                 <input
                                     id="field-cliente"
                                     className={inputCls}
@@ -250,7 +262,7 @@ export function ProposalModal({
                             </FormField>
                         </div>
 
-                        <FormField label="Gerência (GRC)">
+                        <FormField label="Gerência (GRC)" lightActive={lightActive}>
                             <select
                                 id="field-gerencia"
                                 className={selectCls}
@@ -263,7 +275,7 @@ export function ProposalModal({
                                 ))}
                             </select>
                         </FormField>
-                        <FormField label="Gerente (Manager)">
+                        <FormField label="Gerente (Manager)" lightActive={lightActive}>
                             <select
                                 id="field-managerId"
                                 className={selectCls}
@@ -278,7 +290,7 @@ export function ProposalModal({
                         </FormField>
 
                         <div className="col-span-2">
-                            <FormField label="Proprietário da Oportunidade">
+                            <FormField label="Proprietário da Oportunidade" lightActive={lightActive}>
                                 <input
                                     id="field-proprietario"
                                     className={inputCls}
@@ -289,7 +301,7 @@ export function ProposalModal({
                             </FormField>
                         </div>
 
-                        <FormField label="Valor (R$)">
+                        <FormField label="Valor (R$)" lightActive={lightActive}>
                             <input
                                 id="field-valor"
                                 type="number"
@@ -300,7 +312,7 @@ export function ProposalModal({
                                 placeholder="0.00"
                             />
                         </FormField>
-                        <FormField label="Receita Esperada (R$)">
+                        <FormField label="Receita Esperada (R$)" lightActive={lightActive}>
                             <input
                                 id="field-receitaEsperada"
                                 type="number"
@@ -312,7 +324,7 @@ export function ProposalModal({
                             />
                         </FormField>
 
-                        <FormField label="Probabilidade (%)">
+                        <FormField label="Probabilidade (%)" lightActive={lightActive}>
                             <input
                                 id="field-probabilidade"
                                 type="number"
@@ -325,7 +337,7 @@ export function ProposalModal({
                                 placeholder="0 - 100"
                             />
                         </FormField>
-                        <FormField label="Duração (dias)">
+                        <FormField label="Duração (dias)" lightActive={lightActive}>
                             <input
                                 id="field-duracao"
                                 type="number"
@@ -337,7 +349,7 @@ export function ProposalModal({
                             />
                         </FormField>
 
-                        <FormField label="Data de Criação">
+                        <FormField label="Data de Criação" lightActive={lightActive}>
                             <input
                                 id="field-dataCriacao"
                                 type="date"
@@ -346,7 +358,7 @@ export function ProposalModal({
                                 onChange={(e) => set('dataCriacao', e.target.value)}
                             />
                         </FormField>
-                        <FormField label="Data de Fechamento">
+                        <FormField label="Data de Fechamento" lightActive={lightActive}>
                             <input
                                 id="field-dataFechamento"
                                 type="date"
@@ -356,11 +368,11 @@ export function ProposalModal({
                             />
                         </FormField>
 
-                        <div className="col-span-2 border-t border-zinc-800 pt-4 mt-2">
-                            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">Status do Pipeline</p>
+                        <div className={`col-span-2 border-t pt-4 mt-2 ${lightActive ? 'border-zinc-200' : 'border-zinc-800'}`}>
+                            <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${lightActive ? 'text-zinc-500' : 'text-zinc-500'}`}>Status do Pipeline</p>
                         </div>
 
-                        <FormField label="Status">
+                        <FormField label="Status" lightActive={lightActive}>
                             <select
                                 id="field-status"
                                 className={selectCls}
@@ -376,7 +388,7 @@ export function ProposalModal({
                         <div />
 
                         <div className="col-span-2">
-                            <FormField label="Observação">
+                            <FormField label="Observação" lightActive={lightActive}>
                                 <textarea
                                     id="field-observacao"
                                     rows={3}
@@ -390,9 +402,9 @@ export function ProposalModal({
                     </div>
                 </form>
 
-                <div className="flex-none border-t border-zinc-800 px-6 py-4 flex items-center justify-between gap-3">
+                <div className={`flex-none border-t px-6 py-4 flex items-center justify-between gap-3 ${lightActive ? 'border-zinc-200' : 'border-zinc-800'}`}>
                     {error && (
-                        <div className="flex items-center gap-2 text-rose-400 text-sm">
+                        <div className={`flex items-center gap-2 text-sm ${lightActive ? 'text-rose-600' : 'text-rose-400'}`}>
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{error}</span>
                         </div>
@@ -404,7 +416,7 @@ export function ProposalModal({
                             type="button"
                             onClick={onClose}
                             disabled={isPending}
-                            className="h-9 px-4 rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors disabled:opacity-50"
+                            className={`h-9 px-4 rounded-lg border text-sm transition-colors disabled:opacity-50 ${lightActive ? 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900' : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'}`}
                         >
                             Cancelar
                         </button>

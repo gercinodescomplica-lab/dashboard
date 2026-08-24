@@ -11,6 +11,7 @@ import {
 
 interface ProjectsTabProps {
     pipeline: PipelineData;
+    lightActive?: boolean;
 }
 
 const QUARTER_LABELS: Record<string, string> = {
@@ -56,8 +57,43 @@ function buildTimeline(project: Project, quarterKey: string): ProjectHistoryItem
     return [];
 }
 
-export function ProjectsTab({ pipeline }: ProjectsTabProps) {
+export function ProjectsTab({ pipeline, lightActive = false }: ProjectsTabProps) {
     const [expandedRow, setExpandedRow] = useState<number | null>(null);
+    const T = {
+        headBorder: lightActive ? 'border-zinc-200' : 'border-zinc-800',
+        headText: lightActive ? 'text-zinc-500' : 'text-zinc-500',
+        rowDivide: lightActive ? 'divide-zinc-200' : 'divide-zinc-800/50',
+        rowHover: lightActive ? 'hover:bg-zinc-50' : 'hover:bg-zinc-800/40',
+        rowInactive: lightActive ? 'bg-zinc-50' : 'bg-zinc-950/40',
+        rowExpandedBg: lightActive ? 'bg-zinc-50' : 'bg-zinc-800/30',
+        chevronMuted: lightActive ? 'text-zinc-400 hover:text-zinc-600' : 'text-zinc-500 hover:text-zinc-300',
+        quarterBadge: lightActive ? 'text-indigo-600 bg-indigo-50 border-indigo-200' : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+        projectName: lightActive ? 'text-zinc-800' : 'text-zinc-200',
+        projectNameInactive: lightActive ? 'text-zinc-400' : 'text-zinc-400',
+        projectDesc: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        orgao: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        orgaoEmpty: lightActive ? 'text-zinc-300' : 'text-zinc-600',
+        tempBadge: lightActive ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900 border-zinc-800',
+        tempEmpty: lightActive ? 'text-zinc-300' : 'text-zinc-700',
+        expRowBg: lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-950/80 border-zinc-800/80',
+        expPanel: lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900/60 border-zinc-800/80',
+        statLabel: lightActive ? 'text-zinc-500' : 'text-zinc-500',
+        statValue: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+        statValueMuted: lightActive ? 'text-zinc-600' : 'text-zinc-300',
+        timelineHeading: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        timelineEmpty: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        timelineBorder: lightActive ? 'border-indigo-300' : 'border-indigo-500/30',
+        timelineDot: lightActive ? 'border-white' : 'border-zinc-900',
+        timelineDate: lightActive ? 'text-zinc-700' : 'text-zinc-300',
+        timelineAutor: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        timelineDe: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        timelineDeStrong: lightActive ? 'text-zinc-700' : 'text-zinc-300',
+        timelineNote: lightActive ? 'text-zinc-700 bg-zinc-50 border-zinc-200' : 'text-zinc-300 bg-zinc-950 border-zinc-800/60',
+        tooltipCls: lightActive ? 'text-zinc-700 bg-white border border-zinc-200' : 'text-zinc-200',
+        footerBorder: lightActive ? 'border-zinc-200' : 'border-zinc-700',
+        footerLabel: lightActive ? 'text-zinc-400' : 'text-zinc-600',
+        footerValue: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+    };
 
     // Flatten all projects with quarter info, sorted by quarter then by value desc
     const rows: Array<{ quarter: string; project: Project }> = [];
@@ -71,7 +107,7 @@ export function ProjectsTab({ pipeline }: ProjectsTabProps) {
 
     if (rows.length === 0) {
         return (
-            <div className="flex items-center justify-center py-20 text-zinc-500">
+            <div className={`flex items-center justify-center py-20 ${lightActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
                 Nenhum projeto cadastrado no pipeline.
             </div>
         );
@@ -85,15 +121,15 @@ export function ProjectsTab({ pipeline }: ProjectsTabProps) {
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
                 <thead>
-                    <tr className="border-b border-zinc-800 text-left">
-                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider w-36">Quarter</th>
-                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Projeto</th>
-                        <th className="pb-3 pr-4 text-xs font-semibold text-zinc-500 uppercase tracking-wider">Órgão / Cliente</th>
-                        <th className="pb-3 pr-2 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-right">Valor Total</th>
-                        <th className="pb-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider text-center w-24">Temp.</th>
+                    <tr className={`border-b text-left ${T.headBorder}`}>
+                        <th className={`pb-3 pr-4 text-xs font-semibold uppercase tracking-wider w-36 ${T.headText}`}>Quarter</th>
+                        <th className={`pb-3 pr-4 text-xs font-semibold uppercase tracking-wider ${T.headText}`}>Projeto</th>
+                        <th className={`pb-3 pr-4 text-xs font-semibold uppercase tracking-wider ${T.headText}`}>Órgão / Cliente</th>
+                        <th className={`pb-3 pr-2 text-xs font-semibold uppercase tracking-wider text-right ${T.headText}`}>Valor Total</th>
+                        <th className={`pb-3 text-xs font-semibold uppercase tracking-wider text-center w-24 ${T.headText}`}>Temp.</th>
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/50">
+                <tbody className={`divide-y ${T.rowDivide}`}>
                     {rows.map(({ quarter, project }, i) => {
                         const isPerdido = project.temperature === 'perdido';
                         const isHistorico = project.temperature === 'historico';
@@ -109,119 +145,119 @@ export function ProjectsTab({ pipeline }: ProjectsTabProps) {
                                 <tr
                                     key={i}
                                     onClick={() => toggleRow(i)}
-                                    className={`hover:bg-zinc-800/40 transition-colors cursor-pointer select-none ${isInactive ? 'opacity-60 bg-zinc-950/40' : ''} ${isExpanded ? 'bg-zinc-800/30' : ''}`}
+                                    className={`transition-colors cursor-pointer select-none ${T.rowHover} ${isInactive ? `opacity-60 ${T.rowInactive}` : ''} ${isExpanded ? T.rowExpandedBg : ''}`}
                                 >
                                     <td className="py-3.5 pr-4">
                                         <div className="flex items-center gap-2">
-                                            <span className="text-zinc-500 hover:text-zinc-300">
+                                            <span className={T.chevronMuted}>
                                                 {isExpanded ? <ChevronDown className="w-4 h-4 text-indigo-400" /> : <ChevronRight className="w-4 h-4" />}
                                             </span>
-                                            <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded">
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded border ${T.quarterBadge}`}>
                                                 {quarter === 'nao_mapeado' ? 'NÃO MAP' : quarter.toUpperCase()}
                                             </span>
                                         </div>
                                     </td>
                                     <td className="py-3.5 pr-4">
                                         <div className="flex flex-col">
-                                            <span className={`font-medium ${isInactive ? 'text-zinc-400 line-through' : 'text-zinc-200'}`}>
+                                            <span className={`font-medium ${isInactive ? `${T.projectNameInactive} line-through` : T.projectName}`}>
                                                 {project.name}
                                             </span>
                                             {project.description && (
-                                                <span className="text-zinc-500 text-xs mt-0.5 line-clamp-1 truncate block max-w-[280px]" title={project.description}>
+                                                <span className={`text-xs mt-0.5 line-clamp-1 truncate block max-w-[280px] ${T.projectDesc}`} title={project.description}>
                                                     {project.description}
                                                 </span>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="py-3.5 pr-4 text-zinc-400">{project.orgao || <span className="text-zinc-600">—</span>}</td>
-                                    <td className={`py-3.5 pr-2 text-right font-mono font-semibold ${isPerdido ? 'text-red-400/70 line-through' : isHistorico ? 'text-orange-300/70 line-through' : 'text-emerald-400'}`}>
+                                    <td className={`py-3.5 pr-4 ${T.orgao}`}>{project.orgao || <span className={T.orgaoEmpty}>—</span>}</td>
+                                    <td className={`py-3.5 pr-2 text-right font-mono font-semibold ${isPerdido ? 'text-red-400/70 line-through' : isHistorico ? 'text-orange-300/70 line-through' : lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>
                                         {formatCurrency(project.value)}
                                     </td>
                                     <td className="py-3.5 text-center text-base">
                                         {temp ? (
-                                            <span className="inline-flex items-center gap-1 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded text-xs" title={temp.label}>
+                                            <span className={`inline-flex items-center gap-1 border px-2 py-0.5 rounded text-xs ${T.tempBadge}`} title={temp.label}>
                                                 <span>{temp.emoji}</span>
                                             </span>
                                         ) : (
-                                            <span className="text-zinc-700">—</span>
+                                            <span className={T.tempEmpty}>—</span>
                                         )}
                                     </td>
                                 </tr>
 
                                 {/* ── Accordion Expanded Details & Timeline ── */}
                                 {isExpanded && (
-                                    <tr key={`exp-${i}`} className="bg-zinc-950/80 border-b border-zinc-800/80">
+                                    <tr key={`exp-${i}`} className={`border-b ${T.expRowBg}`}>
                                         <td colSpan={5} className="p-4 sm:p-5">
-                                            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4 sm:p-5 flex flex-col gap-5">
+                                            <div className={`border rounded-xl p-4 sm:p-5 flex flex-col gap-5 transition-colors duration-200 ${T.expPanel}`}>
                                                 {/* Header Stats */}
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-zinc-800 pb-4">
+                                                <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 border-b pb-4 ${T.headBorder}`}>
                                                     <div>
-                                                        <p className="text-[10px] uppercase font-semibold text-zinc-500">Valor Total Contratado (TCV)</p>
-                                                        <p className="text-sm font-bold font-mono text-zinc-100 mt-0.5">{formatCurrency(project.value)}</p>
+                                                        <p className={`text-[10px] uppercase font-semibold ${T.statLabel}`}>Valor Total Contratado (TCV)</p>
+                                                        <p className={`text-sm font-bold font-mono mt-0.5 ${T.statValue}`}>{formatCurrency(project.value)}</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] uppercase font-semibold text-zinc-500">Vigência (Parcelas)</p>
-                                                        <p className="text-sm font-bold text-zinc-300 mt-0.5">{duration} meses</p>
+                                                        <p className={`text-[10px] uppercase font-semibold ${T.statLabel}`}>Vigência (Parcelas)</p>
+                                                        <p className={`text-sm font-bold mt-0.5 ${T.statValueMuted}`}>{duration} meses</p>
                                                         {project.billingStartMonth ? (
-                                                            <p className="text-[10px] text-indigo-400 mt-0.5">Início: {['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][project.billingStartMonth]}</p>
+                                                            <p className={`text-[10px] mt-0.5 ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>Início: {['', 'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'][project.billingStartMonth]}</p>
                                                         ) : null}
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] uppercase font-semibold text-zinc-500">Mensalidade Estimada</p>
-                                                        <p className="text-sm font-bold font-mono text-zinc-300 mt-0.5">{formatCurrency(project.value / duration)}/mês</p>
+                                                        <p className={`text-[10px] uppercase font-semibold ${T.statLabel}`}>Mensalidade Estimada</p>
+                                                        <p className={`text-sm font-bold font-mono mt-0.5 ${T.statValueMuted}`}>{formatCurrency(project.value / duration)}/mês</p>
                                                     </div>
                                                     <div>
-                                                        <p className="text-[10px] uppercase font-semibold text-zinc-500 flex items-center gap-1">
+                                                        <p className={`text-[10px] uppercase font-semibold flex items-center gap-1 ${T.statLabel}`}>
                                                             Reconhecido em 2026
                                                             <TooltipProvider>
                                                                 <Tooltip>
                                                                     <TooltipTrigger type="button">
-                                                                        <Info className="w-3 h-3 text-zinc-500 hover:text-zinc-300" />
+                                                                        <Info className={`w-3 h-3 ${lightActive ? 'text-zinc-400 hover:text-zinc-600' : 'text-zinc-500 hover:text-zinc-300'}`} />
                                                                     </TooltipTrigger>
-                                                                    <TooltipContent className="max-w-[260px] text-zinc-200 leading-relaxed">
+                                                                    <TooltipContent className={`max-w-[260px] leading-relaxed ${T.tooltipCls}`}>
                                                                         Parcela financeira que efetivamente impacta a receita de 2026, calculada pro-rata a partir do mês de início do faturamento.
                                                                     </TooltipContent>
                                                                 </Tooltip>
                                                             </TooltipProvider>
                                                         </p>
-                                                        <p className="text-sm font-bold font-mono text-blue-400 mt-0.5">{formatCurrency(val2026)}</p>
+                                                        <p className={`text-sm font-bold font-mono mt-0.5 ${lightActive ? 'text-blue-600' : 'text-blue-400'}`}>{formatCurrency(val2026)}</p>
                                                     </div>
                                                 </div>
 
                                                 {/* Timeline Section */}
                                                 <div>
-                                                    <h5 className="text-xs font-bold text-zinc-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                                        <History className="w-3.5 h-3.5 text-indigo-400" />
+                                                    <h5 className={`text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5 ${T.timelineHeading}`}>
+                                                        <History className={`w-3.5 h-3.5 ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`} />
                                                         Histórico de Alterações & Notas
                                                     </h5>
 
                                                     {timeline.length === 0 ? (
-                                                        <div className="text-xs text-zinc-500 italic py-2">
+                                                        <div className={`text-xs italic py-2 ${T.timelineEmpty}`}>
                                                             Nenhuma alteração ou nota gravada para este projeto.
                                                         </div>
                                                     ) : (
-                                                        <div className="relative pl-4 space-y-3 border-l-2 border-indigo-500/30">
+                                                        <div className={`relative pl-4 space-y-3 border-l-2 ${T.timelineBorder}`}>
                                                             {timeline.map((item, idx) => (
                                                                 <div key={idx} className="relative flex flex-col gap-1 text-xs">
-                                                                    <div className="absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border border-zinc-900" />
+                                                                    <div className={`absolute -left-[21px] top-0.5 w-2.5 h-2.5 rounded-full bg-indigo-500 border ${T.timelineDot}`} />
                                                                     <div className="flex items-center gap-2 flex-wrap">
-                                                                        <span className="font-semibold text-zinc-300 flex items-center gap-1">
+                                                                        <span className={`font-semibold flex items-center gap-1 ${T.timelineDate}`}>
                                                                             {getHistoryIcon(item.tipo)}
                                                                             {item.date}
                                                                         </span>
                                                                         {item.autor && (
-                                                                            <span className="text-zinc-500">• por {item.autor}</span>
+                                                                            <span className={T.timelineAutor}>• por {item.autor}</span>
                                                                         )}
                                                                     </div>
                                                                     {item.de && item.para && (
-                                                                        <div className="text-zinc-400 flex items-center gap-1 text-[11px]">
-                                                                            <span>De: <strong className="text-zinc-300">{item.de}</strong></span>
+                                                                        <div className={`flex items-center gap-1 text-[11px] ${T.timelineDe}`}>
+                                                                            <span>De: <strong className={T.timelineDeStrong}>{item.de}</strong></span>
                                                                             <span>➔</span>
-                                                                            <span>Para: <strong className="text-indigo-300">{item.para}</strong></span>
+                                                                            <span>Para: <strong className={lightActive ? 'text-indigo-600' : 'text-indigo-300'}>{item.para}</strong></span>
                                                                         </div>
                                                                     )}
                                                                     {item.justificativa && (
-                                                                        <p className="text-zinc-300 bg-zinc-950 p-2 rounded border border-zinc-800/60 mt-0.5">
+                                                                        <p className={`p-2 rounded border mt-0.5 ${T.timelineNote}`}>
                                                                             {item.justificativa}
                                                                         </p>
                                                                     )}
@@ -239,23 +275,23 @@ export function ProjectsTab({ pipeline }: ProjectsTabProps) {
                     })}
                 </tbody>
                 <tfoot>
-                    <tr className="border-t border-zinc-700">
-                        <td colSpan={3} className="pt-3 text-xs text-zinc-600 uppercase tracking-wider">
+                    <tr className={`border-t ${T.footerBorder}`}>
+                        <td colSpan={3} className={`pt-3 text-xs uppercase tracking-wider ${T.footerLabel}`}>
                             <div className="flex items-center gap-1">
                                 <span>Total Pipeline</span>
                                 <TooltipProvider>
                                     <Tooltip>
                                         <TooltipTrigger type="button">
-                                            <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300" />
+                                            <Info className={`w-3.5 h-3.5 ${lightActive ? 'text-zinc-400 hover:text-zinc-600' : 'text-zinc-500 hover:text-zinc-300'}`} />
                                         </TooltipTrigger>
-                                        <TooltipContent className="text-zinc-200 max-w-[280px] leading-relaxed">
+                                        <TooltipContent className={`max-w-[280px] leading-relaxed ${T.tooltipCls}`}>
                                             Soma em Reais de todas as oportunidades ativas (desconsidera projetos desativados/perdidos/históricos).
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>
                             </div>
                         </td>
-                        <td className="pt-3 text-right font-mono font-bold text-zinc-100 pr-2">
+                        <td className={`pt-3 text-right font-mono font-bold pr-2 ${T.footerValue}`}>
                             {formatCurrency(
                                 rows
                                     .filter(({ project }) => project.temperature !== 'perdido' && project.temperature !== 'historico')

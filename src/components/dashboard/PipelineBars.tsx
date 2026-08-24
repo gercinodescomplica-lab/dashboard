@@ -14,9 +14,10 @@ import {
 interface PipelineBarsProps {
     pipeline: PipelineData;
     managerName: string;
+    lightActive?: boolean;
 }
 
-export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
+export function PipelineBars({ pipeline, managerName, lightActive = false }: PipelineBarsProps) {
     const [selectedQuarter, setSelectedQuarter] = useState<{ label: string; projects: PipelineData['q1']['projects']; calculatedTotal: number; perdidoTotal: number; historicoTotal: number } | null>(null);
 
     const quarters = [
@@ -40,12 +41,12 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
         <TooltipProvider>
             <div className="space-y-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                    <h4 className="text-sm font-medium text-zinc-400">Oportunidades / Pipeline</h4>
+                    <h4 className={`text-sm font-medium ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>Oportunidades / Pipeline</h4>
                     <Tooltip>
                         <TooltipTrigger>
-                            <Info className="w-3.5 h-3.5 text-zinc-500 hover:text-zinc-300 transition-colors" />
+                            <Info className={`w-3.5 h-3.5 transition-colors ${lightActive ? 'text-zinc-400 hover:text-zinc-600' : 'text-zinc-500 hover:text-zinc-300'}`} />
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-[250px] text-zinc-300 bg-zinc-900 border-zinc-700">
+                        <TooltipContent side="top" className={`max-w-[250px] ${lightActive ? 'text-zinc-700 bg-white border-zinc-200' : 'text-zinc-300 bg-zinc-900 border-zinc-700'}`}>
                             <p><strong>Pipeline (Oportunidades):</strong> Dinheiro que está "na mesa". Representa o total em Reais (R$) de todas as negociações em andamento por trimestre fiscal.</p>
                         </TooltipContent>
                     </Tooltip>
@@ -60,11 +61,11 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                         const isEmpty = q.calculatedTotal === 0 && q.perdidoTotal === 0 && q.historicoTotal === 0;
                         return (
                             <div key={q.label} className="flex items-center gap-3">
-                                <span className="text-xs font-semibold text-zinc-500 w-5">{q.label}</span>
+                                <span className={`text-xs font-semibold w-5 ${lightActive ? 'text-zinc-400' : 'text-zinc-500'}`}>{q.label}</span>
                                 <div className="flex-1 flex items-center h-5">
                                     <button
                                         onClick={() => setSelectedQuarter(q)}
-                                        className="w-full bg-zinc-800/50 hover:bg-zinc-800/80 rounded-r-sm h-full flex relative focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer overflow-hidden transition-colors"
+                                        className={`w-full rounded-r-sm h-full flex relative focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer overflow-hidden transition-colors ${lightActive ? 'bg-zinc-100 hover:bg-zinc-200' : 'bg-zinc-800/50 hover:bg-zinc-800/80'}`}
                                         type="button"
                                     >
                                         {q.contractedTotal > 0 && (
@@ -92,7 +93,7 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                             />
                                         )}
                                         {isEmpty && (
-                                            <span className="absolute left-2 text-xs text-zinc-600 top-1/2 -translate-y-1/2">R$ 0</span>
+                                            <span className={`absolute left-2 text-xs top-1/2 -translate-y-1/2 ${lightActive ? 'text-zinc-400' : 'text-zinc-600'}`}>R$ 0</span>
                                         )}
                                     </button>
                                 </div>
@@ -100,29 +101,29 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                                 <div className="w-[220px] shrink-0 flex flex-col items-end gap-0.5 text-[10px] leading-tight">
                                     <div className="flex items-center gap-1.5">
                                         {q.contractedTotal > 0 && (
-                                            <span className="text-emerald-400 font-bold whitespace-nowrap">
+                                            <span className={`font-bold whitespace-nowrap ${lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>
                                                 ✅ {formatCurrency(q.contractedTotal)}
                                             </span>
                                         )}
                                         {q.contractedTotal > 0 && activeTotal > 0 && (
-                                            <span className="text-zinc-700">|</span>
+                                            <span className={lightActive ? 'text-zinc-300' : 'text-zinc-700'}>|</span>
                                         )}
                                         {activeTotal > 0 && (
-                                            <span className="text-indigo-400/70 whitespace-nowrap">
+                                            <span className={`whitespace-nowrap ${lightActive ? 'text-indigo-600/80' : 'text-indigo-400/70'}`}>
                                                 {formatCurrency(activeTotal)}
                                             </span>
                                         )}
                                         {isEmpty && (
-                                            <span className="text-zinc-600">R$ 0</span>
+                                            <span className={lightActive ? 'text-zinc-400' : 'text-zinc-600'}>R$ 0</span>
                                         )}
                                     </div>
                                     {q.historicoTotal > 0 && (
-                                        <span className="text-orange-300/80 whitespace-nowrap">
+                                        <span className={`whitespace-nowrap ${lightActive ? 'text-orange-600/90' : 'text-orange-300/80'}`}>
                                             ⏸️ {formatCurrency(q.historicoTotal)} adiado
                                         </span>
                                     )}
                                     {q.perdidoTotal > 0 && (
-                                        <span className="text-red-500/70 whitespace-nowrap">
+                                        <span className={`whitespace-nowrap ${lightActive ? 'text-red-600/80' : 'text-red-500/70'}`}>
                                             ❌ {formatCurrency(q.perdidoTotal)} perdido
                                         </span>
                                     )}
@@ -140,6 +141,7 @@ export function PipelineBars({ pipeline, managerName }: PipelineBarsProps) {
                         projects={selectedQuarter.projects}
                         totalValue={selectedQuarter.calculatedTotal}
                         managerName={managerName}
+                        lightActive={lightActive}
                     />
                 )}
             </div>

@@ -49,6 +49,14 @@ export interface CXItem {
   criticidade?: CXCriticidade;
   isVisible?: boolean;
   createdAt?: string;
+  // Vínculo com a tarefa do Planner que originou este item (null/undefined
+  // para itens criados manualmente no Settings). Preservado no round-trip
+  // editar→salvar para não quebrar a sincronização — ver saveCXData.
+  externalId?: string | null;
+  // Timestamp (ISO) setado quando um item vindo do Planner é editado à mão
+  // no Settings desde o último sync; limpo pelo próprio sync ao rodar de
+  // novo. Só usado para exibir um aviso pro admin — não editável na UI.
+  manualEditAt?: string | null;
 }
 
 export interface Visit {

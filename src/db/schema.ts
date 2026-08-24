@@ -41,6 +41,14 @@ export const cx = sqliteTable('cx', {
     criticidade: text('criticidade', { enum: ['baixa', 'media', 'alta'] }).notNull().default('baixa'),
     isVisible: integer('is_visible', { mode: 'boolean' }).notNull().default(true),
     externalId: text('external_id'),
+    // Marca (timestamp ISO) que um item vindo do Planner (tem externalId) foi
+    // editado à mão no Settings desde o último sync — os campos que o Planner
+    // controla (titulo/problema/status/criticidade) vão ser sobrescritos no
+    // próximo sync, então isso avisa o admin disso. Nulo = em dia com o
+    // Planner (ou item 100% manual, nunca veio de lá). Ver src/lib/planner-sync.ts
+    // (limpa o campo a cada sync) e src/app/settings/actions.ts (seta o campo
+    // quando detecta que um item sincronizado foi alterado antes de salvar).
+    manualEditAt: text('manual_edit_at'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 

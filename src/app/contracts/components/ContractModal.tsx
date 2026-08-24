@@ -13,6 +13,7 @@ interface ContractModalProps {
     gerencias: string[];
     onClose: () => void;
     onSuccess: () => void;
+    lightActive?: boolean;
 }
 
 const TIPOS = ['SUSTENTAÇÃO', 'PROJETOS'];
@@ -22,25 +23,33 @@ function FormField({
     label,
     children,
     required,
+    lightActive,
 }: {
     label: string;
     children: React.ReactNode;
     required?: boolean;
+    lightActive?: boolean;
 }) {
     return (
         <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
-                {label}{required && <span className="text-rose-400 ml-0.5">*</span>}
+            <label className={`text-xs font-semibold uppercase tracking-wider ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                {label}{required && <span className={`ml-0.5 ${lightActive ? 'text-rose-500' : 'text-rose-400'}`}>*</span>}
             </label>
             {children}
         </div>
     );
 }
 
-const inputCls =
-    'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all';
-const selectCls =
-    'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none';
+function getInputCls(lightActive: boolean) {
+    return lightActive
+        ? 'h-9 w-full px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all'
+        : 'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all';
+}
+function getSelectCls(lightActive: boolean) {
+    return lightActive
+        ? 'h-9 w-full px-3 bg-white border border-zinc-300 rounded-md text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none'
+        : 'h-9 w-full px-3 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all appearance-none';
+}
 
 export function ContractModal({
     open,
@@ -50,7 +59,10 @@ export function ContractModal({
     gerencias,
     onClose,
     onSuccess,
+    lightActive = false,
 }: ContractModalProps) {
+    const inputCls = getInputCls(lightActive);
+    const selectCls = getSelectCls(lightActive);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
 
@@ -181,21 +193,21 @@ export function ContractModal({
             />
 
             {/* Panel */}
-            <div className="relative w-full max-w-3xl max-h-[90vh] flex flex-col bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden mx-4">
+            <div className={`relative w-full max-w-3xl max-h-[90vh] flex flex-col border rounded-2xl shadow-2xl overflow-hidden mx-4 ${lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-950 border-zinc-800'}`}>
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 flex-none">
+                <div className={`flex items-center justify-between px-6 py-4 border-b flex-none ${lightActive ? 'border-zinc-200' : 'border-zinc-800'}`}>
                     <div>
-                        <h2 className="text-lg font-bold text-zinc-100">
+                        <h2 className={`text-lg font-bold ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>
                             {mode === 'add' ? 'Novo Contrato' : 'Editar Contrato'}
                         </h2>
                         {mode === 'edit' && contrato && (
-                            <p className="text-xs text-zinc-500 mt-0.5 font-mono">{contrato.numeroContrato}</p>
+                            <p className={`text-xs mt-0.5 font-mono ${lightActive ? 'text-zinc-500' : 'text-zinc-500'}`}>{contrato.numeroContrato}</p>
                         )}
                     </div>
                     <button
                         id="contract-modal-close"
                         onClick={onClose}
-                        className="p-2 rounded-lg text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${lightActive ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800'}`}
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -205,7 +217,7 @@ export function ContractModal({
                 <form id="contract-form" onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
                     <div className="px-6 py-5 grid grid-cols-2 gap-4">
                         {/* Row 1 */}
-                        <FormField label="Número do Contrato" required>
+                        <FormField label="Número do Contrato" required lightActive={lightActive}>
                             <input
                                 id="field-numeroContrato"
                                 className={inputCls}
@@ -216,7 +228,7 @@ export function ContractModal({
                                 disabled={mode === 'edit'}
                             />
                         </FormField>
-                        <FormField label="Código Protheus">
+                        <FormField label="Código Protheus" lightActive={lightActive}>
                             <input
                                 id="field-protheus"
                                 className={inputCls}
@@ -227,7 +239,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 2 */}
-                        <FormField label="Cliente" required>
+                        <FormField label="Cliente" required lightActive={lightActive}>
                             <input
                                 id="field-cliente"
                                 className={inputCls}
@@ -237,7 +249,7 @@ export function ContractModal({
                                 required
                             />
                         </FormField>
-                        <FormField label="Diretoria">
+                        <FormField label="Diretoria" lightActive={lightActive}>
                             <input
                                 id="field-diretoria"
                                 className={inputCls}
@@ -248,7 +260,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 3 - Gerência & Manager */}
-                        <FormField label="Gerência (GRC)">
+                        <FormField label="Gerência (GRC)" lightActive={lightActive}>
                             <select
                                 id="field-gerencia"
                                 className={selectCls}
@@ -261,7 +273,7 @@ export function ContractModal({
                                 ))}
                             </select>
                         </FormField>
-                        <FormField label="Gerente (Manager)">
+                        <FormField label="Gerente (Manager)" lightActive={lightActive}>
                             <select
                                 id="field-managerId"
                                 className={selectCls}
@@ -276,7 +288,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 4 - Nome Gerente */}
-                        <FormField label="Nome Completo do Gerente">
+                        <FormField label="Nome Completo do Gerente" lightActive={lightActive}>
                             <input
                                 id="field-nomeGerente"
                                 className={inputCls}
@@ -285,7 +297,7 @@ export function ContractModal({
                                 placeholder="Nome completo (denormalizado do CSV)"
                             />
                         </FormField>
-                        <FormField label="Tipo">
+                        <FormField label="Tipo" lightActive={lightActive}>
                             <select
                                 id="field-tipo"
                                 className={selectCls}
@@ -300,7 +312,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 5 - Dates */}
-                        <FormField label="Início (Desde)">
+                        <FormField label="Início (Desde)" lightActive={lightActive}>
                             <input
                                 id="field-desde"
                                 type="date"
@@ -309,7 +321,7 @@ export function ContractModal({
                                 onChange={(e) => set('desde', e.target.value)}
                             />
                         </FormField>
-                        <FormField label="Início Vigência">
+                        <FormField label="Início Vigência" lightActive={lightActive}>
                             <input
                                 id="field-dtInicioVigencia"
                                 type="date"
@@ -320,7 +332,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 6 - Dates cont. */}
-                        <FormField label="Fim Vigência">
+                        <FormField label="Fim Vigência" lightActive={lightActive}>
                             <input
                                 id="field-dtFimVigencia"
                                 type="date"
@@ -329,7 +341,7 @@ export function ContractModal({
                                 onChange={(e) => set('dtFimVigencia', e.target.value)}
                             />
                         </FormField>
-                        <FormField label="Situação">
+                        <FormField label="Situação" lightActive={lightActive}>
                             <select
                                 id="field-situacao"
                                 className={selectCls}
@@ -344,7 +356,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 7 - Values */}
-                        <FormField label="Valor Contratado (R$)">
+                        <FormField label="Valor Contratado (R$)" lightActive={lightActive}>
                             <input
                                 id="field-vlContratado"
                                 type="number"
@@ -355,7 +367,7 @@ export function ContractModal({
                                 placeholder="0.00"
                             />
                         </FormField>
-                        <FormField label="Valor Faturado (R$)">
+                        <FormField label="Valor Faturado (R$)" lightActive={lightActive}>
                             <input
                                 id="field-vlFaturado"
                                 type="number"
@@ -368,7 +380,7 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 8 - Saldo + Vigente */}
-                        <FormField label="Saldo (R$)">
+                        <FormField label="Saldo (R$)" lightActive={lightActive}>
                             <input
                                 id="field-vlSaldo"
                                 type="number"
@@ -379,21 +391,21 @@ export function ContractModal({
                                 placeholder="0.00"
                             />
                         </FormField>
-                        <FormField label="Vigente">
+                        <FormField label="Vigente" lightActive={lightActive}>
                             <div className="flex items-center h-9 gap-3">
                                 <button
                                     id="field-vigente-toggle"
                                     type="button"
                                     onClick={() => set('vigente', !form.vigente)}
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-zinc-950
-                                        ${form.vigente ? 'bg-indigo-600' : 'bg-zinc-700'}`}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${lightActive ? 'focus:ring-offset-white' : 'focus:ring-offset-zinc-950'}
+                                        ${form.vigente ? 'bg-indigo-600' : (lightActive ? 'bg-zinc-300' : 'bg-zinc-700')}`}
                                 >
                                     <span
                                         className={`inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform
                                             ${form.vigente ? 'translate-x-6' : 'translate-x-1'}`}
                                     />
                                 </button>
-                                <span className="text-sm text-zinc-400">
+                                <span className={`text-sm ${lightActive ? 'text-zinc-600' : 'text-zinc-400'}`}>
                                     {form.vigente ? 'Contrato vigente' : 'Não vigente'}
                                 </span>
                             </div>
@@ -401,10 +413,10 @@ export function ContractModal({
 
                         {/* Row 9 - Objeto (full width) */}
                         <div className="col-span-2">
-                            <FormField label="Objeto / Descrição">
+                            <FormField label="Objeto / Descrição" lightActive={lightActive}>
                                 <textarea
                                     id="field-objeto"
-                                    className="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none"
+                                    className={`w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all resize-none ${lightActive ? 'bg-white border-zinc-300 text-zinc-900 placeholder:text-zinc-400' : 'bg-zinc-900 border-zinc-700 text-zinc-100 placeholder:text-zinc-600'}`}
                                     rows={3}
                                     value={form.objeto}
                                     onChange={(e) => set('objeto', e.target.value)}
@@ -416,9 +428,9 @@ export function ContractModal({
                 </form>
 
                 {/* Footer */}
-                <div className="flex-none border-t border-zinc-800 px-6 py-4 flex items-center justify-between gap-3">
+                <div className={`flex-none border-t px-6 py-4 flex items-center justify-between gap-3 ${lightActive ? 'border-zinc-200' : 'border-zinc-800'}`}>
                     {error && (
-                        <div className="flex items-center gap-2 text-rose-400 text-sm">
+                        <div className={`flex items-center gap-2 text-sm ${lightActive ? 'text-rose-600' : 'text-rose-400'}`}>
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{error}</span>
                         </div>
@@ -430,7 +442,7 @@ export function ContractModal({
                             type="button"
                             onClick={onClose}
                             disabled={isPending}
-                            className="h-9 px-4 rounded-lg border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 transition-colors disabled:opacity-50"
+                            className={`h-9 px-4 rounded-lg border text-sm transition-colors disabled:opacity-50 ${lightActive ? 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900' : 'border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'}`}
                         >
                             Cancelar
                         </button>

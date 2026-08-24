@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
-import { Loader2, User, Save, FileText, Copy, Handshake, Network, DollarSign } from 'lucide-react';
+import { Loader2, User, Save, FileText, Copy, Handshake, Network, DollarSign, Upload } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
 import { ContractsEditor } from './ContractsEditor';
 import { ProposalsEditor } from './ProposalsEditor';
 import { OrgChartEditor } from './OrgChartEditor';
 import { FaturamentoEditor } from './FaturamentoEditor';
+import { PlannerUploadEditor } from './PlannerUploadEditor';
 import { saveManagerData, saveCXData, saveVisitsData, cloneManager } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ import Link from 'next/link';
 export function SettingsDashboard() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart' | 'faturamento'>('managers');
+    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart' | 'faturamento' | 'planner-upload'>('managers');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -180,6 +181,18 @@ export function SettingsDashboard() {
                                 <p className={`text-xs truncate ${section === 'faturamento' ? 'text-emerald-200' : 'text-zinc-500'}`}>Card Faturamento 2025</p>
                             </div>
                         </button>
+                        <button
+                            onClick={() => setSection('planner-upload')}
+                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'planner-upload' ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${section === 'planner-upload' ? 'bg-indigo-500' : 'bg-zinc-800'}`}>
+                                <Upload className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate text-sm">Upload Planner</p>
+                                <p className={`text-xs truncate ${section === 'planner-upload' ? 'text-indigo-200' : 'text-zinc-500'}`}>Sincronizar CX via JSON</p>
+                            </div>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -221,6 +234,8 @@ export function SettingsDashboard() {
                     <OrgChartEditor />
                 ) : section === 'faturamento' ? (
                     <FaturamentoEditor />
+                ) : section === 'planner-upload' ? (
+                    <PlannerUploadEditor />
                 ) : selectedManager ? (
                     <ManagerEditor
                         key={selectedManager.id}

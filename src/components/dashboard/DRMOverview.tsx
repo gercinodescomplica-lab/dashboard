@@ -24,6 +24,8 @@ interface DRMOverviewProps {
     managers: Manager[];
     year: string;
     faturamento2025?: number;
+    /** Tema claro do painel (clone dos prints, mesmo layout de hoje). Padrão false = escuro, estado atual intocado. */
+    lightActive?: boolean;
 }
 
 type Temp = 'quente' | 'morno' | 'frio' | 'contratado' | 'historico' | 'perdido';
@@ -53,31 +55,32 @@ const Q_DESCRIPTIONS: Record<QKey, { name: string; period: string }> = {
     nao_mapeado: { name: 'Sem Data', period: 'Não Mapeado' },
 };
 
-function InfoTip({ text }: { text: string }) {
+function InfoTip({ text, lightActive }: { text: string; lightActive?: boolean }) {
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <span className="cursor-help text-zinc-600 hover:text-zinc-400 transition-colors ml-1 inline-flex items-center">
+                <span className={`cursor-help transition-colors ml-1 inline-flex items-center ${lightActive ? 'text-zinc-400 hover:text-zinc-600' : 'text-zinc-600 hover:text-zinc-400'}`}>
                     <Info className="w-3.5 h-3.5" />
                 </span>
             </TooltipTrigger>
-            <TooltipContent className="max-w-[260px] text-xs leading-relaxed bg-zinc-900 text-zinc-200 border border-zinc-700 shadow-xl" side="top" sideOffset={4}>
+            <TooltipContent className={`max-w-[260px] text-xs leading-relaxed shadow-xl border ${lightActive ? 'bg-white text-zinc-700 border-zinc-200' : 'bg-zinc-900 text-zinc-200 border-zinc-700'}`} side="top" sideOffset={4}>
                 {text}
             </TooltipContent>
         </Tooltip>
     );
 }
 
-function KpiCardSide({ label, value, accent, tip }: {
-    label: string; value: string; accent?: string; tip?: string;
+function KpiCardSide({ label, value, accent, accentLight, tip, lightActive }: {
+    label: string; value: string; accent?: string; accentLight?: string; tip?: string; lightActive?: boolean;
 }) {
+    const resolvedAccent = lightActive ? (accentLight ?? accent ?? 'text-zinc-900') : (accent ?? 'text-zinc-100');
     return (
-        <div className="flex flex-col gap-0.5 bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-4 py-2 min-w-0 hover:border-zinc-700/80 transition-colors">
+        <div className={`flex flex-col gap-0.5 rounded-xl px-4 py-2 min-w-0 transition-colors border ${lightActive ? 'bg-zinc-50 border-zinc-200 hover:border-zinc-300' : 'bg-zinc-900/60 border-zinc-800/80 hover:border-zinc-700/80'}`}>
             <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center justify-between">
                 <span>{label}</span>
-                {tip && <InfoTip text={tip} />}
+                {tip && <InfoTip text={tip} lightActive={lightActive} />}
             </p>
-            <p className={`text-base sm:text-lg font-bold font-mono truncate ${accent ?? 'text-zinc-100'}`}>{value}</p>
+            <p className={`text-base sm:text-lg font-bold font-mono truncate ${resolvedAccent}`}>{value}</p>
         </div>
     );
 }
@@ -91,8 +94,51 @@ const TEMP_META: Record<Temp, { label: string; emoji: string; accent: string; ba
     perdido:   { label: 'Perdido',    emoji: '❌', accent: 'text-red-400',    bar: 'bg-red-600'    },
 };
 
-export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: DRMOverviewProps) {
+export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, lightActive = false }: DRMOverviewProps) {
     const [modal, setModal] = useState<ModalState>(CLOSED_MODAL);
+
+    // Tokens de cor do tema claro (clone dos prints). Escuro nunca muda — é só o valor literal de sempre.
+    const T = {
+        panel: lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900/40 border-zinc-800/80',
+        panelBorderSoft: lightActive ? 'border-zinc-200' : 'border-zinc-800/60',
+        heading: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+        subtext: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        toggleActiveNeutral: lightActive ? 'bg-zinc-200 text-zinc-900 border-zinc-300 shadow-sm' : 'bg-zinc-800 text-zinc-100 border-zinc-600 shadow-sm',
+        toggleInactive: lightActive ? 'bg-zinc-50 text-zinc-400 border-zinc-200 hover:border-zinc-300 opacity-60' : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700 opacity-60',
+        toggleDotInactive: lightActive ? 'bg-zinc-300' : 'bg-zinc-700',
+        toggleActiveNovos: lightActive ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-sm' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-sm',
+        toggleActivePipeline: lightActive ? 'bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-sm',
+        tierBorder: lightActive ? 'border-zinc-200' : 'border-zinc-800/80',
+        tierTop: lightActive ? 'bg-white border-emerald-400 shadow-[0_0_14px_rgba(16,185,129,0.15)] z-10' : 'bg-zinc-900 border-emerald-500/50 shadow-[0_0_14px_rgba(16,185,129,0.2)] z-10',
+        tierNormal: lightActive ? 'bg-zinc-50 hover:bg-white' : 'bg-zinc-900/80 hover:bg-zinc-900',
+        rankBadgeNormal: lightActive ? 'bg-zinc-100 text-zinc-700 border-zinc-300' : 'bg-zinc-800/90 text-zinc-200 border-zinc-700',
+        managerName: lightActive ? 'text-zinc-900 group-hover:text-black' : 'text-zinc-100 group-hover:text-white',
+        managerRole: lightActive ? 'text-zinc-500/90' : 'text-zinc-300/80',
+        tierValue: lightActive ? 'text-zinc-900' : 'text-zinc-50',
+        baseIndicator: lightActive ? 'text-emerald-600' : 'text-emerald-400',
+        kpiHeading: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        pipelineBadge: lightActive ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30',
+        qCard: lightActive ? 'bg-white hover:bg-zinc-50 border-zinc-200 hover:border-indigo-300' : 'bg-zinc-900/80 hover:bg-zinc-850 border-zinc-800 hover:border-indigo-500/60',
+        qLabel: lightActive ? 'text-indigo-700 bg-indigo-50 border-indigo-200' : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
+        qPeriod: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        qName: lightActive ? 'text-zinc-600 group-hover:text-zinc-900' : 'text-zinc-300 group-hover:text-white',
+        qValue: lightActive ? 'text-zinc-900 group-hover:text-indigo-600' : 'text-zinc-100 group-hover:text-indigo-300',
+        qTrack: lightActive ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-950 border-zinc-800',
+        qFooter: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        qFooterAccent: lightActive ? 'text-indigo-700' : 'text-indigo-400',
+        modalBg: lightActive ? 'bg-white border-zinc-200 text-zinc-900' : 'bg-zinc-950 border-zinc-800 text-zinc-100',
+        modalDivider: lightActive ? 'border-zinc-200' : 'border-zinc-800',
+        modalItem: lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900 border-zinc-800',
+        modalItemTitle: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+        modalItemSub: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        modalItemOrg: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        modalItemRole: lightActive ? 'text-zinc-400' : 'text-zinc-700',
+        modalAccent: lightActive ? 'text-indigo-700' : 'text-indigo-400',
+        tooltipBg: lightActive ? 'bg-white text-zinc-700 border-zinc-200' : 'bg-zinc-950 text-zinc-200 border-zinc-700/80',
+        tooltipTitle: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+        tooltipMuted: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        tooltipDivider: lightActive ? 'border-zinc-200' : 'border-zinc-800',
+    };
 
     // ── Metric Filters State ──────────────────────────────────────────────────
     const [activeMetrics, setActiveMetrics] = useState<{
@@ -218,16 +264,16 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 w-full">
 
                     {/* ── LEFT COLUMN (7 Cols): Pirâmide Dinâmica Ajustável ── */}
-                    <div className="lg:col-span-7 bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col backdrop-blur-md justify-between overflow-hidden">
-                        <div className="flex items-center justify-between mb-2.5 border-b border-zinc-800/60 pb-2.5 flex-wrap gap-2 shrink-0">
+                    <div className={`lg:col-span-7 border rounded-2xl p-4 flex flex-col backdrop-blur-md justify-between overflow-hidden transition-colors duration-200 ${T.panel}`}>
+                        <div className={`flex items-center justify-between mb-2.5 border-b pb-2.5 flex-wrap gap-2 shrink-0 ${T.panelBorderSoft}`}>
                             <div>
-                                <h4 className="text-sm font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-1.5">
+                                <h4 className={`text-sm font-bold uppercase tracking-wider flex items-center gap-1.5 ${T.heading}`}>
                                     <Layers className="w-4 h-4 text-emerald-400" />
                                     Pirâmide Comercial Dinâmica
-                                    <InfoTip text="A base da pirâmide recalcula dinamicamente conforme os filtros selecionados à direita. Quem possui o maior valor selecionado fica na base da pirâmide." />
+                                    <InfoTip lightActive={lightActive} text="A base da pirâmide recalcula dinamicamente conforme os filtros selecionados à direita. Quem possui o maior valor selecionado fica na base da pirâmide." />
                                 </h4>
-                                <p className="text-[11px] text-zinc-400 mt-0.5">
-                                    Base da pirâmide ordenada por: <strong className="text-emerald-400">{activeMetricLabel}</strong>
+                                <p className={`text-[11px] mt-0.5 ${T.subtext}`}>
+                                    Base da pirâmide ordenada por: <strong className={T.baseIndicator}>{activeMetricLabel}</strong>
                                 </p>
                             </div>
 
@@ -237,12 +283,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                     type="button"
                                     onClick={() => toggleMetric('herdados')}
                                     className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer select-none ${
-                                        activeMetrics.herdados
-                                            ? 'bg-zinc-800 text-zinc-100 border-zinc-600 shadow-sm'
-                                            : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700 opacity-60'
+                                        activeMetrics.herdados ? T.toggleActiveNeutral : T.toggleInactive
                                     }`}
                                 >
-                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.herdados ? 'bg-zinc-300' : 'bg-zinc-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.herdados ? (lightActive ? 'bg-zinc-500' : 'bg-zinc-300') : T.toggleDotInactive}`} />
                                     Herdados
                                 </button>
 
@@ -250,12 +294,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                     type="button"
                                     onClick={() => toggleMetric('novos')}
                                     className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer select-none ${
-                                        activeMetrics.novos
-                                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-sm'
-                                            : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700 opacity-60'
+                                        activeMetrics.novos ? T.toggleActiveNovos : T.toggleInactive
                                     }`}
                                 >
-                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.novos ? 'bg-emerald-500' : 'bg-zinc-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.novos ? 'bg-emerald-500' : T.toggleDotInactive}`} />
                                     Concluídos
                                 </button>
 
@@ -263,12 +305,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                     type="button"
                                     onClick={() => toggleMetric('pipeline')}
                                     className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border flex items-center gap-1.5 transition-all cursor-pointer select-none ${
-                                        activeMetrics.pipeline
-                                            ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 shadow-sm'
-                                            : 'bg-zinc-950/40 text-zinc-500 border-zinc-800 hover:border-zinc-700 opacity-60'
+                                        activeMetrics.pipeline ? T.toggleActivePipeline : T.toggleInactive
                                     }`}
                                 >
-                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.pipeline ? 'bg-indigo-500' : 'bg-zinc-700'}`} />
+                                    <span className={`w-2 h-2 rounded-full ${activeMetrics.pipeline ? 'bg-indigo-500' : T.toggleDotInactive}`} />
                                     Pipeline
                                 </button>
                             </div>
@@ -297,12 +337,12 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                 style={{ width: `${widthPct}%` }}
                                             >
                                                 {/* Seamless tier bar without extra padding */}
-                                                <div className={`w-full h-8 relative flex items-center justify-between px-3 transition-all duration-200 border-x border-t border-zinc-800/80 overflow-hidden ${
+                                                <div className={`w-full h-8 relative flex items-center justify-between px-3 transition-all duration-200 border-x border-t overflow-hidden ${T.tierBorder} ${
                                                     idx === 0 ? 'rounded-t-xl border-t' : ''
                                                 } ${
                                                     isBase ? 'rounded-b-xl border-b shadow-lg' : ''
                                                 } ${
-                                                    isTopRank ? 'bg-zinc-900 border-emerald-500/50 shadow-[0_0_14px_rgba(16,185,129,0.2)] z-10' : 'bg-zinc-900/80 hover:bg-zinc-900'
+                                                    isTopRank ? T.tierTop : T.tierNormal
                                                 }`}>
                                                     
                                                     {/* Color fill layer across the tier band */}
@@ -332,19 +372,19 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                         {/* Left: Rank Badge & Manager Name */}
                                                         <div className="flex items-center gap-2 min-w-0">
                                                             <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded border font-mono shrink-0 ${
-                                                                isTopRank ? 'bg-amber-400 text-zinc-950 border-amber-300' : 'bg-zinc-800/90 text-zinc-200 border-zinc-700'
+                                                                isTopRank ? 'bg-amber-400 text-zinc-950 border-amber-300' : T.rankBadgeNormal
                                                             }`}>
                                                                 #{m.rank}
                                                             </span>
 
-                                                            <p className="font-bold text-xs text-zinc-100 group-hover:text-white transition-colors truncate max-w-[150px] drop-shadow-sm">
-                                                                {m.name} <span className="text-[11px] font-normal text-zinc-300/80">({m.role})</span>
+                                                            <p className={`font-bold text-xs transition-colors truncate max-w-[150px] drop-shadow-sm ${T.managerName}`}>
+                                                                {m.name} <span className={`text-[11px] font-normal ${T.managerRole}`}>({m.role})</span>
                                                             </p>
                                                         </div>
 
                                                         {/* Right: Selected Total R$ */}
                                                         <div className="flex items-center gap-2 shrink-0">
-                                                            <span className="text-xs font-bold font-mono text-zinc-50 drop-shadow-sm min-w-[80px] text-right">
+                                                            <span className={`text-xs font-bold font-mono drop-shadow-sm min-w-[80px] text-right ${T.tierValue}`}>
                                                                 {formatCurrency(m.totalSelected)}
                                                             </span>
                                                         </div>
@@ -353,25 +393,25 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                                 </div>
                                             </div>
                                         </TooltipTrigger>
-                                        <TooltipContent className="text-xs bg-zinc-950 text-zinc-200 border border-zinc-700/80 leading-relaxed p-2.5 shadow-2xl" sideOffset={6}>
+                                        <TooltipContent className={`text-xs border leading-relaxed p-2.5 shadow-2xl ${T.tooltipBg}`} sideOffset={6}>
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="font-bold text-amber-400 font-mono text-xs">#{m.rank} no Ranking de {activeMetricLabel}</span>
+                                                <span className={`font-bold font-mono text-xs ${lightActive ? 'text-amber-600' : 'text-amber-400'}`}>#{m.rank} no Ranking de {activeMetricLabel}</span>
                                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${m.statusColor}`}>{m.perfStatus}</span>
                                             </div>
-                                            <p className="font-bold text-zinc-100 text-sm">{m.name} ({m.role})</p>
+                                            <p className={`font-bold text-sm ${T.tooltipTitle}`}>{m.name} ({m.role})</p>
                                             <div className="space-y-1 text-xs mt-1">
-                                                <div className="flex justify-between gap-4"><span>Total Selecionado:</span> <strong className="font-mono text-emerald-400">{formatCurrency(m.totalSelected)}</strong></div>
+                                                <div className="flex justify-between gap-4"><span>Total Selecionado:</span> <strong className={`font-mono ${lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>{formatCurrency(m.totalSelected)}</strong></div>
                                                 {activeMetrics.novos && (
-                                                    <div className="flex justify-between gap-4"><span>Novos Concluídos (TCV):</span> <span className="font-mono text-emerald-300">{formatCurrency(m.novos)}</span></div>
+                                                    <div className="flex justify-between gap-4"><span>Novos Concluídos (TCV):</span> <span className={`font-mono ${lightActive ? 'text-emerald-600' : 'text-emerald-300'}`}>{formatCurrency(m.novos)}</span></div>
                                                 )}
                                                 {activeMetrics.herdados && (
-                                                    <div className="flex justify-between gap-4"><span>Contratos Herdados:</span> <span className="font-mono text-zinc-300">{formatCurrency(m.herdados)}</span></div>
+                                                    <div className="flex justify-between gap-4"><span>Contratos Herdados:</span> <span className={`font-mono ${T.tooltipMuted}`}>{formatCurrency(m.herdados)}</span></div>
                                                 )}
                                                 {activeMetrics.pipeline && (
-                                                    <div className="flex justify-between gap-4"><span>Pipeline em Aberto:</span> <span className="font-mono text-indigo-400">{formatCurrency(m.pipelineVal)}</span></div>
+                                                    <div className="flex justify-between gap-4"><span>Pipeline em Aberto:</span> <span className={`font-mono ${T.qFooterAccent}`}>{formatCurrency(m.pipelineVal)}</span></div>
                                                 )}
-                                                <div className="flex justify-between gap-4"><span>Meta 2026:</span> <span className="font-mono text-zinc-400">{formatCurrency(m.meta)}</span></div>
-                                                <div className="flex justify-between gap-4 pt-1 font-bold border-t border-zinc-800"><span>% Atingimento da Meta:</span> <span className="font-mono text-emerald-400">{formatPercentage(m.achievementPct)}</span></div>
+                                                <div className="flex justify-between gap-4"><span>Meta 2026:</span> <span className={`font-mono ${T.tooltipMuted}`}>{formatCurrency(m.meta)}</span></div>
+                                                <div className={`flex justify-between gap-4 pt-1 font-bold border-t ${T.tooltipDivider}`}><span>% Atingimento da Meta:</span> <span className={`font-mono ${lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>{formatPercentage(m.achievementPct)}</span></div>
                                             </div>
                                         </TooltipContent>
                                     </Tooltip>
@@ -380,7 +420,7 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                         </div>
 
                         {/* Base Indicator */}
-                        <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] font-bold uppercase tracking-wider justify-center pt-2 border-t border-zinc-800/60 shrink-0">
+                        <div className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider justify-center pt-2 border-t shrink-0 ${T.baseIndicator} ${T.panelBorderSoft}`}>
                             <ArrowUp className="w-3.5 h-3.5 animate-bounce" />
                             Base da Pirâmide — Maior Volume: <span className="underline ml-1">{activeMetricLabel}</span>
                             <ArrowUp className="w-3.5 h-3.5 animate-bounce" />
@@ -391,46 +431,58 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                     <div className="lg:col-span-5 flex flex-col gap-3.5">
 
                         {/* Consolidated KPI Cards Column (6 Cards Total) */}
-                        <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 flex flex-col gap-2 backdrop-blur-md">
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <div className={`border rounded-2xl p-4 flex flex-col gap-2 backdrop-blur-md transition-colors duration-200 ${T.panel}`}>
+                            <h4 className={`text-xs font-bold uppercase tracking-widest mb-1 flex items-center gap-1.5 ${T.kpiHeading}`}>
                                 <BarChart3 className="w-4 h-4 text-cyan-400" />
                                 Informações Consolidadas
                             </h4>
 
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="1. Faturamento 2025"
                                 value={formatCurrency(faturamento2025)}
                                 accent="text-cyan-400"
+                                accentLight="text-cyan-600"
                                 tip="Faturamento total realizado no ano de 2025. Editável nas Configurações."
                             />
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="2. Contratos Herdados"
                                 value={formatCurrency(totalHerdados)}
                                 accent="text-zinc-300"
+                                accentLight="text-zinc-700"
                                 tip="Base de contratos legados trazida de anos anteriores."
                             />
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="3. Novos Negócios Concluídos (Valor Total)"
                                 value={formatCurrency(totalNovosNegociosTCV)}
                                 accent="text-emerald-400"
+                                accentLight="text-emerald-600"
                                 tip="Valor total acumulado de novos contratos fechados (TCV total sem pro-rata)."
                             />
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="4. Novos Negócios Concluídos (Pro-rata 2026)"
                                 value={formatCurrency(totalNovosNegociosProRata)}
                                 accent="text-emerald-300"
+                                accentLight="text-emerald-500"
                                 tip="Receita pro-rata 2026 reconhecida dos novos contratos fechados no pipeline."
                             />
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="5. Contratado 2026"
                                 value={formatCurrency(totalContratado2026)}
                                 accent="text-blue-400"
+                                accentLight="text-blue-600"
                                 tip="Herdados + parcela pro-rata 2026 dos novos negócios."
                             />
                             <KpiCardSide
+                                lightActive={lightActive}
                                 label="6. Forecast Pro-rata 2026"
                                 value={formatCurrency(totalForecastProRata2026)}
                                 accent="text-violet-400"
+                                accentLight="text-violet-600"
                                 tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline."
                             />
                         </div>
@@ -440,16 +492,16 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                 </div>
 
                 {/* ── EXPANDED PIPELINE POR TRIMESTRE (Visão Ampla Destaque Executivo) ── */}
-                <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-4 sm:p-5 backdrop-blur-md shrink-0 mt-1">
-                    <div className="flex items-center justify-between mb-3 border-b border-zinc-800/60 pb-3 flex-wrap gap-2">
+                <div className={`border rounded-2xl p-4 sm:p-5 backdrop-blur-md shrink-0 mt-1 transition-colors duration-200 ${T.panel}`}>
+                    <div className={`flex items-center justify-between mb-3 border-b pb-3 flex-wrap gap-2 ${T.panelBorderSoft}`}>
                         <div>
-                            <h4 className="text-sm sm:text-base font-bold text-zinc-100 uppercase tracking-wider flex items-center gap-2">
+                            <h4 className={`text-sm sm:text-base font-bold uppercase tracking-wider flex items-center gap-2 ${T.heading}`}>
                                 <Calendar className="w-5 h-5 text-indigo-400" />
                                 Pipeline por Trimestre (Visão Ampla 2026)
                             </h4>
-                            <p className="text-xs text-zinc-400 mt-0.5">Distribuição do volume comercial mapeado por período de fechamento · Clique para detalhamento</p>
+                            <p className={`text-xs mt-0.5 ${T.subtext}`}>Distribuição do volume comercial mapeado por período de fechamento · Clique para detalhamento</p>
                         </div>
-                        <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+                        <span className={`text-xs font-semibold border px-3 py-1 rounded-full flex items-center gap-1.5 ${T.pipelineBadge}`}>
                             Total Pipeline: {formatCurrency(sumAllPipelineQuarters)}
                         </span>
                     </div>
@@ -464,44 +516,44 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                     key={q.label}
                                     type="button"
                                     onClick={() => openQuarterModal(q.key, `${q.label} (${q.name})`, q.total)}
-                                    className="bg-zinc-900/80 hover:bg-zinc-850 border border-zinc-800 hover:border-indigo-500/60 rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 text-left group cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] relative overflow-hidden"
+                                    className={`border rounded-xl p-3.5 flex flex-col justify-between transition-all duration-200 text-left group cursor-pointer shadow-sm hover:shadow-[0_0_15px_rgba(99,102,241,0.15)] relative overflow-hidden ${T.qCard}`}
                                 >
                                     {/* Accent Top Border Highlight */}
                                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-violet-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                                     <div>
                                         <div className="flex items-center justify-between w-full mb-1">
-                                            <span className="text-xs font-extrabold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/20">
+                                            <span className={`text-xs font-extrabold uppercase tracking-wider px-2 py-0.5 rounded border ${T.qLabel}`}>
                                                 {q.label}
                                             </span>
-                                            <span className="text-[11px] font-semibold text-zinc-400">
+                                            <span className={`text-[11px] font-semibold ${T.qPeriod}`}>
                                                 {q.period}
                                             </span>
                                         </div>
 
-                                        <p className="text-xs font-bold text-zinc-300 mt-1 line-clamp-1 group-hover:text-white transition-colors">
+                                        <p className={`text-xs font-bold mt-1 line-clamp-1 transition-colors ${T.qName}`}>
                                             {q.name}
                                         </p>
                                     </div>
 
                                     <div className="mt-3">
                                         <div className="flex items-baseline justify-between gap-1 mb-1.5">
-                                            <span className="text-base sm:text-lg font-bold font-mono text-zinc-100 group-hover:text-indigo-300 transition-colors">
+                                            <span className={`text-base sm:text-lg font-bold font-mono transition-colors ${T.qValue}`}>
                                                 {formatCurrency(q.total)}
                                             </span>
                                         </div>
 
                                         {/* Progress bar relative to max quarter */}
-                                        <div className="w-full h-1.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+                                        <div className={`w-full h-1.5 rounded-full overflow-hidden border ${T.qTrack}`}>
                                             <div
                                                 className="h-full bg-gradient-to-r from-indigo-500 to-emerald-400 rounded-full transition-all duration-500"
                                                 style={{ width: `${Math.max(5, barWidthPct)}%` }}
                                             />
                                         </div>
 
-                                        <div className="flex items-center justify-between mt-2 text-[10px] text-zinc-400">
+                                        <div className={`flex items-center justify-between mt-2 text-[10px] ${T.qFooter}`}>
                                             <span>{q.count} oport.</span>
-                                            <span className="font-mono text-indigo-400 font-semibold">{pctOfTotal.toFixed(1)}% do total</span>
+                                            <span className={`font-mono font-semibold ${T.qFooterAccent}`}>{pctOfTotal.toFixed(1)}% do total</span>
                                         </div>
                                     </div>
                                 </button>
@@ -514,10 +566,10 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
 
             {/* ── Drill-down Modal ─────────────────────────── */}
             <Dialog open={modal.open} onOpenChange={(v) => !v && setModal(CLOSED_MODAL)}>
-                <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden">
-                    <DialogHeader className="px-6 pt-6 pb-4 border-b border-zinc-800 shrink-0">
+                <DialogContent className={`border max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden ${T.modalBg}`}>
+                    <DialogHeader className={`px-6 pt-6 pb-4 border-b shrink-0 ${T.modalDivider}`}>
                         <DialogTitle className="text-xl font-bold">{modal.title}</DialogTitle>
-                        <p className="text-sm text-zinc-400 mt-0.5">{modal.subtitle}</p>
+                        <p className={`text-sm mt-0.5 ${T.subtext}`}>{modal.subtitle}</p>
                     </DialogHeader>
 
                     {/* Project list */}
@@ -529,16 +581,16 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                                 {modal.projects.map((p, i) => {
                                     const tempMeta = TEMP_META[(p.temperature as Temp) ?? 'morno'] ?? TEMP_META['morno'];
                                     return (
-                                        <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
+                                        <div key={i} className={`border rounded-xl px-4 py-3 flex items-center gap-3 ${T.modalItem}`}>
                                             <span className="text-lg shrink-0">{tempMeta.emoji}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold text-zinc-100 truncate">{p.name}</p>
-                                                <p className="text-xs text-zinc-500 mt-0.5">
-                                                    {p.orgao ? <span className="text-zinc-400">{p.orgao} · </span> : null}
-                                                    {p.managerName} <span className="text-zinc-700">({p.managerRole})</span>
+                                                <p className={`text-sm font-semibold truncate ${T.modalItemTitle}`}>{p.name}</p>
+                                                <p className={`text-xs mt-0.5 ${T.modalItemSub}`}>
+                                                    {p.orgao ? <span className={T.modalItemOrg}>{p.orgao} · </span> : null}
+                                                    {p.managerName} <span className={T.modalItemRole}>({p.managerRole})</span>
                                                 </p>
                                             </div>
-                                            <p className={`text-sm font-bold font-mono shrink-0 ${modal.accentColor}`}>
+                                            <p className={`text-sm font-bold font-mono shrink-0 ${lightActive ? T.modalAccent : modal.accentColor}`}>
                                                 {formatCurrency(p.value)}
                                             </p>
                                         </div>
@@ -549,9 +601,9 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11 }: 
                     </div>
 
                     {/* Footer total */}
-                    <div className="px-6 py-4 border-t border-zinc-800 shrink-0 flex justify-between items-center">
+                    <div className={`px-6 py-4 border-t shrink-0 flex justify-between items-center ${T.modalDivider}`}>
                         <span className="text-xs text-zinc-500 uppercase tracking-widest">Total</span>
-                        <span className={`text-lg font-bold font-mono ${modal.accentColor}`}>{formatCurrency(modal.total)}</span>
+                        <span className={`text-lg font-bold font-mono ${lightActive ? T.modalAccent : modal.accentColor}`}>{formatCurrency(modal.total)}</span>
                     </div>
                 </DialogContent>
             </Dialog>

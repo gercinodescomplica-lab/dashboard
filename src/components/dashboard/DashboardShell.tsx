@@ -10,7 +10,7 @@ import { getFaturamento2025Action } from '@/app/settings/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin, Sun, Moon } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import { CidadesView } from '@/components/cidades/CidadesView';
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { calculateAchievementPercentage, determinePerformanceStatus, sumPipelineContratado2026 } from '@/lib/calc';
+import { applyBodyTheme } from '@/lib/themeSync';
 import { StatBadge } from './StatBadge';
 
 export function DashboardShell() {
@@ -38,6 +39,39 @@ export function DashboardShell() {
     const [selectedManagerId, setSelectedManagerId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentView, setCurrentView] = useState<'dashboard' | 'store' | 'organograma' | 'pipeline' | 'cidades'>('dashboard');
+    // Tema claro/escuro do painel Pipeline Store, compartilhado com o cabeçalho (só reflete aqui quando essa aba está ativa).
+    const [storeTheme, setStoreThemeState] = useState<'dark' | 'light'>('dark');
+    // Áreas cobertas pelo mesmo botão do header (Dashboard, Cidades, Organograma, Store). Contratos/Propostas são páginas
+    // separadas e têm seu próprio botão independente — não compartilham esse estado.
+    const storeLightActive = ['dashboard', 'cidades', 'organograma', 'pipeline', 'store'].includes(currentView) && storeTheme === 'light';
+
+    // Persiste a preferência de tema no navegador para sobreviver a atualizações de página (F5).
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem('aibertinho-theme');
+            if (saved === 'light' || saved === 'dark') {
+                setStoreThemeState(saved);
+                applyBodyTheme(saved);
+                return;
+            }
+        } catch {
+            // localStorage indisponível (SSR/privacidade) — mantém o padrão escuro.
+        }
+        applyBodyTheme('dark');
+    }, []);
+
+    const setStoreTheme = (value: 'dark' | 'light' | ((prev: 'dark' | 'light') => 'dark' | 'light')) => {
+        setStoreThemeState((prev) => {
+            const next = typeof value === 'function' ? value(prev) : value;
+            try {
+                localStorage.setItem('aibertinho-theme', next);
+            } catch {
+                // localStorage indisponível — segue apenas em memória.
+            }
+            applyBodyTheme(next);
+            return next;
+        });
+    };
 
     // Fetch Data
     useEffect(() => {
@@ -117,12 +151,12 @@ export function DashboardShell() {
     }, [managersForYear, selectedManagerId]);
 
     if (error) {
-        return <div className="h-screen w-screen flex items-center justify-center bg-zinc-950 text-red-500">{error}</div>;
+        return <div className={`h-screen w-screen flex items-center justify-center transition-colors duration-200 ${storeLightActive ? 'bg-white' : 'bg-zinc-950'} text-red-500`}>{error}</div>;
     }
 
     if (isLoading) {
         return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-400 gap-4">
+            <div className={`h-screen w-screen flex flex-col items-center justify-center gap-4 transition-colors duration-200 ${storeLightActive ? 'bg-white text-zinc-500' : 'bg-zinc-950 text-zinc-400'}`}>
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 <p>Carregando Dashboard...</p>
             </div>
@@ -130,10 +164,10 @@ export function DashboardShell() {
     }
 
     return (
-        <div className="h-screen w-screen bg-zinc-950 text-zinc-50 flex flex-col overflow-hidden selection:bg-indigo-500/30">
+        <div className={`h-screen w-screen ${storeLightActive ? 'bg-white text-zinc-900' : 'bg-zinc-950 text-zinc-50'} flex flex-col overflow-hidden selection:bg-indigo-500/30 transition-colors duration-200`}>
 
             {/* Header - Fixed Height */}
-            <header className="relative flex-none p-4 sm:p-6 lg:px-8 border-b border-zinc-900/50 bg-zinc-950 z-30 flex items-center justify-between">
+            <header className={`relative flex-none p-4 sm:p-6 lg:px-8 border-b ${storeLightActive ? 'border-zinc-200 bg-white' : 'border-zinc-900/50 bg-zinc-950'} z-30 flex items-center justify-between transition-colors duration-200`}>
                 <div className="flex items-center gap-4">
                     {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
                         <MapPin className="w-6 h-6 text-indigo-400" />
@@ -142,23 +176,24 @@ export function DashboardShell() {
                         onClick={() => setSelectedManagerId('drm')}
                         className="text-left group transition-all cursor-pointer flex items-center gap-3"
                     >
+                        {/* Logotipo AIBertinho — não muda com o tema */}
                         <Image src="/avatars/aibertinho.png" alt="AiBertinho v2 Logo" width={40} height={40} className="rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" priority />
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-zinc-100 group-hover:text-indigo-400 transition-colors flex items-center gap-2">
+                            <h1 className={`text-2xl font-bold tracking-tight transition-colors flex items-center gap-2 ${storeLightActive ? 'text-zinc-900 group-hover:text-indigo-600' : 'text-zinc-100 group-hover:text-indigo-400'}`}>
                                 AiBertinho <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">v2.01</span>
                             </h1>
-                            <p className="text-zinc-400 text-sm font-medium">
+                            <p className={`text-sm font-medium ${storeLightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
                                 Visão Executiva de Gerentes
                             </p>
                         </div>
                     </button>
 
                     {/* Navigation */}
-                    <nav className="hidden sm:flex items-center gap-1 ml-6 bg-zinc-900/50 p-1 rounded-lg border border-zinc-800/80">
+                    <nav className={`hidden sm:flex items-center gap-1 ml-6 p-1 rounded-lg border ${storeLightActive ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900/50 border-zinc-800/80'}`}>
                         {/* Dashboard */}
                         <button
                             onClick={() => setCurrentView('dashboard')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'dashboard' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'dashboard' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
                         >
                             <LayoutDashboard className="w-4 h-4" />
                             Dashboard
@@ -167,16 +202,16 @@ export function DashboardShell() {
                         {/* Cidades */}
                         <button
                             onClick={() => setCurrentView('cidades')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'cidades' ? 'bg-zinc-800 text-indigo-400 shadow-sm border border-indigo-500/30' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'cidades' ? (storeLightActive ? 'bg-white text-indigo-600 shadow-sm border border-indigo-200' : 'bg-zinc-800 text-indigo-400 shadow-sm border border-indigo-500/30') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
                         >
-                            <MapPin className="w-4 h-4 text-indigo-400" />
+                            <MapPin className={`w-4 h-4 ${storeLightActive ? 'text-indigo-600' : 'text-indigo-400'}`} />
                             Cidades
                         </button>
 
                         {/* Organograma */}
                         <button
                             onClick={() => setCurrentView('organograma')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'organograma' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'organograma' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
                         >
                             <Network className="w-4 h-4" />
                             Organograma
@@ -185,24 +220,24 @@ export function DashboardShell() {
                         {/* Store — hover dropdown */}
                         <div className="relative group">
                             <button
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' || currentView === 'pipeline' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' || currentView === 'pipeline' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
                             >
                                 <Store className="w-4 h-4" />
                                 Store
                                 <ChevronDown className="w-3 h-3 opacity-60" />
                             </button>
                             {/* Dropdown */}
-                            <div className="absolute top-full left-0 mt-1.5 w-52 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1.5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-150 z-50">
+                            <div className={`absolute top-full left-0 mt-1.5 w-52 rounded-xl shadow-2xl py-1.5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-150 z-50 border ${storeLightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900 border-zinc-800'}`}>
                                 <button
                                     onClick={() => setCurrentView('store')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'store' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'}`}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'store' ? (storeLightActive ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-100 bg-zinc-800') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60')}`}
                                 >
                                     <BarChart2 className="w-4 h-4 shrink-0" />
                                     Estatísticas Store
                                 </button>
                                 <button
                                     onClick={() => setCurrentView('pipeline')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'pipeline' ? 'text-zinc-100 bg-zinc-800' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'}`}
+                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'pipeline' ? (storeLightActive ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-100 bg-zinc-800') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60')}`}
                                 >
                                     <PackageSearch className="w-4 h-4 shrink-0" />
                                     Pipeline Store
@@ -213,7 +248,7 @@ export function DashboardShell() {
                         {/* Contratos */}
                         <Link
                             href="/contracts"
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-all"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
                         >
                             <FileText className="w-4 h-4" />
                             Contratos
@@ -222,7 +257,7 @@ export function DashboardShell() {
                         {/* Propostas */}
                         <Link
                             href="/proposals"
-                            className="flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50 transition-all"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
                         >
                             <Handshake className="w-4 h-4" />
                             Propostas
@@ -231,14 +266,25 @@ export function DashboardShell() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* Alternância de tema — fixa no header principal. Hoje só reflete no Pipeline Store; no futuro vai controlar o app inteiro. */}
+                    <button
+                        type="button"
+                        onClick={() => setStoreTheme(t => t === 'dark' ? 'light' : 'dark')}
+                        title={storeTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                        aria-label={storeTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                        className={`w-10 h-10 flex items-center justify-center rounded-md border transition-colors ${storeLightActive ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border-zinc-200' : 'bg-zinc-900 text-amber-300 hover:bg-zinc-800 border-zinc-800'}`}
+                    >
+                        {storeTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+
                     <div className="w-28">
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
-                            <SelectTrigger className="bg-zinc-900 border-zinc-800 focus:ring-zinc-700 h-10">
+                            <SelectTrigger className={storeLightActive ? 'bg-white border-zinc-200 focus:ring-zinc-300 h-10' : 'bg-zinc-900 border-zinc-800 focus:ring-zinc-700 h-10'}>
                                 <SelectValue placeholder="Ano" />
                             </SelectTrigger>
-                            <SelectContent className="bg-zinc-900 border-zinc-800 text-zinc-100">
+                            <SelectContent className={storeLightActive ? 'bg-white border-zinc-200 text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-100'}>
                                 {availableYears.map((year) => (
-                                    <SelectItem key={year} value={year.toString()} className="focus:bg-zinc-800 focus:text-zinc-50">
+                                    <SelectItem key={year} value={year.toString()} className={storeLightActive ? 'focus:bg-zinc-100 focus:text-zinc-900' : 'focus:bg-zinc-800 focus:text-zinc-50'}>
                                         {year}
                                     </SelectItem>
                                 ))}
@@ -330,20 +376,20 @@ export function DashboardShell() {
             {/* Main Content Area - Scrollable on mobile, handles remaining height */}
             <main className="relative flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full overflow-y-auto overflow-x-hidden z-10">
                 {currentView === 'cidades' ? (
-                    <CidadesView />
+                    <CidadesView lightActive={storeLightActive} />
                 ) : currentView === 'organograma' ? (
-                    <OrganizationChartView />
+                    <OrganizationChartView lightActive={storeLightActive} />
                 ) : currentView === 'pipeline' ? (
-                    <PipelineStoreView PRODUCTS={storeProducts} EXTRA_OPTIONS={dropdownOpts} />
+                    <PipelineStoreView PRODUCTS={storeProducts} EXTRA_OPTIONS={dropdownOpts} theme={storeTheme} onThemeChange={setStoreTheme} />
                 ) : currentView === 'store' ? (
                     <StoreView />
                 ) : selectedManagerId === 'drm' ? (
-                    <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} faturamento2025={faturamento2025} />
+                    <DRMOverview key={`drm-${selectedYear}`} managers={managersForYear} year={selectedYear} faturamento2025={faturamento2025} lightActive={storeLightActive} />
                 ) : currentManager ? (
-                    <SingleManagerView key={currentManager.id} manager={currentManager} />
+                    <SingleManagerView key={currentManager.id} manager={currentManager} lightActive={storeLightActive} />
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 border-2 border-dashed border-zinc-800 rounded-2xl">
-                        <Users className="w-12 h-12 mb-4 text-zinc-700" />
+                    <div className={`flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-2xl transition-colors duration-200 ${storeLightActive ? 'text-zinc-500 border-zinc-300' : 'text-zinc-500 border-zinc-800'}`}>
+                        <Users className={`w-12 h-12 mb-4 ${storeLightActive ? 'text-zinc-300' : 'text-zinc-700'}`} />
                         <p className="text-lg font-medium">Selecione um gerente para visualizar.</p>
                     </div>
                 )}

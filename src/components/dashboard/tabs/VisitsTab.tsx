@@ -5,12 +5,13 @@ import { MapPin, Calendar } from 'lucide-react';
 
 interface VisitsTabProps {
     items: Visit[];
+    lightActive?: boolean;
 }
 
-export function VisitsTab({ items }: VisitsTabProps) {
+export function VisitsTab({ items, lightActive = false }: VisitsTabProps) {
     if (items.length === 0) {
         return (
-            <div className="flex items-center justify-center py-20 text-zinc-500">
+            <div className={`flex items-center justify-center py-20 ${lightActive ? 'text-zinc-400' : 'text-zinc-500'}`}>
                 Nenhuma visita registrada para este gerente.
             </div>
         );
@@ -29,23 +30,23 @@ export function VisitsTab({ items }: VisitsTabProps) {
                 const dateDisplay = formattedDate ? `Semana do dia ${formattedDate}` : '—';
 
                 return (
-                    <div key={i} className="bg-zinc-900/60 border border-zinc-800 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div key={i} className={`border rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 transition-colors duration-200 ${lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900/60 border-zinc-800'}`}>
                         {/* Date bubble */}
-                        <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-semibold shrink-0 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-3 py-1.5 w-fit">
+                        <div className={`flex items-center gap-1.5 text-xs font-semibold shrink-0 border rounded-lg px-3 py-1.5 w-fit ${lightActive ? 'text-indigo-600 bg-indigo-50 border-indigo-200' : 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'}`}>
                             <Calendar className="w-3.5 h-3.5" />
                             {dateDisplay}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-zinc-100 truncate">{visit.titulo}</p>
+                            <p className={`font-semibold truncate ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>{visit.titulo}</p>
                             <div className="flex items-center gap-3 mt-0.5 flex-wrap">
-                                <span className="flex items-center gap-1 text-xs text-zinc-400">
-                                    <MapPin className="w-3 h-3 text-zinc-600" />
+                                <span className={`flex items-center gap-1 text-xs ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
+                                    <MapPin className={`w-3 h-3 ${lightActive ? 'text-zinc-400' : 'text-zinc-600'}`} />
                                     {visit.local}
                                 </span>
-                                <span className="text-zinc-700">·</span>
-                                <span className="text-xs text-zinc-400">{visit.motivo}</span>
+                                <span className={lightActive ? 'text-zinc-300' : 'text-zinc-700'}>·</span>
+                                <span className={`text-xs ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>{visit.motivo}</span>
                             </div>
                         </div>
                     </div>

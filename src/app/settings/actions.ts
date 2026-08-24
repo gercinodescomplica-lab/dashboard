@@ -15,22 +15,53 @@ export async function verifySettingsKey(key: string) {
 
 export async function saveCXData(managerId: string, items: CXItem[]) {
     try {
+        // Lê o estado atual ANTES de apagar, só para comparar e decidir quais
+        // itens vindos do Planner (têm externalId) foram de fato alterados à
+        // mão nos campos que o próximo sync do Planner vai sobrescrever
+        // (titulo/problema/status/criticidade) — ver planner-sync.ts. Isso
+        // alimenta o aviso "editado manualmente" no CXEditor; não afeta o que
+        // é salvo além do próprio manualEditAt.
+        const currentRows = await db.select().from(cx).where(eq(cx.managerId, managerId));
+        const currentByExternalId = new Map(
+            currentRows.filter((r) => r.externalId).map((r) => [r.externalId as string, r])
+        );
+
         // Delete all existing CX for this manager, then reinsert
         await db.delete(cx).where(eq(cx.managerId, managerId));
 
         if (items.length > 0) {
             await db.insert(cx).values(
-                items.map((item) => ({
-                    managerId,
-                    cliente: item.cliente,
-                    titulo: item.titulo,
-                    problema: item.problema,
-                    solucaoProposta: item.solucaoProposta,
-                    status: item.status,
-                    criticidade: item.criticidade ?? 'baixa',
-                    isVisible: item.isVisible ?? true,
-                    createdAt: item.createdAt ?? new Date().toISOString(),
-                }))
+                items.map((item) => {
+                    // Preserva o externalId como veio (nunca editável na UI) —
+                    // é o que faz o próximo sync do Planner reconhecer esta
+                    // linha em vez de duplicá-la.
+                    let manualEditAt = item.manualEditAt ?? null;
+                    if (item.externalId) {
+                        const prev = currentByExternalId.get(item.externalId);
+                        const divergedFromPlanner =
+                            !prev ||
+                            prev.titulo !== item.titulo ||
+                            prev.problema !== item.problema ||
+                            prev.status !== item.status ||
+                            (prev.criticidade ?? 'baixa') !== (item.criticidade ?? 'baixa');
+                        if (divergedFromPlanner) {
+                            manualEditAt = new Date().toISOString();
+                        }
+                    }
+                    return {
+                        managerId,
+                        cliente: item.cliente,
+                        titulo: item.titulo,
+                        problema: item.problema,
+                        solucaoProposta: item.solucaoProposta,
+                        status: item.status,
+                        criticidade: item.criticidade ?? 'baixa',
+                        isVisible: item.isVisible ?? true,
+                        createdAt: item.createdAt ?? new Date().toISOString(),
+                        externalId: item.externalId ?? null,
+                        manualEditAt,
+                    };
+                })
             );
         }
         return { success: true };

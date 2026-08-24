@@ -36,7 +36,10 @@ async function main() {
             continue;
         }
         const sql = readFileSync(join(MIGRATIONS_DIR, file), 'utf8');
-        const statements = sql.split('--> statement-breakpoint').map(s => s.trim()).filter(Boolean);
+        const statements = sql
+            .split(/(?:--> statement-breakpoint|;\s*(?:\r?\n|$))/)
+            .map(s => s.trim())
+            .filter(Boolean);
         console.log(`→ applying ${file} (${statements.length} statement(s))`);
         for (const stmt of statements) {
             try {

@@ -11,19 +11,21 @@ const GEO_URL = '/br-states.json';
 interface BrazilHeatMapProps {
     leads: LeadCidade[];
     onSelectUf?: (uf: string) => void;
+    lightActive?: boolean;
 }
 
-function colorForValue(val: number, maxVal: number): string {
-    if (!val || !maxVal) return '#27272a'; // zinc-800
+function colorForValue(val: number, maxVal: number, lightActive = false): string {
+    if (!val || !maxVal) return lightActive ? '#f4f4f5' : '#27272a'; // zinc-100 / zinc-800
     const ratio = Math.sqrt(val / maxVal);
     // Dark mode gradient: from subtle indigo (rgb(49, 46, 129)) to vivid indigo (rgb(99, 102, 241))
-    const start = [49, 46, 129];
-    const end = [99, 102, 241];
+    // Light mode gradient: from soft indigo (rgb(199, 210, 254)) to strong indigo (rgb(79, 70, 229))
+    const start = lightActive ? [199, 210, 254] : [49, 46, 129];
+    const end = lightActive ? [79, 70, 229] : [99, 102, 241];
     const rgb = start.map((s, i) => Math.round(s + (end[i] - s) * ratio));
     return `rgb(${rgb.join(',')})`;
 }
 
-export function BrazilHeatMap({ leads, onSelectUf }: BrazilHeatMapProps) {
+export function BrazilHeatMap({ leads, onSelectUf, lightActive = false }: BrazilHeatMapProps) {
     const [hoverState, setHoverState] = useState<{ uf: string; name: string; count: number; valor: number } | null>(null);
     const [hoverPin, setHoverPin] = useState<MunicipioPin | null>(null);
 
@@ -92,18 +94,18 @@ export function BrazilHeatMap({ leads, onSelectUf }: BrazilHeatMapProps) {
     }
 
     return (
-        <div className="relative w-full h-[520px] bg-zinc-950/60 border border-zinc-800/80 rounded-2xl p-4 flex flex-col justify-between overflow-hidden">
-            <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3 mb-2 z-10">
+        <div className={`relative w-full h-[520px] border rounded-2xl p-4 flex flex-col justify-between overflow-hidden transition-colors duration-200 ${lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-950/60 border-zinc-800/80'}`}>
+            <div className={`flex items-center justify-between border-b pb-3 mb-2 z-10 ${lightActive ? 'border-zinc-200' : 'border-zinc-800/60'}`}>
                 <div>
-                    <h3 className="text-base font-bold text-zinc-100 uppercase tracking-wider">
+                    <h3 className={`text-base font-bold uppercase tracking-wider ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>
                         Mapa de Calor de Oportunidades
                     </h3>
-                    <p className="text-xs text-zinc-400">
+                    <p className={`text-xs ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
                         Estados coloridos por volume financeiro · Marcadores (pins) nas cidades
                     </p>
                 </div>
                 {onSelectUf && (
-                    <span className="text-xs text-indigo-400 font-medium">
+                    <span className={`text-xs font-medium ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>
                         Clique em um estado ou cidade para filtrar
                     </span>
                 )}
@@ -122,7 +124,7 @@ export function BrazilHeatMap({ leads, onSelectUf }: BrazilHeatMapProps) {
                             geographies.map((geo: any) => {
                                 const uf = geo.properties.sigla;
                                 const data = ufStats.map.get(uf);
-                                const fill = colorForValue(data?.valor || 0, ufStats.maxVal);
+                                const fill = colorForValue(data?.valor || 0, ufStats.maxVal, lightActive);
 
                                 return (
                                     <Geography
@@ -141,7 +143,7 @@ export function BrazilHeatMap({ leads, onSelectUf }: BrazilHeatMapProps) {
                                         style={{
                                             default: {
                                                 fill,
-                                                stroke: '#18181b', // zinc-900
+                                                stroke: lightActive ? '#d4d4d8' : '#18181b', // zinc-300 / zinc-900
                                                 strokeWidth: 0.8,
                                                 outline: 'none',
                                                 cursor: 'pointer',
@@ -187,30 +189,30 @@ export function BrazilHeatMap({ leads, onSelectUf }: BrazilHeatMapProps) {
 
                 {/* Tooltip Float */}
                 {(hoverPin || hoverState) && (
-                    <div className="pointer-events-none absolute top-4 right-4 rounded-xl border border-zinc-700 bg-zinc-900/95 p-3.5 shadow-2xl backdrop-blur-md min-w-[200px] z-20 transition-all">
+                    <div className={`pointer-events-none absolute top-4 right-4 rounded-xl border p-3.5 shadow-2xl backdrop-blur-md min-w-[200px] z-20 transition-all ${lightActive ? 'border-zinc-200 bg-white/95' : 'border-zinc-700 bg-zinc-900/95'}`}>
                         {hoverPin ? (
                             <>
-                                <div className="text-sm font-bold text-zinc-100 flex items-center gap-1.5">
+                                <div className={`text-sm font-bold flex items-center gap-1.5 ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>
                                     <span>📍</span>
                                     <span>{hoverPin.municipio}</span>
-                                    <span className="text-zinc-400 font-normal">({hoverPin.uf})</span>
+                                    <span className={`font-normal ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>({hoverPin.uf})</span>
                                 </div>
-                                <div className="text-xs text-zinc-400 mt-1">
+                                <div className={`text-xs mt-1 ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
                                     {hoverPin.count} oportunidade(s)
                                 </div>
-                                <div className="text-base font-bold font-mono text-rose-400 mt-1">
+                                <div className={`text-base font-bold font-mono mt-1 ${lightActive ? 'text-rose-600' : 'text-rose-400'}`}>
                                     {formatCurrency(hoverPin.valor)}
                                 </div>
                             </>
                         ) : (
                             <>
-                                <div className="text-sm font-bold text-zinc-100">
-                                    {hoverState?.name} <span className="text-zinc-400 font-normal">({hoverState?.uf})</span>
+                                <div className={`text-sm font-bold ${lightActive ? 'text-zinc-900' : 'text-zinc-100'}`}>
+                                    {hoverState?.name} <span className={`font-normal ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>({hoverState?.uf})</span>
                                 </div>
-                                <div className="text-xs text-zinc-400 mt-1">
+                                <div className={`text-xs mt-1 ${lightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
                                     {hoverState?.count} oportunidade(s)
                                 </div>
-                                <div className="text-base font-bold font-mono text-indigo-400 mt-1">
+                                <div className={`text-base font-bold font-mono mt-1 ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>
                                     {formatCurrency(hoverState?.valor || 0)}
                                 </div>
                             </>

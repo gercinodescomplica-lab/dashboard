@@ -10,6 +10,7 @@ interface ContractsTableProps {
     initialData: ContratoRow[];
     managersList: { id: string; name: string; role: string }[];
     readOnly?: boolean;
+    lightActive?: boolean;
 }
 
 const GERENCIAS = ['GRC-1', 'GRC-2', 'GRC-3', 'GRC-4', 'GRC-C', 'KAM-1', 'KAM-2', 'KAM-3', 'KAM-4'];
@@ -31,27 +32,27 @@ function formatDate(dateStr: string | null): string {
     return dateStr;
 }
 
-function SituacaoBadge({ situacao, vigente }: { situacao: string | null; vigente: boolean | null }) {
+function SituacaoBadge({ situacao, vigente, lightActive }: { situacao: string | null; vigente: boolean | null; lightActive: boolean }) {
     const isVigente = vigente === true || situacao?.toLowerCase() === 'vigente';
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap
             ${isVigente
-                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                : 'bg-zinc-700/50 text-zinc-400 border border-zinc-600/30'
+                ? (lightActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-300' : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30')
+                : (lightActive ? 'bg-zinc-100 text-zinc-500 border border-zinc-300' : 'bg-zinc-700/50 text-zinc-400 border border-zinc-600/30')
             }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${isVigente ? 'bg-emerald-400' : 'bg-zinc-500'}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${isVigente ? (lightActive ? 'bg-emerald-500' : 'bg-emerald-400') : (lightActive ? 'bg-zinc-400' : 'bg-zinc-500')}`} />
             {situacao || (isVigente ? 'Vigente' : 'Inativo')}
         </span>
     );
 }
 
-function TipoBadge({ tipo }: { tipo: string | null }) {
+function TipoBadge({ tipo, lightActive }: { tipo: string | null; lightActive: boolean }) {
     const isSustentacao = tipo?.toUpperCase().includes('SUSTENT');
     return (
         <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium whitespace-nowrap
             ${isSustentacao
-                ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/25'
-                : 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
+                ? (lightActive ? 'bg-indigo-50 text-indigo-700 border border-indigo-300' : 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/25')
+                : (lightActive ? 'bg-amber-50 text-amber-700 border border-amber-300' : 'bg-amber-500/15 text-amber-400 border border-amber-500/25')
             }`}>
             {isSustentacao ? 'Sustentação' : tipo || '—'}
         </span>
@@ -98,6 +99,7 @@ function SortHeader({
     currentDir,
     onSort,
     align = 'left',
+    lightActive,
 }: {
     label: string;
     sortKey: SortKey;
@@ -105,6 +107,7 @@ function SortHeader({
     currentDir: SortDir;
     onSort: (k: SortKey) => void;
     align?: 'left' | 'right' | 'center';
+    lightActive: boolean;
 }) {
     const active = currentKey === sortKey;
     const Icon = !active ? ArrowUpDown : currentDir === 'asc' ? ArrowUp : ArrowDown;
@@ -113,7 +116,7 @@ function SortHeader({
         <button
             type="button"
             onClick={() => onSort(sortKey)}
-            className={`w-full flex items-center gap-1.5 ${justify} text-xs font-semibold uppercase tracking-wider transition-colors ${active ? 'text-indigo-300' : 'text-zinc-500 hover:text-zinc-300'}`}
+            className={`w-full flex items-center gap-1.5 ${justify} text-xs font-semibold uppercase tracking-wider transition-colors ${active ? (lightActive ? 'text-indigo-600' : 'text-indigo-300') : (lightActive ? 'text-zinc-500 hover:text-zinc-800' : 'text-zinc-500 hover:text-zinc-300')}`}
         >
             <span>{label}</span>
             <Icon className={`w-3 h-3 ${active ? 'opacity-100' : 'opacity-40'}`} />
@@ -121,7 +124,7 @@ function SortHeader({
     );
 }
 
-export function ContractsTable({ initialData, managersList, readOnly = false }: ContractsTableProps) {
+export function ContractsTable({ initialData, managersList, readOnly = false, lightActive = false }: ContractsTableProps) {
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [contratos, setContratos] = useState<ContratoRow[]>(initialData);
@@ -281,32 +284,53 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
     const totalVlContratado = filteredContratos.reduce((sum, c) => sum + (c.vlContratado ?? 0), 0);
     const countVigentes = filteredContratos.filter((c) => c.vigente || c.situacao?.toLowerCase() === 'vigente').length;
 
+    const T = {
+        panel: lightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900/60 border-zinc-800/80',
+        panelSoft: lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900/60 border-zinc-800/80',
+        heading: lightActive ? 'text-zinc-900' : 'text-zinc-100',
+        subtext: lightActive ? 'text-zinc-500' : 'text-zinc-500',
+        mutedIcon: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        inputBg: lightActive ? 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400' : 'bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600',
+        selectBg: lightActive ? 'bg-white border-zinc-200 text-zinc-800' : 'bg-zinc-950 border-zinc-800 text-zinc-200',
+        filterLabel: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        tableWrap: lightActive ? 'border-zinc-200 bg-white' : 'border-zinc-800/80 bg-zinc-900/40',
+        theadBg: lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-950 border-zinc-800',
+        tbodyDivide: lightActive ? 'divide-zinc-200' : 'divide-zinc-800/50',
+        rowHover: lightActive ? 'hover:bg-zinc-50' : 'hover:bg-zinc-800/40',
+        rowText: lightActive ? 'text-zinc-800' : 'text-zinc-200',
+        rowMuted: lightActive ? 'text-zinc-600' : 'text-zinc-300',
+        rowFaded: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        pillMuted: lightActive ? 'bg-zinc-100 text-zinc-600 border-zinc-300' : 'bg-zinc-800 text-zinc-300 border-zinc-700/50',
+        footerBorder: lightActive ? 'border-zinc-200' : 'border-zinc-800/80',
+        footerText: lightActive ? 'text-zinc-500' : 'text-zinc-600',
+    };
+
     return (
         <div className="flex flex-col h-full gap-4">
             {/* Stats Bar */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Total de Contratos</p>
-                    <p className="text-2xl font-bold text-zinc-100">{filteredContratos.length}</p>
+                <div className={`border rounded-xl p-4 transition-colors duration-200 ${T.panel}`}>
+                    <p className={`text-xs uppercase tracking-wider mb-1 ${T.subtext}`}>Total de Contratos</p>
+                    <p className={`text-2xl font-bold ${T.heading}`}>{filteredContratos.length}</p>
                 </div>
-                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Vigentes</p>
-                    <p className="text-2xl font-bold text-emerald-400">{countVigentes}</p>
+                <div className={`border rounded-xl p-4 transition-colors duration-200 ${T.panel}`}>
+                    <p className={`text-xs uppercase tracking-wider mb-1 ${T.subtext}`}>Vigentes</p>
+                    <p className={`text-2xl font-bold ${lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>{countVigentes}</p>
                 </div>
-                <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-xl p-4">
-                    <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Valor Total Contratado</p>
-                    <p className="text-2xl font-bold text-indigo-400">
+                <div className={`border rounded-xl p-4 transition-colors duration-200 ${T.panel}`}>
+                    <p className={`text-xs uppercase tracking-wider mb-1 ${T.subtext}`}>Valor Total Contratado</p>
+                    <p className={`text-2xl font-bold ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumFractionDigits: 1 }).format(totalVlContratado)}
                     </p>
                 </div>
             </div>
 
             {/* Toolbar & Filters */}
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 bg-zinc-900/60 p-3 rounded-xl border border-zinc-800/80">
+            <div className={`flex flex-col md:flex-row items-stretch md:items-center gap-3 p-3 rounded-xl border transition-colors duration-200 ${T.panelSoft}`}>
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none" />
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none ${T.mutedIcon}`} />
                     {isSearching && (
-                        <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-400 animate-spin" />
+                        <Loader2 className={`absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin ${lightActive ? 'text-indigo-500' : 'text-indigo-400'}`} />
                     )}
                     <input
                         id="contract-search"
@@ -314,7 +338,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Buscar por contrato, cliente, gerente, objeto..."
-                        className="w-full h-10 pl-9 pr-4 bg-zinc-950 border border-zinc-800 rounded-lg text-xs text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all"
+                        className={`w-full h-10 pl-9 pr-4 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all ${T.inputBg}`}
                     />
                 </div>
 
@@ -322,11 +346,11 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                 <div className="flex items-center gap-2 flex-wrap">
                     {/* Filter GRC */}
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-zinc-400">GRC:</span>
+                        <span className={`text-xs ${T.filterLabel}`}>GRC:</span>
                         <select
                             value={selectedGerencia}
                             onChange={(e) => setSelectedGerencia(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            className={`border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer ${T.selectBg}`}
                         >
                             <option value="TODAS">Todas</option>
                             {availableGerencias.map((g) => (
@@ -337,11 +361,11 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
 
                     {/* Filter Gerente */}
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-zinc-400">Gerente:</span>
+                        <span className={`text-xs ${T.filterLabel}`}>Gerente:</span>
                         <select
                             value={selectedGerente}
                             onChange={(e) => setSelectedGerente(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[150px] truncate"
+                            className={`border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer max-w-[150px] truncate ${T.selectBg}`}
                         >
                             <option value="TODOS">Todos</option>
                             {availableGerentes.map((g) => (
@@ -352,11 +376,11 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
 
                     {/* Filter Tipo */}
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-zinc-400">Tipo:</span>
+                        <span className={`text-xs ${T.filterLabel}`}>Tipo:</span>
                         <select
                             value={selectedTipo}
                             onChange={(e) => setSelectedTipo(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            className={`border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer ${T.selectBg}`}
                         >
                             <option value="TODOS">Todos</option>
                             {availableTipos.map((t) => (
@@ -367,11 +391,11 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
 
                     {/* Filter Situação */}
                     <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-zinc-400">Situação:</span>
+                        <span className={`text-xs ${T.filterLabel}`}>Situação:</span>
                         <select
                             value={selectedSituacao}
                             onChange={(e) => setSelectedSituacao(e.target.value)}
-                            className="bg-zinc-950 border border-zinc-800 text-zinc-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                            className={`border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500 cursor-pointer ${T.selectBg}`}
                         >
                             <option value="TODAS">Todas</option>
                             {availableSituacoes.map((s) => (
@@ -384,7 +408,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 px-2 py-1 transition-colors font-medium"
+                            className={`flex items-center gap-1 text-xs px-2 py-1 transition-colors font-medium ${lightActive ? 'text-indigo-600 hover:text-indigo-700' : 'text-indigo-400 hover:text-indigo-300'}`}
                         >
                             <X className="w-3.5 h-3.5" />
                             Limpar
@@ -405,50 +429,50 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-900/40 flex flex-col">
+            <div className={`flex-1 overflow-hidden rounded-xl border flex flex-col transition-colors duration-200 ${T.tableWrap}`}>
                 <div className="overflow-x-auto overflow-y-auto flex-1">
                     <table className="w-full text-sm min-w-[1280px]">
                         <thead className="sticky top-0 z-10">
-                            <tr className="bg-zinc-950 border-b border-zinc-800">
+                            <tr className={`border-b ${T.theadBg}`}>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Contrato" sortKey="numeroContrato" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Contrato" sortKey="numeroContrato" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Cliente" sortKey="cliente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Cliente" sortKey="cliente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="GRC" sortKey="gerencia" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="GRC" sortKey="gerencia" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Gerente" sortKey="nomeGerente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Gerente" sortKey="nomeGerente" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Contratado" sortKey="vlContratado" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" />
+                                    <SortHeader label="Contratado" sortKey="vlContratado" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Faturado" sortKey="vlFaturado" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" />
+                                    <SortHeader label="Faturado" sortKey="vlFaturado" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Saldo" sortKey="vlSaldo" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" />
+                                    <SortHeader label="Saldo" sortKey="vlSaldo" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} align="right" lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Tipo" sortKey="tipo" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Tipo" sortKey="tipo" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Situação" sortKey="situacao" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Situação" sortKey="situacao" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
                                 <th className="px-4 py-3 whitespace-nowrap">
-                                    <SortHeader label="Vencimento" sortKey="dtFimVigencia" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} />
+                                    <SortHeader label="Vencimento" sortKey="dtFimVigencia" currentKey={sortKey} currentDir={sortDir} onSort={handleSort} lightActive={lightActive} />
                                 </th>
-                                {!readOnly && <th className="text-center px-4 py-3 text-xs font-semibold text-zinc-500 uppercase tracking-wider whitespace-nowrap">Ações</th>}
+                                {!readOnly && <th className={`text-center px-4 py-3 text-xs font-semibold uppercase tracking-wider whitespace-nowrap ${T.subtext}`}>Ações</th>}
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-800/50">
+                        <tbody className={`divide-y ${T.tbodyDivide}`}>
                             {displayContratos.length === 0 ? (
                                 <tr>
-                                    <td colSpan={11} className="py-16 text-center text-zinc-500">
+                                    <td colSpan={11} className={`py-16 text-center ${T.subtext}`}>
                                         <div className="flex flex-col items-center gap-3">
-                                            <FileText className="w-10 h-10 text-zinc-700" />
+                                            <FileText className={`w-10 h-10 ${lightActive ? 'text-zinc-300' : 'text-zinc-700'}`} />
                                             <p className="text-sm">Nenhum contrato encontrado com os filtros aplicados.</p>
                                         </div>
                                     </td>
@@ -457,24 +481,24 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                                 displayContratos.map((row) => (
                                     <tr
                                         key={row.id}
-                                        className="group hover:bg-zinc-800/40 transition-colors"
+                                        className={`group transition-colors ${T.rowHover}`}
                                     >
-                                        <td className="px-4 py-3 font-mono text-xs text-indigo-300 whitespace-nowrap">{row.numeroContrato}</td>
-                                        <td className="px-4 py-3 text-zinc-200 whitespace-nowrap font-medium" title={row.cliente}>{row.cliente}</td>
+                                        <td className={`px-4 py-3 font-mono text-xs whitespace-nowrap ${lightActive ? 'text-indigo-600' : 'text-indigo-300'}`}>{row.numeroContrato}</td>
+                                        <td className={`px-4 py-3 whitespace-nowrap font-medium ${T.rowText}`} title={row.cliente}>{row.cliente}</td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className="inline-block px-2 py-0.5 rounded-md text-xs font-bold bg-zinc-800 text-zinc-300 border border-zinc-700/50 whitespace-nowrap">
+                                            <span className={`inline-block px-2 py-0.5 rounded-md text-xs font-bold border whitespace-nowrap ${T.pillMuted}`}>
                                                 {row.gerencia || '—'}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-zinc-300 whitespace-nowrap font-medium">{row.nomeGerente || row.managerName || '—'}</td>
-                                        <td className="px-4 py-3 text-right text-zinc-200 font-medium tabular-nums whitespace-nowrap">{formatCurrency(row.vlContratado)}</td>
-                                        <td className="px-4 py-3 text-right text-zinc-400 tabular-nums whitespace-nowrap">{formatCurrency(row.vlFaturado)}</td>
-                                        <td className={`px-4 py-3 text-right tabular-nums font-medium whitespace-nowrap ${(row.vlSaldo ?? 0) < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                                        <td className={`px-4 py-3 whitespace-nowrap font-medium ${T.rowMuted}`}>{row.nomeGerente || row.managerName || '—'}</td>
+                                        <td className={`px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap ${T.rowText}`}>{formatCurrency(row.vlContratado)}</td>
+                                        <td className={`px-4 py-3 text-right tabular-nums whitespace-nowrap ${T.rowFaded}`}>{formatCurrency(row.vlFaturado)}</td>
+                                        <td className={`px-4 py-3 text-right tabular-nums font-medium whitespace-nowrap ${(row.vlSaldo ?? 0) < 0 ? (lightActive ? 'text-rose-600' : 'text-rose-400') : (lightActive ? 'text-emerald-600' : 'text-emerald-400')}`}>
                                             {formatCurrency(row.vlSaldo)}
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap"><TipoBadge tipo={row.tipo} /></td>
-                                        <td className="px-4 py-3 whitespace-nowrap"><SituacaoBadge situacao={row.situacao} vigente={row.vigente} /></td>
-                                        <td className="px-4 py-3 text-zinc-400 text-xs whitespace-nowrap">{formatDate(row.dtFimVigencia)}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap"><TipoBadge tipo={row.tipo} lightActive={lightActive} /></td>
+                                        <td className="px-4 py-3 whitespace-nowrap"><SituacaoBadge situacao={row.situacao} vigente={row.vigente} lightActive={lightActive} /></td>
+                                        <td className={`px-4 py-3 text-xs whitespace-nowrap ${T.rowFaded}`}>{formatDate(row.dtFimVigencia)}</td>
                                         {!readOnly && (
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <div className="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -482,7 +506,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                                                         id={`edit-contract-${row.id}`}
                                                         onClick={() => handleEdit(row)}
                                                         title="Editar contrato"
-                                                        className="p-1.5 rounded-md hover:bg-indigo-500/20 hover:text-indigo-400 text-zinc-500 transition-colors"
+                                                        className={`p-1.5 rounded-md hover:bg-indigo-500/20 transition-colors ${lightActive ? 'text-zinc-400 hover:text-indigo-600' : 'text-zinc-500 hover:text-indigo-400'}`}
                                                     >
                                                         <Pencil className="w-3.5 h-3.5" />
                                                     </button>
@@ -490,7 +514,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                                                         id={`delete-contract-${row.id}`}
                                                         onClick={() => handleDelete(row.id, row.numeroContrato)}
                                                         title="Excluir contrato"
-                                                        className="p-1.5 rounded-md hover:bg-rose-500/20 hover:text-rose-400 text-zinc-500 transition-colors"
+                                                        className={`p-1.5 rounded-md hover:bg-rose-500/20 transition-colors ${lightActive ? 'text-zinc-400 hover:text-rose-600' : 'text-zinc-500 hover:text-rose-400'}`}
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -504,7 +528,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                     </table>
                 </div>
                 {displayContratos.length > 0 && (
-                    <div className="flex-none border-t border-zinc-800/80 px-4 py-2 text-xs text-zinc-600">
+                    <div className={`flex-none border-t px-4 py-2 text-xs ${T.footerBorder} ${T.footerText}`}>
                         {displayContratos.length} contrato{displayContratos.length !== 1 ? 's' : ''} exibido{displayContratos.length !== 1 ? 's' : ''}
                     </div>
                 )}
@@ -520,6 +544,7 @@ export function ContractsTable({ initialData, managersList, readOnly = false }: 
                     gerencias={GERENCIAS}
                     onClose={() => setModalOpen(false)}
                     onSuccess={handleModalSuccess}
+                    lightActive={lightActive}
                 />
             )}
         </div>
