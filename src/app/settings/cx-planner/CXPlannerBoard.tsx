@@ -15,7 +15,7 @@ import {
 } from './actions';
 import { CXPlannerCard } from './CXPlannerCard';
 import { CXPlannerItemModal } from './CXPlannerItemModal';
-import { STATUS_COLUMNS } from './board-config';
+import { STATUS_COLUMNS, PRIORIDADE_OPTIONS } from './board-config';
 
 interface ManagerOption {
     id: string;
@@ -35,6 +35,7 @@ export function CXPlannerBoard() {
     const [managerFilter, setManagerFilter] = useState('');
     const [clienteFilter, setClienteFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState<CXStatus | ''>('');
+    const [prioridadeFilter, setPrioridadeFilter] = useState('');
 
     // Shared by the initial mount load and the manual "Atualizar" button —
     // with several concurrent editors on this board, each open tab holds an
@@ -128,9 +129,10 @@ export function CXPlannerBoard() {
         [items]
     );
 
-    // Filtro combinado (AND entre todos): busca livre + os 3 selects. Nenhum
-    // filtro aqui inventa categoria — gerente/cliente/status vêm direto dos
-    // valores reais dos itens (ver clienteOptions acima e STATUS_COLUMNS), e
+    // Filtro combinado (AND entre todos): busca livre + os 4 selects. Nenhum
+    // filtro aqui inventa categoria — gerente/cliente/status/prioridade vêm
+    // direto dos valores reais dos itens (ver clienteOptions acima,
+    // STATUS_COLUMNS e PRIORIDADE_OPTIONS), e
     // "data" não virou um select de faixas fixas (ex: "atrasados"/"próximos
     // 7 dias") porque isso deixaria de fora qualquer item cuja data não
     // coubesse em nenhum balde — em vez disso, data início/prazo entram na
@@ -145,6 +147,7 @@ export function CXPlannerBoard() {
             if (managerFilter && item.managerId !== managerFilter) return false;
             if (clienteFilter && item.cliente !== clienteFilter) return false;
             if (statusFilter && item.status !== statusFilter) return false;
+            if (prioridadeFilter && item.prioridadeTexto !== prioridadeFilter) return false;
 
             if (!q) return true;
             const haystack = [
@@ -162,14 +165,15 @@ export function CXPlannerBoard() {
                 .toLowerCase();
             return haystack.includes(q);
         });
-    }, [items, query, managerFilter, clienteFilter, statusFilter]);
+    }, [items, query, managerFilter, clienteFilter, statusFilter, prioridadeFilter]);
 
-    const hasActiveFilter = Boolean(query || managerFilter || clienteFilter || statusFilter);
+    const hasActiveFilter = Boolean(query || managerFilter || clienteFilter || statusFilter || prioridadeFilter);
     const clearFilters = () => {
         setQuery('');
         setManagerFilter('');
         setClienteFilter('');
         setStatusFilter('');
+        setPrioridadeFilter('');
     };
 
     const selectClassName = 'bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500/50 transition-colors';
@@ -258,6 +262,17 @@ export function CXPlannerBoard() {
                         <option value="">Todos os status</option>
                         {STATUS_COLUMNS.map((s) => (
                             <option key={s.key} value={s.key}>{s.label}</option>
+                        ))}
+                    </select>
+
+                    <select
+                        value={prioridadeFilter}
+                        onChange={(e) => setPrioridadeFilter(e.target.value)}
+                        className={selectClassName}
+                    >
+                        <option value="">Todas as prioridades</option>
+                        {PRIORIDADE_OPTIONS.map((p) => (
+                            <option key={p} value={p}>{p}</option>
                         ))}
                     </select>
                 </div>
