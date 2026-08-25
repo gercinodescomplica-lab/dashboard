@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 import { ChevronUp, ChevronDown, ArrowUpDown, Search, X } from 'lucide-react';
-import { formatDateOnlyBRFull, isOverdueDate } from '@/lib/cx-log';
+import { formatDateOnlyBR, formatDateOnlyBRFull, isOverdueDate } from '@/lib/cx-log';
 
 interface CXTabProps {
     items: CXItem[];
@@ -311,8 +311,14 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                 // (dado legado/externo que não bate com YYYY-MM-DD) — calcula
                                 // aqui pra checar o RESULTADO formatado, não o dataFim cru, e
                                 // não arriscar renderizar "Prazo null" na tela.
-                                const fimBR = item.dataFim ? formatDateOnlyBRFull(item.dataFim) : null;
-                                const abertoBR = item.dataInicio ? formatDateOnlyBRFull(item.dataInicio) : null;
+                                // Texto na tela fica compacto (ano com 2 dígitos, rótulo curto
+                                // "Início"/"Fim") pra não poluir a coluna estreita — o title
+                                // (tooltip no hover) usa o rótulo por extenso e o ano completo,
+                                // pra quem quiser confirmar sem ambiguidade.
+                                const fimBR = item.dataFim ? formatDateOnlyBR(item.dataFim) : null;
+                                const fimFull = item.dataFim ? formatDateOnlyBRFull(item.dataFim) : null;
+                                const abertoBR = item.dataInicio ? formatDateOnlyBR(item.dataInicio) : null;
+                                const abertoFull = item.dataInicio ? formatDateOnlyBRFull(item.dataInicio) : null;
                                 const rowKey = item.id ?? i;
                                 const entries = parseLogEntries(item.problema);
                                 const isExpanded = expandedRows.has(rowKey);
@@ -379,13 +385,21 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${lightActive ? status.styleLight : status.style}`}>
                                                     {status.label}
                                                 </span>
-                                                {abertoBR && (
-                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>Data de abertura: {abertoBR}</span>
-                                                )}
-                                                {fimBR && (
-                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : T.entryText}`}>
-                                                        Data de fechamento: {fimBR}{isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
-                                                    </span>
+                                                {(abertoBR || fimBR) && (
+                                                    <div className={`flex items-center gap-1.5 text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>
+                                                        {abertoBR && (
+                                                            <span title={`Data de início: ${abertoFull}`}>Início {abertoBR}</span>
+                                                        )}
+                                                        {abertoBR && fimBR && <span className="opacity-50">·</span>}
+                                                        {fimBR && (
+                                                            <span
+                                                                title={`Data de fechamento (prazo): ${fimFull}`}
+                                                                className={isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : ''}
+                                                            >
+                                                                Fim {fimBR}{isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 )}
                                                 {typeof item.percentComplete === 'number' && (
                                                     <span className={`text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>{item.percentComplete}%</span>
