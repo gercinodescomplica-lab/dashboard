@@ -10,7 +10,7 @@ import { getFaturamento2025Action } from '@/app/settings/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin, Sun, Moon, Kanban } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin, Sun, Moon } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import { CidadesView } from '@/components/cidades/CidadesView';
@@ -261,18 +261,6 @@ export function DashboardShell() {
                         >
                             <Handshake className="w-4 h-4" />
                             Propostas
-                        </Link>
-
-                        {/* CX Planner — página própria com chave separada (CX_PLANNER_KEY),
-                            fora do /settings, pra o time de CX achar sem precisar da
-                            SETTINGS_KEY de admin. Este link só leva até a porta; o acesso
-                            de verdade continua sendo o CXPlannerGate da própria página. */}
-                        <Link
-                            href="/settings/cx-planner"
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
-                        >
-                            <Kanban className="w-4 h-4" />
-                            CX Planner
                         </Link>
                     </nav>
                 </div>
