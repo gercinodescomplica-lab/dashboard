@@ -36,6 +36,19 @@ export function formatDateOnlyBR(v: string | null | undefined): string | null {
     return `${dd}/${mm}/${yyyy.slice(2)}`;
 }
 
+// Mesma coisa que formatDateOnlyBR, mas com o ano completo (4 dígitos) — pra
+// contextos com rótulo explícito ("Data de abertura: 12/08/2026"), onde o
+// ano completo deixa a data inequívoca; formatDateOnlyBR (2 dígitos) segue
+// reservado pros lugares compactos (card do board, sem rótulo por perto).
+export function formatDateOnlyBRFull(v: string | null | undefined): string | null {
+    if (!v) return null;
+    const dateOnly = v.slice(0, 10);
+    const m = dateOnly.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const [, yyyy, mm, dd] = m;
+    return `${dd}/${mm}/${yyyy}`;
+}
+
 // Prazo vencido = dataFim (aceita "YYYY-MM-DD" ou o prefixo de um ISO
 // datetime) é antes de hoje E o item ainda não foi resolvido — um item
 // resolvido não fica "atrasado" mesmo que o prazo já tenha passado.

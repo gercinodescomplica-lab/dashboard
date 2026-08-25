@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { CXItem, CXStatus, CXCriticidade } from '@/types/manager';
 import { ChevronUp, ChevronDown, ArrowUpDown, Search, X } from 'lucide-react';
-import { formatDateOnlyBR, isOverdueDate } from '@/lib/cx-log';
+import { formatDateOnlyBRFull, isOverdueDate } from '@/lib/cx-log';
 
 interface CXTabProps {
     items: CXItem[];
@@ -311,21 +311,10 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                 // (dado legado/externo que não bate com YYYY-MM-DD) — calcula
                                 // aqui pra checar o RESULTADO formatado, não o dataFim cru, e
                                 // não arriscar renderizar "Prazo null" na tela.
-                                const fimBR = item.dataFim ? formatDateOnlyBR(item.dataFim) : null;
-                                const abertoBR = item.dataInicio ? formatDateOnlyBR(item.dataInicio) : null;
+                                const fimBR = item.dataFim ? formatDateOnlyBRFull(item.dataFim) : null;
+                                const abertoBR = item.dataInicio ? formatDateOnlyBRFull(item.dataInicio) : null;
                                 const rowKey = item.id ?? i;
                                 const entries = parseLogEntries(item.problema);
-                                // Não existe um campo dedicado de "data em que foi marcado como
-                                // resolvido" — a entrada datada mais recente do log (o sync do
-                                // Planner sempre prepende a mais nova no topo, ver
-                                // syncPlannerTasks em planner-sync.ts) é o melhor proxy honesto
-                                // disso: pra um item já Resolvido, geralmente é literalmente a
-                                // nota de encerramento. Já vem no formato do próprio log
-                                // (DD/MM/AAAA ou DD.MM.AA), sem reformatar.
-                                const firstDatedEntry = entries.find((e) => e.date);
-                                const resolvidoEm = item.status === 'resolvido' && firstDatedEntry
-                                    ? firstDatedEntry.date!.split(/\s+/)[0]
-                                    : null;
                                 const isExpanded = expandedRows.has(rowKey);
                                 const visibleEntries = isExpanded || entries.length <= 2 ? entries : entries.slice(0, 2);
                                 const hiddenCount = entries.length - visibleEntries.length;
@@ -338,12 +327,7 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                         onClick={() => { if (expandable) toggleExpanded(rowKey); }}
                                         className={`transition-colors align-top ${T.rowHover} ${expandable ? 'cursor-pointer' : ''}`}
                                     >
-                                        <td className={`py-3 pr-4 font-medium truncate ${T.clientText}`}>
-                                            {item.cliente}
-                                            {abertoBR && (
-                                                <div className={`text-[10px] font-normal font-mono truncate ${T.entryText}`}>Aberto {abertoBR}</div>
-                                            )}
-                                        </td>
+                                        <td className={`py-3 pr-4 font-medium truncate ${T.clientText}`}>{item.cliente}</td>
                                         <td className="py-3 pr-4">
                                             {item.titulo && <div className={`font-semibold mb-1 text-sm ${T.tituloText}`}>{item.titulo}</div>}
                                             <div className="space-y-2.5">
@@ -395,16 +379,16 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${lightActive ? status.styleLight : status.style}`}>
                                                     {status.label}
                                                 </span>
-                                                {(fimBR || typeof item.percentComplete === 'number') && (
-                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${fimBR && isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : (lightActive ? 'text-zinc-500' : 'text-zinc-500')}`}>
-                                                        {typeof item.percentComplete === 'number' ? `${item.percentComplete}%` : ''}
-                                                        {fimBR && typeof item.percentComplete === 'number' ? ' · ' : ''}
-                                                        {fimBR ? `Prazo ${fimBR}` : ''}
-                                                        {fimBR && isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
+                                                {abertoBR && (
+                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>Data de abertura: {abertoBR}</span>
+                                                )}
+                                                {fimBR && (
+                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : T.entryText}`}>
+                                                        Data de fechamento: {fimBR}{isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
                                                     </span>
                                                 )}
-                                                {resolvidoEm && (
-                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>Resolvido {resolvidoEm}</span>
+                                                {typeof item.percentComplete === 'number' && (
+                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${T.entryText}`}>{item.percentComplete}%</span>
                                                 )}
                                             </div>
                                         </td>
