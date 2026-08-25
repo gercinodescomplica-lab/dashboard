@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Loader2, CheckCircle2, AlertCircle, Kanban } from 'lucide-react';
 import { uploadPlannerTasks } from '@/services/planner-upload.service';
 
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
@@ -91,6 +91,18 @@ export function PlannerUploadEditor() {
                 <p className="text-sm text-zinc-400 mt-1">
                     Envie o(s) JSON exportado(s) do Planner para sincronizar o CX de todos os gerentes de uma vez
                     (cada tarefa é casada com o gerente pelos clientes atendidos).
+                </p>
+                <a
+                    href="/settings/cx-planner"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg text-sm font-semibold text-indigo-300 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors"
+                >
+                    <Kanban className="w-4 h-4" />
+                    Abrir o board do time de CX (/settings/cx-planner)
+                </a>
+                <p className="text-xs text-zinc-600 mt-1">
+                    Depois do upload, o time de CX passa a editar direto ali — chave de acesso própria (CX_PLANNER_KEY), separada desta aqui.
                 </p>
             </div>
 
