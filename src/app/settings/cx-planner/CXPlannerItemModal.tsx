@@ -84,10 +84,17 @@ export function CXPlannerItemModal({
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    // Excluir é permanente e reflete nos dois lugares (some do board e da
+    // aba CX do gerente, sem trash/undo) — por isso é um clique pra pedir
+    // confirmação e outro pra confirmar de verdade, em vez de um
+    // window.confirm() nativo (que além de menos visível trava a automação
+    // de navegador em alguns ambientes).
+    const [confirmingDelete, setConfirmingDelete] = useState(false);
 
     useEffect(() => {
         if (!open) return;
         setErrorMessage(null);
+        setConfirmingDelete(false);
         if (item) {
             setValues({
                 managerId: item.managerId,
@@ -132,9 +139,19 @@ export function CXPlannerItemModal({
         }
     };
 
-    const handleDelete = async () => {
+    const handleDeleteClick = () => {
         if (!onDelete) return;
-        if (!window.confirm('Excluir este item de CX? Essa ação não pode ser desfeita.')) return;
+        // Primeiro clique só arma a confirmação; a exclusão de verdade só
+        // acontece no segundo clique (ver performDelete).
+        if (!confirmingDelete) {
+            setConfirmingDelete(true);
+            return;
+        }
+        void performDelete();
+    };
+
+    const performDelete = async () => {
+        if (!onDelete) return;
         setIsDeleting(true);
         setErrorMessage(null);
         try {
@@ -142,6 +159,7 @@ export function CXPlannerItemModal({
             onOpenChange(false);
         } catch (err) {
             setErrorMessage(err instanceof Error ? err.message : 'Erro ao excluir. Tente novamente.');
+            setConfirmingDelete(false);
         } finally {
             setIsDeleting(false);
         }
@@ -328,16 +346,38 @@ export function CXPlannerItemModal({
                     </p>
                 )}
 
+                {confirmingDelete && (
+                    <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-2">
+                        Isso apaga o item de vez — some daqui do board <strong>e</strong> da aba de CX do gerente, sem
+                        como desfazer. Se é só pra tirar da visão do gerente, desmarque &quot;Mostrar no painel do
+                        gerente&quot; em vez de excluir.
+                    </p>
+                )}
+
                 <DialogFooter className="flex items-center justify-between sm:justify-between">
                     {item && onDelete ? (
-                        <Button
-                            variant="ghost"
-                            onClick={handleDelete}
-                            disabled={isDeleting || isSaving}
-                            className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
-                        >
-                            <Trash2 className="w-4 h-4 mr-1.5" /> Excluir
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant={confirmingDelete ? 'destructive' : 'ghost'}
+                                onClick={handleDeleteClick}
+                                disabled={isDeleting || isSaving}
+                                className={confirmingDelete ? 'font-semibold' : 'text-red-500 hover:text-red-400 hover:bg-red-500/10'}
+                            >
+                                <Trash2 className="w-4 h-4 mr-1.5" />
+                                {isDeleting ? 'Excluindo...' : confirmingDelete ? 'Confirmar exclusão' : 'Excluir'}
+                            </Button>
+                            {confirmingDelete && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => setConfirmingDelete(false)}
+                                    disabled={isDeleting}
+                                    className="text-zinc-400 hover:text-white"
+                                >
+                                    Cancelar
+                                </Button>
+                            )}
+                        </div>
                     ) : <span />}
                     <Button
                         onClick={handleSave}
