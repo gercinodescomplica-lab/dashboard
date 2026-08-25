@@ -33,6 +33,7 @@ interface CXPlannerItemModalProps {
     defaultStatus?: CXStatus;
     onSave: (values: CXPlannerFormValues) => Promise<void>;
     onDelete?: () => Promise<void>;
+    lightActive?: boolean;
 }
 
 function emptyValues(defaultManagerId = '', defaultStatus: CXStatus = 'pendente'): CXPlannerFormValues {
@@ -79,6 +80,7 @@ export function CXPlannerItemModal({
     defaultStatus,
     onSave,
     onDelete,
+    lightActive = false,
 }: CXPlannerItemModalProps) {
     const [values, setValues] = useState<CXPlannerFormValues>(emptyValues(defaultManagerId, defaultStatus));
     const [isSaving, setIsSaving] = useState(false);
@@ -174,9 +176,35 @@ export function CXPlannerItemModal({
     // problema recém-criado com um parágrafo só não precisa dessa seção.
     const logEntries = item ? parseCXLogEntries(item.problema) : [];
 
+    // Mesma convenção de theming do resto do app (ver CXTab.tsx): um mapa de
+    // classes light/dark montado uma vez, em vez de ternário repetido em
+    // cada campo do formulário.
+    const T = {
+        dialog: lightActive ? 'bg-white border-zinc-200 text-zinc-900' : 'bg-zinc-950 border-zinc-800 text-zinc-100',
+        label: lightActive ? 'text-zinc-600' : 'text-zinc-400',
+        field: lightActive ? 'bg-white border-zinc-200 text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-200',
+        historyBox: lightActive ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-950',
+        historyEntryBorder: lightActive ? 'border-zinc-300' : 'border-zinc-800',
+        historyDate: lightActive ? 'text-indigo-600' : 'text-indigo-400/80',
+        historyText: lightActive ? 'text-zinc-600' : 'text-zinc-400',
+        chipInactive: lightActive
+            ? 'bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300'
+            : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600',
+        statusActive: lightActive
+            ? 'bg-indigo-100 text-indigo-700 border-indigo-300'
+            : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50',
+        ringOffset: lightActive ? 'ring-offset-white' : 'ring-offset-zinc-950',
+        helperText: lightActive ? 'text-zinc-500' : 'text-zinc-600',
+        checkbox: lightActive ? 'border-zinc-300 bg-white' : 'border-zinc-700 bg-zinc-900',
+        checkboxLabel: lightActive ? 'text-zinc-600 group-hover:text-zinc-800' : 'text-zinc-400 group-hover:text-zinc-300',
+        messageBox: lightActive ? 'bg-red-50 border-red-300 text-red-700' : 'bg-red-500/10 border-red-500/30 text-red-400',
+        cancelBtn: lightActive ? 'text-zinc-500 hover:text-zinc-900' : 'text-zinc-400 hover:text-white',
+        deleteGhost: lightActive ? 'text-red-600 hover:text-red-500 hover:bg-red-50' : 'text-red-500 hover:text-red-400 hover:bg-red-500/10',
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-zinc-100">
+            <DialogContent className={`max-w-2xl max-h-[85vh] overflow-y-auto transition-colors duration-200 ${T.dialog}`}>
                 <DialogHeader>
                     <DialogTitle>{item ? 'Editar item de CX' : 'Nova tarefa de CX'}</DialogTitle>
                 </DialogHeader>
@@ -184,9 +212,9 @@ export function CXPlannerItemModal({
                 <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label className="text-zinc-400">Gerente</Label>
+                            <Label className={T.label}>Gerente</Label>
                             <Select value={values.managerId} onValueChange={(v) => update('managerId', v)}>
-                                <SelectTrigger className="bg-zinc-900 border-zinc-800 text-zinc-200">
+                                <SelectTrigger className={T.field}>
                                     <SelectValue placeholder="Selecione o gerente" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -197,36 +225,36 @@ export function CXPlannerItemModal({
                             </Select>
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-zinc-400">Cliente / Órgão</Label>
+                            <Label className={T.label}>Cliente / Órgão</Label>
                             <Input
                                 value={values.cliente}
                                 onChange={(e) => update('cliente', e.target.value)}
                                 placeholder="Ex: SEFAZ"
-                                className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                                className={T.field}
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Título</Label>
+                        <Label className={T.label}>Título</Label>
                         <Input
                             value={values.titulo}
                             onChange={(e) => update('titulo', e.target.value)}
                             placeholder="Resumo do problema"
-                            className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                            className={T.field}
                         />
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Descrição do problema</Label>
+                        <Label className={T.label}>Descrição do problema</Label>
                         {logEntries.length > 1 && (
-                            <div className="max-h-32 overflow-y-auto rounded-md border border-zinc-800 bg-zinc-950 px-3 py-2 flex flex-col gap-2 mb-1.5">
+                            <div className={`max-h-32 overflow-y-auto rounded-md border px-3 py-2 flex flex-col gap-2 mb-1.5 ${T.historyBox}`}>
                                 {logEntries.map((entry, idx) => (
-                                    <div key={idx} className="flex flex-col gap-0.5 border-l-2 border-zinc-800 pl-2">
+                                    <div key={idx} className={`flex flex-col gap-0.5 border-l-2 pl-2 ${T.historyEntryBorder}`}>
                                         {entry.date && (
-                                            <span className="text-[10px] font-mono font-semibold text-indigo-400/80">{entry.date}</span>
+                                            <span className={`text-[10px] font-mono font-semibold ${T.historyDate}`}>{entry.date}</span>
                                         )}
-                                        <span className="text-xs text-zinc-400 break-words">{entry.text}</span>
+                                        <span className={`text-xs break-words ${T.historyText}`}>{entry.text}</span>
                                     </div>
                                 ))}
                             </div>
@@ -242,43 +270,43 @@ export function CXPlannerItemModal({
                             onChange={(e) => update('problema', e.target.value)}
                             placeholder="Descreva o problema relatado em detalhes"
                             rows={4}
-                            className="w-full rounded-md border bg-zinc-900 border-zinc-800 text-zinc-200 px-3 py-2 text-sm placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                            className={`w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 ${lightActive ? 'placeholder:text-zinc-400' : 'placeholder:text-zinc-600'} ${T.field}`}
                         />
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Solução proposta</Label>
+                        <Label className={T.label}>Solução proposta</Label>
                         <Input
                             value={values.solucaoProposta}
                             onChange={(e) => update('solucaoProposta', e.target.value)}
                             placeholder="Descreva a solução ou encaminhamento"
-                            className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                            className={T.field}
                         />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label className="text-zinc-400">Data início</Label>
+                            <Label className={T.label}>Data início</Label>
                             <Input
                                 type="date"
                                 value={values.dataInicio}
                                 onChange={(e) => update('dataInicio', e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                                className={T.field}
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-zinc-400">Prazo (data fim)</Label>
+                            <Label className={T.label}>Prazo (data fim)</Label>
                             <Input
                                 type="date"
                                 value={values.dataFim}
                                 onChange={(e) => update('dataFim', e.target.value)}
-                                className="bg-zinc-900 border-zinc-800 text-zinc-200"
+                                className={T.field}
                             />
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Prioridade</Label>
+                        <Label className={T.label}>Prioridade</Label>
                         <div className="flex gap-2 flex-wrap">
                             {PRIORIDADE_OPTIONS.map((p) => (
                                 <button
@@ -286,8 +314,8 @@ export function CXPlannerItemModal({
                                     type="button"
                                     onClick={() => update('prioridadeTexto', p)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${values.prioridadeTexto === p
-                                        ? PRIORIDADE_CONFIG[p].badge + ' ring-2 ring-offset-1 ring-offset-zinc-950 ring-current'
-                                        : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600'
+                                        ? (lightActive ? PRIORIDADE_CONFIG[p].badgeLight : PRIORIDADE_CONFIG[p].badge) + ` ring-2 ring-offset-1 ${T.ringOffset} ring-current`
+                                        : T.chipInactive
                                         }`}
                                 >
                                     {p}
@@ -297,7 +325,7 @@ export function CXPlannerItemModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">% de conclusão — {values.percentComplete}%</Label>
+                        <Label className={T.label}>% de conclusão — {values.percentComplete}%</Label>
                         <input
                             type="range"
                             min={0}
@@ -310,7 +338,7 @@ export function CXPlannerItemModal({
                     </div>
 
                     <div className="space-y-1.5">
-                        <Label className="text-zinc-400">Status</Label>
+                        <Label className={T.label}>Status</Label>
                         <div className="flex gap-2 flex-wrap">
                             {STATUS_COLUMNS.map((s) => (
                                 <button
@@ -318,15 +346,15 @@ export function CXPlannerItemModal({
                                     type="button"
                                     onClick={() => update('status', s.key)}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${values.status === s.key
-                                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 ring-2 ring-offset-1 ring-offset-zinc-950 ring-current'
-                                        : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:border-zinc-600'
+                                        ? `${T.statusActive} ring-2 ring-offset-1 ${T.ringOffset} ring-current`
+                                        : T.chipInactive
                                         }`}
                                 >
                                     {s.label}
                                 </button>
                             ))}
                         </div>
-                        <p className="text-[11px] text-zinc-600">Sugerido automaticamente pelo % de conclusão, mas pode ser mudado aqui.</p>
+                        <p className={`text-[11px] ${T.helperText}`}>Sugerido automaticamente pelo % de conclusão, mas pode ser mudado aqui.</p>
                     </div>
 
                     <label className="flex items-center gap-2 cursor-pointer group">
@@ -334,20 +362,20 @@ export function CXPlannerItemModal({
                             type="checkbox"
                             checked={values.isVisible}
                             onChange={(e) => update('isVisible', e.target.checked)}
-                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-blue-500 focus:ring-blue-500 focus:ring-offset-zinc-950 accent-blue-500 cursor-pointer"
+                            className={`w-4 h-4 rounded focus:ring-blue-500 accent-blue-500 cursor-pointer ${T.ringOffset} ${T.checkbox}`}
                         />
-                        <span className="text-xs font-semibold text-zinc-400 group-hover:text-zinc-300 transition-colors">Mostrar no painel do gerente</span>
+                        <span className={`text-xs font-semibold transition-colors ${T.checkboxLabel}`}>Mostrar no painel do gerente</span>
                     </label>
                 </div>
 
                 {errorMessage && (
-                    <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-2">
+                    <p className={`text-xs font-semibold rounded-md px-3 py-2 border ${T.messageBox}`}>
                         {errorMessage}
                     </p>
                 )}
 
                 {confirmingDelete && (
-                    <p className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/30 rounded-md px-3 py-2">
+                    <p className={`text-xs font-semibold rounded-md px-3 py-2 border ${T.messageBox}`}>
                         Isso apaga o item de vez — some daqui do board <strong>e</strong> da aba de CX do gerente, sem
                         como desfazer. Se é só pra tirar da visão do gerente, desmarque &quot;Mostrar no painel do
                         gerente&quot; em vez de excluir.
@@ -361,7 +389,7 @@ export function CXPlannerItemModal({
                                 variant={confirmingDelete ? 'destructive' : 'ghost'}
                                 onClick={handleDeleteClick}
                                 disabled={isDeleting || isSaving}
-                                className={confirmingDelete ? 'font-semibold' : 'text-red-500 hover:text-red-400 hover:bg-red-500/10'}
+                                className={confirmingDelete ? 'font-semibold' : T.deleteGhost}
                             >
                                 <Trash2 className="w-4 h-4 mr-1.5" />
                                 {isDeleting ? 'Excluindo...' : confirmingDelete ? 'Confirmar exclusão' : 'Excluir'}
@@ -372,7 +400,7 @@ export function CXPlannerItemModal({
                                     variant="ghost"
                                     onClick={() => setConfirmingDelete(false)}
                                     disabled={isDeleting}
-                                    className="text-zinc-400 hover:text-white"
+                                    className={T.cancelBtn}
                                 >
                                     Cancelar
                                 </Button>

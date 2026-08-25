@@ -23,10 +23,13 @@ export type PrioridadeTexto = (typeof PRIORIDADE_OPTIONS)[number];
 // visualmente no board — Importante fica no amarelo (mesma cor de 'media'),
 // Média fica no verde (o tom mais "de baixa urgência" das 3, coerente com
 // ser a opção mais comum e menos crítica dos dados reais).
-export const PRIORIDADE_CONFIG: Record<PrioridadeTexto, { badge: string; border: string }> = {
-    Urgente: { badge: 'bg-red-500/20 text-red-400 border-red-500/30', border: 'border-l-red-500' },
-    Importante: { badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', border: 'border-l-yellow-500' },
-    Média: { badge: 'bg-green-500/20 text-green-400 border-green-500/30', border: 'border-l-green-500' },
+// badgeLight usa as mesmas classes de CRITICIDADE_CONFIG.chipStyleLight em
+// CXTab.tsx (bg-*-100/text-*-800/border-*-400) — o badge translúcido do tema
+// escuro (bg-*-500/20 text-*-400) fica com contraste ruim em fundo branco.
+export const PRIORIDADE_CONFIG: Record<PrioridadeTexto, { badge: string; badgeLight: string; border: string }> = {
+    Urgente: { badge: 'bg-red-500/20 text-red-400 border-red-500/30', badgeLight: 'bg-red-100 text-red-800 border-red-400', border: 'border-l-red-500' },
+    Importante: { badge: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30', badgeLight: 'bg-yellow-100 text-yellow-800 border-yellow-400', border: 'border-l-yellow-500' },
+    Média: { badge: 'bg-green-500/20 text-green-400 border-green-500/30', badgeLight: 'bg-green-100 text-green-800 border-green-400', border: 'border-l-green-500' },
 };
 
 // Fallback neutro pra item null/não-reconhecido — "Média" é o meio-termo das

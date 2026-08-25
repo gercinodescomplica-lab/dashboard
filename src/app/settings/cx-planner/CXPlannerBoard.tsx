@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, RefreshCw, Search, X } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Search, X, Sun, Moon } from 'lucide-react';
 import { CXBoardItem } from '@/db/queries';
 import { CXStatus } from '@/types/manager';
+import { applyBodyTheme, THEME_STORAGE_KEY } from '@/lib/themeSync';
 import {
     fetchCXPlannerBoardItems,
     fetchManagersForDropdown,
@@ -36,6 +37,11 @@ export function CXPlannerBoard() {
     const [clienteFilter, setClienteFilter] = useState('');
     const [statusFilter, setStatusFilter] = useState<CXStatus | ''>('');
     const [prioridadeFilter, setPrioridadeFilter] = useState('');
+    // Tema claro/escuro — mesma chave de localStorage que o resto do app
+    // (DashboardShell/lib/themeSync), pra alternar aqui refletir se essa
+    // pessoa também usa o dashboard principal, e vice-versa.
+    const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
+    const lightActive = theme === 'light';
 
     // Shared by the initial mount load and the manual "Atualizar" button —
     // with several concurrent editors on this board, each open tab holds an
@@ -57,6 +63,32 @@ export function CXPlannerBoard() {
             setIsLoading(false);
         })();
     }, [loadBoard]);
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(THEME_STORAGE_KEY);
+            if (saved === 'light' || saved === 'dark') {
+                setThemeState(saved);
+                applyBodyTheme(saved);
+            }
+        } catch {
+            // localStorage indisponível (ex: modo privado) — segue com o
+            // padrão escuro, sem quebrar a página.
+        }
+    }, []);
+
+    const toggleTheme = () => {
+        setThemeState((prev) => {
+            const next = prev === 'dark' ? 'light' : 'dark';
+            try {
+                localStorage.setItem(THEME_STORAGE_KEY, next);
+            } catch {
+                // idem — falha silenciosa, só não persiste entre sessões.
+            }
+            applyBodyTheme(next);
+            return next;
+        });
+    };
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
@@ -176,55 +208,96 @@ export function CXPlannerBoard() {
         setPrioridadeFilter('');
     };
 
-    const selectClassName = 'bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500/50 transition-colors';
+    // Mesma convenção de theming que o resto do app (ver CXTab.tsx): um mapa
+    // único de classes light/dark, montado uma vez por render, em vez de
+    // ternário espalhado em cada elemento.
+    const T = {
+        page: lightActive ? 'bg-white text-zinc-900' : 'bg-zinc-950 text-zinc-50',
+        subtitle: lightActive ? 'text-zinc-500' : 'text-zinc-500',
+        refreshBtn: lightActive
+            ? 'text-zinc-600 border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:text-zinc-900'
+            : 'text-zinc-300 border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:text-zinc-100',
+        themeBtn: lightActive
+            ? 'text-zinc-600 border-zinc-200 bg-zinc-50 hover:border-zinc-300 hover:text-zinc-900'
+            : 'text-zinc-300 border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:text-zinc-100',
+        filterPanel: lightActive ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900/40 border-zinc-800',
+        searchIcon: lightActive ? 'text-zinc-400' : 'text-zinc-500',
+        searchInput: lightActive
+            ? 'bg-white border-zinc-200 text-zinc-900 placeholder:text-zinc-400'
+            : 'bg-zinc-950 border-zinc-800 text-zinc-200 placeholder:text-zinc-600',
+        countText: lightActive ? 'text-zinc-500' : 'text-zinc-500',
+        countStrong: lightActive ? 'text-zinc-700' : 'text-zinc-300',
+        clearBtn: lightActive ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-white hover:bg-zinc-800',
+        select: lightActive
+            ? 'bg-white border-zinc-200 text-zinc-700'
+            : 'bg-zinc-950 border-zinc-800 text-zinc-300',
+        columnBg: lightActive ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-900/30',
+        columnDragOver: lightActive ? 'border-indigo-400 bg-indigo-50' : 'border-indigo-500/60 bg-indigo-500/5',
+        columnHeadText: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        addBtn: lightActive ? 'text-zinc-400 hover:text-indigo-600' : 'text-zinc-500 hover:text-indigo-400',
+        emptyState: lightActive ? 'text-zinc-400' : 'text-zinc-700',
+    };
+
+    const selectClassName = `border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500/50 transition-colors ${T.select}`;
 
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+            <div className={`min-h-screen flex items-center justify-center transition-colors duration-200 ${T.page}`}>
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-50 p-6">
+        <div className={`min-h-screen p-6 transition-colors duration-200 ${T.page}`}>
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold">CX Planner</h1>
-                    <p className="text-zinc-500 text-sm">Board de CX do time — arraste os cards entre as colunas ou clique para editar.</p>
+                    <p className={`text-sm ${T.subtitle}`}>Board de CX do time — arraste os cards entre as colunas ou clique para editar.</p>
                 </div>
-                <button
-                    type="button"
-                    onClick={handleRefresh}
-                    disabled={isRefreshing}
-                    title="Buscar estado mais recente do board"
-                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-zinc-300 border border-zinc-800 bg-zinc-900/50 hover:border-zinc-700 hover:text-zinc-100 transition-colors disabled:opacity-50"
-                >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                    Atualizar
-                </button>
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={toggleTheme}
+                        title={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                        aria-label={theme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
+                        className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-colors ${T.themeBtn}`}
+                    >
+                        {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        title="Buscar estado mais recente do board"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors disabled:opacity-50 ${T.refreshBtn}`}
+                    >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        Atualizar
+                    </button>
+                </div>
             </div>
 
-            <div className="mb-4 flex flex-col gap-3 p-3 rounded-xl border border-zinc-800 bg-zinc-900/40">
+            <div className={`mb-4 flex flex-col gap-3 p-3 rounded-xl border transition-colors duration-200 ${T.filterPanel}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="relative flex-1 min-w-[200px]">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
+                        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${T.searchIcon}`} />
                         <input
                             type="text"
                             value={query}
                             onChange={(e) => setQuery(e.target.value)}
                             placeholder="Buscar por título, descrição, prioridade ou data..."
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-3 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-indigo-500/50 transition-colors"
+                            className={`w-full border rounded-lg pl-9 pr-3 py-1.5 text-sm focus:outline-none focus:border-indigo-500/50 transition-colors ${T.searchInput}`}
                         />
                     </div>
-                    <div className="text-xs text-zinc-500 whitespace-nowrap">
-                        Mostrando <span className="font-semibold text-zinc-300">{filteredItems.length}</span> de {items.length}
+                    <div className={`text-xs whitespace-nowrap ${T.countText}`}>
+                        Mostrando <span className={`font-semibold ${T.countStrong}`}>{filteredItems.length}</span> de {items.length}
                     </div>
                     {hasActiveFilter && (
                         <button
                             type="button"
                             onClick={clearFilters}
-                            className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors shrink-0"
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors shrink-0 ${T.clearBtn}`}
                         >
                             <X className="w-3 h-3" /> Limpar filtros
                         </button>
@@ -287,14 +360,14 @@ export function CXPlannerBoard() {
                             onDragOver={(e) => { e.preventDefault(); setDragOverStatus(col.key); }}
                             onDragLeave={() => setDragOverStatus((s) => (s === col.key ? null : s))}
                             onDrop={(e) => handleDrop(col.key, e)}
-                            className={`rounded-xl border p-3 flex flex-col gap-3 min-h-[200px] transition-colors ${dragOverStatus === col.key ? 'border-indigo-500/60 bg-indigo-500/5' : 'border-zinc-800 bg-zinc-900/30'}`}
+                            className={`rounded-xl border p-3 flex flex-col gap-3 min-h-[200px] transition-colors ${dragOverStatus === col.key ? T.columnDragOver : T.columnBg}`}
                         >
                             <div className="flex items-center justify-between">
-                                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">{col.label} ({colItems.length})</h2>
+                                <h2 className={`text-xs font-bold uppercase tracking-wider ${T.columnHeadText}`}>{col.label} ({colItems.length})</h2>
                                 <button
                                     type="button"
                                     onClick={() => openCreate(col.key)}
-                                    className="text-zinc-500 hover:text-indigo-400 transition-colors"
+                                    className={`transition-colors ${T.addBtn}`}
                                     title="Nova tarefa"
                                 >
                                     <Plus className="w-4 h-4" />
@@ -307,11 +380,11 @@ export function CXPlannerBoard() {
                                         draggable
                                         onDragStart={(e) => e.dataTransfer.setData('text/plain', String(item.id))}
                                     >
-                                        <CXPlannerCard item={item} onClick={() => openEdit(item)} />
+                                        <CXPlannerCard item={item} onClick={() => openEdit(item)} lightActive={lightActive} />
                                     </div>
                                 ))}
                                 {colItems.length === 0 && (
-                                    <p className="text-xs text-zinc-700 text-center py-6">
+                                    <p className={`text-xs text-center py-6 ${T.emptyState}`}>
                                         {hasActiveFilter ? 'Nenhum item corresponde aos filtros.' : 'Nenhum item.'}
                                     </p>
                                 )}
@@ -330,6 +403,7 @@ export function CXPlannerBoard() {
                 defaultStatus={defaultStatusForNew}
                 onSave={handleSave}
                 onDelete={editingItem ? handleDelete : undefined}
+                lightActive={lightActive}
             />
         </div>
     );
