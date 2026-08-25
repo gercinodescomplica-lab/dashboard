@@ -307,6 +307,11 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                         <tbody className={`divide-y ${T.rowDivide}`}>
                             {sorted.map((item, i) => {
                                 const status = STATUS_CONFIG[item.status];
+                                // formatDateOnlyBR pode voltar null pra uma string malformada
+                                // (dado legado/externo que não bate com YYYY-MM-DD) — calcula
+                                // aqui pra checar o RESULTADO formatado, não o dataFim cru, e
+                                // não arriscar renderizar "Prazo null" na tela.
+                                const fimBR = item.dataFim ? formatDateOnlyBR(item.dataFim) : null;
                                 const rowKey = item.id ?? i;
                                 const entries = parseLogEntries(item.problema);
                                 const isExpanded = expandedRows.has(rowKey);
@@ -373,12 +378,12 @@ export function CXTab({ items, lightActive = false }: CXTabProps) {
                                                 <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-bold ${lightActive ? status.styleLight : status.style}`}>
                                                     {status.label}
                                                 </span>
-                                                {(item.dataFim || typeof item.percentComplete === 'number') && (
-                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : (lightActive ? 'text-zinc-500' : 'text-zinc-500')}`}>
+                                                {(fimBR || typeof item.percentComplete === 'number') && (
+                                                    <span className={`text-[10px] font-mono whitespace-nowrap ${fimBR && isOverdueDate(item.dataFim, item.status) ? 'text-red-500 font-bold' : (lightActive ? 'text-zinc-500' : 'text-zinc-500')}`}>
                                                         {typeof item.percentComplete === 'number' ? `${item.percentComplete}%` : ''}
-                                                        {item.dataFim && typeof item.percentComplete === 'number' ? ' · ' : ''}
-                                                        {item.dataFim ? `Prazo ${formatDateOnlyBR(item.dataFim)}` : ''}
-                                                        {item.dataFim && isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
+                                                        {fimBR && typeof item.percentComplete === 'number' ? ' · ' : ''}
+                                                        {fimBR ? `Prazo ${fimBR}` : ''}
+                                                        {fimBR && isOverdueDate(item.dataFim, item.status) ? ' ⚠' : ''}
                                                     </span>
                                                 )}
                                             </div>

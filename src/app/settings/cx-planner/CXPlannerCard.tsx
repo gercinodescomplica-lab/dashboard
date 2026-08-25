@@ -90,7 +90,7 @@ export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerC
                     {fimBR ? (
                         <span
                             title={overdue ? `Prazo vencido em ${fimBR}` : `Prazo: ${fimBR}`}
-                            className={`flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold font-mono ${overdue ? 'font-bold' : ''} ${T.prazoChip}`}
+                            className={`flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold font-mono ${T.prazoChip}`}
                         >
                             <CalendarClock className="w-3.5 h-3.5" /> {fimBR}
                         </span>
