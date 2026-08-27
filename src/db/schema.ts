@@ -136,3 +136,14 @@ export const systemSettings = sqliteTable('system_settings', {
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
 });
 
+export const churn = sqliteTable('churn', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    managerId: text('manager_id').notNull().references(() => managers.id, { onDelete: 'cascade' }),
+    numeroContrato: text('numero_contrato').notNull(),
+    valor: real('valor').notNull(),
+    descricao: text('descricao').notNull(),
+    motivo: text('motivo').notNull(),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+

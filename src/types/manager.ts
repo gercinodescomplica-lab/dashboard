@@ -69,6 +69,16 @@ export interface Visit {
   createdAt?: string;
 }
 
+export interface ChurnItem {
+  id?: number;
+  managerId?: string;
+  numeroContrato: string;
+  valor: number;
+  descricao: string;
+  motivo: string;
+  createdAt?: string;
+}
+
 export interface Manager {
   id: string;
   name: string;
@@ -87,6 +97,8 @@ export interface Manager {
   notes?: string;
   cx?: CXItem[];
   visits?: Visit[];
+  churn?: ChurnItem[];
   servedClients?: string[];
   showInDashboard?: boolean;
 }
+

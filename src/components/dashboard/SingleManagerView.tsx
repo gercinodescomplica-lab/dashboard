@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Manager, CXItem, Visit } from '@/types/manager';
+import { Manager, CXItem, Visit, ChurnItem } from '@/types/manager';
 import { calcEffectiveContratado, sumPipelineContratado2026 } from '@/lib/calc';
 import { ManagerHeader } from './ManagerHeader';
 import { PerformanceBars } from './PerformanceBars';
@@ -12,7 +12,8 @@ import { ProjectsTab } from './tabs/ProjectsTab';
 import { CXTab } from './tabs/CXTab';
 import { VisitsTab } from './tabs/VisitsTab';
 import { ClientsTab } from './tabs/ClientsTab';
-import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
+import { ChurnTab } from './tabs/ChurnTab';
+import { getCXByManager, getVisitsByManager, getChurnByManager } from '@/app/settings/fetchActions';
 import { Loader2, Building2 } from 'lucide-react';
 
 interface SingleManagerViewProps {
@@ -25,6 +26,7 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
     const novosNegocios = manager.novosNegocios ?? sumPipelineContratado2026(manager.pipeline);
     const [cxItems, setCxItems] = useState<CXItem[] | null>(null);
     const [visits, setVisits] = useState<Visit[] | null>(null);
+    const [churnItems, setChurnItems] = useState<ChurnItem[] | null>(null);
     const [activeTab, setActiveTab] = useState('dashboard');
 
     const T = {
@@ -38,7 +40,7 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
         loadingText: lightActive ? 'text-zinc-400' : 'text-zinc-500',
     };
 
-    // Lazy-load CX and Visits only when tab is first accessed
+    // Lazy-load CX, Visits, and Churn only when tab is first accessed
     useEffect(() => {
         if ((activeTab === 'cx' || activeTab === 'visitas') && cxItems === null) {
             getCXByManager(manager.id).then(setCxItems);
@@ -46,19 +48,23 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
         if (activeTab === 'visitas' && visits === null) {
             getVisitsByManager(manager.id).then(setVisits);
         }
+        if (activeTab === 'churn' && churnItems === null) {
+            getChurnByManager(manager.id).then(setChurnItems);
+        }
     }, [activeTab, manager.id]);
 
     // Reset when manager changes
     useEffect(() => {
         setCxItems(null);
         setVisits(null);
+        setChurnItems(null);
         setActiveTab('dashboard');
     }, [manager.id]);
 
     return (
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col lg:h-full gap-0">
             {/* Tab Bar */}
-            <TabsList className={`w-full grid grid-cols-5 border rounded-2xl mb-6 shrink-0 transition-colors duration-200 ${T.tabBar}`}>
+            <TabsList className={`w-full grid grid-cols-6 border rounded-2xl mb-6 shrink-0 transition-colors duration-200 ${T.tabBar}`}>
                 <TabsTrigger
                     value="dashboard"
                     className={`data-[state=active]:bg-indigo-600 data-[state=active]:text-white ${T.tabInactive} ${T.tabHover} rounded-xl`}
@@ -88,6 +94,12 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
                     className={`data-[state=active]:bg-indigo-600 data-[state=active]:text-white ${T.tabInactive} ${T.tabHover} rounded-xl`}
                 >
                     📍 Visitas
+                </TabsTrigger>
+                <TabsTrigger
+                    value="churn"
+                    className={`data-[state=active]:bg-red-600 data-[state=active]:text-white ${T.tabInactive} ${T.tabHover} rounded-xl`}
+                >
+                    📉 Churn
                 </TabsTrigger>
             </TabsList>
 
@@ -157,6 +169,20 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
                         </div>
                     ) : (
                         <VisitsTab items={visits} lightActive={lightActive} />
+                    )}
+                </div>
+            </TabsContent>
+
+            {/* ── Churn ── */}
+            <TabsContent value="churn" className="mt-0">
+                <div className={`border rounded-2xl p-6 sm:p-8 backdrop-blur-md transition-colors duration-200 ${T.panel}`}>
+                    <h4 className={`text-lg font-semibold mb-6 text-red-400`}>Contratos em Churn</h4>
+                    {churnItems === null ? (
+                        <div className={`flex items-center justify-center py-20 ${T.loadingText}`}>
+                            <Loader2 className="w-5 h-5 animate-spin mr-2" /> Carregando Churn...
+                        </div>
+                    ) : (
+                        <ChurnTab items={churnItems} lightActive={lightActive} />
                     )}
                 </div>
             </TabsContent>

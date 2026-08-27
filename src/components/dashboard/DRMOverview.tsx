@@ -12,7 +12,7 @@ import {
     determinePerformanceStatus,
     calcForecastProRata2026,
 } from '@/lib/calc';
-import { Building2, Info, Calendar, Layers, ArrowUp, BarChart3, ChevronRight, FileCheck } from 'lucide-react';
+import { Building2, Info, Calendar, Layers, ArrowUp, BarChart3, ChevronRight, FileCheck, TrendingDown, FileText } from 'lucide-react';
 import {
     Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip';
@@ -170,6 +170,15 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
     const totalNovosNegociosTCV = activeManagers.reduce((acc, m) => acc + sumNovosNegocios(m.pipeline), 0);
     const totalContratado2026 = activeManagers.reduce((acc, m) => acc + (m.contratado2026 ?? m.contratado), 0);
     const totalForecastProRata2026 = activeManagers.reduce((acc, m) => acc + (m.forecastProRata2026 ?? calcForecastProRata2026(m.contratado, m.pipeline)), 0);
+    const totalChurnVal = activeManagers.reduce((acc, m) => acc + ((m.churn || []).reduce((cAcc, c) => cAcc + (c.valor || 0), 0)), 0);
+    const totalChurnCount = activeManagers.reduce((acc, m) => acc + (m.churn?.length || 0), 0);
+
+    const [isChurnModalOpen, setIsChurnModalOpen] = useState(false);
+    const allChurnItems = activeManagers.flatMap(m => (m.churn || []).map(c => ({
+        ...c,
+        managerName: m.name,
+        managerRole: m.role,
+    }))).sort((a, b) => b.valor - a.valor);
 
     // ── Pipeline by quarter ──────────────────────────────────────────────────
     const qTotals = (['q1', 'q2', 'q3', 'q4', 'nao_mapeado'] as const).map((q) => {
@@ -485,6 +494,19 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                                 accentLight="text-violet-600"
                                 tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline."
                             />
+                            <div
+                                onClick={() => setIsChurnModalOpen(true)}
+                                className="cursor-pointer transition-transform hover:scale-[1.01]"
+                            >
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="7. Total Churn DRM (Perdas)"
+                                    value={formatCurrency(totalChurnVal)}
+                                    accent="text-red-400"
+                                    accentLight="text-red-600"
+                                    tip={`${totalChurnCount} contrato(s) em churn registrado(s). Clique para ver detalhes.`}
+                                />
+                            </div>
                         </div>
 
                     </div>
@@ -604,6 +626,65 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                     <div className={`px-6 py-4 border-t shrink-0 flex justify-between items-center ${T.modalDivider}`}>
                         <span className="text-xs text-zinc-500 uppercase tracking-widest">Total</span>
                         <span className={`text-lg font-bold font-mono ${lightActive ? T.modalAccent : modal.accentColor}`}>{formatCurrency(modal.total)}</span>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Churn Drill-down Modal ─────────────────────────── */}
+            <Dialog open={isChurnModalOpen} onOpenChange={setIsChurnModalOpen}>
+                <DialogContent className={`border max-w-2xl max-h-[80vh] flex flex-col p-0 overflow-hidden ${T.modalBg}`}>
+                    <DialogHeader className={`px-6 pt-6 pb-4 border-b shrink-0 ${T.modalDivider}`}>
+                        <DialogTitle className="text-xl font-bold text-red-400 flex items-center gap-2">
+                            <TrendingDown className="w-5 h-5 text-red-400" />
+                            Relatório de Churn DRM
+                        </DialogTitle>
+                        <p className={`text-sm mt-0.5 ${T.subtext}`}>
+                            {totalChurnCount} {totalChurnCount === 1 ? 'contrato rescindido' : 'contratos rescindidos'} · Total {formatCurrency(totalChurnVal)}
+                        </p>
+                    </DialogHeader>
+
+                    {/* Churn list */}
+                    <div className="overflow-y-auto flex-1 px-4 py-3">
+                        {allChurnItems.length === 0 ? (
+                            <p className="text-center text-zinc-500 py-12">Nenhum registro de churn encontrado.</p>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {allChurnItems.map((c, i) => (
+                                    <div key={i} className={`border rounded-xl px-4 py-3 flex flex-col gap-2 ${T.modalItem}`}>
+                                        <div className="flex items-center justify-between gap-2 border-b border-zinc-800/40 pb-2">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-red-400 shrink-0" />
+                                                <span className={`text-sm font-bold font-mono ${T.modalItemTitle}`}>{c.numeroContrato}</span>
+                                                <span className={`text-xs ${T.modalItemSub}`}>
+                                                    ({c.managerName} - {c.managerRole})
+                                                </span>
+                                            </div>
+                                            <span className="text-sm font-bold font-mono text-red-400 shrink-0">
+                                                {formatCurrency(c.valor)}
+                                            </span>
+                                        </div>
+                                        {c.descricao && (
+                                            <div className="text-xs">
+                                                <span className="text-zinc-500 font-semibold">Descrição: </span>
+                                                <span className={T.modalItemOrg}>{c.descricao}</span>
+                                            </div>
+                                        )}
+                                        {c.motivo && (
+                                            <div className="text-xs bg-red-950/20 border border-red-900/30 p-2 rounded text-red-300">
+                                                <span className="font-semibold">Motivo: </span>
+                                                {c.motivo}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer total */}
+                    <div className={`px-6 py-4 border-t shrink-0 flex justify-between items-center ${T.modalDivider}`}>
+                        <span className="text-xs text-zinc-500 uppercase tracking-widest">Total Churn DRM</span>
+                        <span className="text-lg font-bold font-mono text-red-400">{formatCurrency(totalChurnVal)}</span>
                     </div>
                 </DialogContent>
             </Dialog>

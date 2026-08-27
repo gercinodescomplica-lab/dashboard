@@ -1,7 +1,7 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato, proposta, systemSettings } from './schema';
+import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn } from './schema';
 import { eq, like, desc, or, inArray } from 'drizzle-orm';
-import { Manager, CXItem, Visit } from '../types/manager';
+import { Manager, CXItem, Visit, ChurnItem } from '../types/manager';
 
 /**
  * Fetches all managers from the database and constructs them exactly
@@ -146,20 +146,68 @@ export async function fetchVisitsByManager(managerId: string): Promise<Visit[]> 
 }
 
 /**
- * Fetches all managers and their associated data (projects, CX, visits) for the external API.
+ * Fetches churn records for a specific manager.
+ */
+export async function fetchChurnByManager(managerId: string): Promise<ChurnItem[]> {
+    const rows = await db.select().from(churn).where(eq(churn.managerId, managerId));
+    return rows.map((r) => ({
+        id: r.id,
+        managerId: r.managerId,
+        numeroContrato: r.numeroContrato,
+        valor: r.valor,
+        descricao: r.descricao,
+        motivo: r.motivo,
+        createdAt: r.createdAt,
+    }));
+}
+
+/**
+ * Fetches all churn records across all managers.
+ */
+export async function fetchAllChurns(): Promise<ChurnItem[]> {
+    const rows = await db.select().from(churn);
+    return rows.map((r) => ({
+        id: r.id,
+        managerId: r.managerId,
+        numeroContrato: r.numeroContrato,
+        valor: r.valor,
+        descricao: r.descricao,
+        motivo: r.motivo,
+        createdAt: r.createdAt,
+    }));
+}
+
+export async function createChurnItem(data: typeof churn.$inferInsert) {
+    const rows = await db.insert(churn).values(data).returning();
+    return rows[0];
+}
+
+export async function updateChurnItem(id: number, data: Partial<typeof churn.$inferInsert>) {
+    const rows = await db.update(churn).set(data).where(eq(churn.id, id)).returning();
+    return rows[0];
+}
+
+export async function deleteChurnItem(id: number) {
+    return db.delete(churn).where(eq(churn.id, id));
+}
+
+/**
+ * Fetches all managers and their associated data (projects, CX, visits, churn) for the external API.
  */
 export async function fetchFullDashboardData(): Promise<Manager[]> {
     const allManagers = await fetchVisibleManagersFromDB();
     
-    // Supplement each manager with CX and Visits
+    // Supplement each manager with CX, Visits, and Churn
     const fullData = await Promise.all(
         allManagers.map(async (manager) => {
-            const cx = await fetchCXByManager(manager.id);
-            const visits = await fetchVisitsByManager(manager.id);
+            const cxData = await fetchCXByManager(manager.id);
+            const visitsData = await fetchVisitsByManager(manager.id);
+            const churnData = await fetchChurnByManager(manager.id);
             return {
                 ...manager,
-                cx,
-                visits
+                cx: cxData,
+                visits: visitsData,
+                churn: churnData,
             };
         })
     );

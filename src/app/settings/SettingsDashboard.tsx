@@ -10,7 +10,7 @@ import { ProposalsEditor } from './ProposalsEditor';
 import { OrgChartEditor } from './OrgChartEditor';
 import { FaturamentoEditor } from './FaturamentoEditor';
 import { PlannerUploadEditor } from './PlannerUploadEditor';
-import { saveManagerData, saveCXData, saveVisitsData, cloneManager } from './actions';
+import { saveManagerData, saveCXData, saveVisitsData, saveChurnData, cloneManager } from './actions';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
@@ -74,6 +74,7 @@ export function SettingsDashboard() {
                 saveManagerData(selectedManager),
                 saveCXData(selectedManager.id, selectedManager.cx || []),
                 saveVisitsData(selectedManager.id, selectedManager.visits || []),
+                saveChurnData(selectedManager.id, selectedManager.churn || []),
             ]);
             setSaveStatus('success');
             setTimeout(() => setSaveStatus('idle'), 3000);

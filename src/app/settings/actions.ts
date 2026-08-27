@@ -1,8 +1,8 @@
 'use server';
 
 import { db } from '@/db/index';
-import { managers, projects, cx, visits } from '@/db/schema';
-import { Manager, CXItem, Visit } from '@/types/manager';
+import { managers, projects, cx, visits, churn } from '@/db/schema';
+import { Manager, CXItem, Visit, ChurnItem } from '@/types/manager';
 import { eq } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
@@ -92,6 +92,29 @@ export async function saveVisitsData(managerId: string, items: Visit[]) {
     } catch (err) {
         console.error('Failed to save visits:', err);
         throw new Error('Erro ao salvar visitas no Turso.');
+    }
+}
+
+export async function saveChurnData(managerId: string, items: ChurnItem[]) {
+    try {
+        await db.delete(churn).where(eq(churn.managerId, managerId));
+
+        if (items.length > 0) {
+            await db.insert(churn).values(
+                items.map((item) => ({
+                    managerId,
+                    numeroContrato: item.numeroContrato,
+                    valor: item.valor,
+                    descricao: item.descricao,
+                    motivo: item.motivo,
+                    createdAt: item.createdAt ?? new Date().toISOString(),
+                }))
+            );
+        }
+        return { success: true };
+    } catch (err) {
+        console.error('Failed to save churn data:', err);
+        throw new Error('Erro ao salvar dados de churn no Turso.');
     }
 }
 

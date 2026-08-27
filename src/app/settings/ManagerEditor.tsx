@@ -15,8 +15,9 @@ import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
 import { ClientsEditor } from './ClientsEditor';
+import { ChurnEditor } from './ChurnEditor';
 import { sumPipelineContratado2026, calcEffectiveContratado, sumPipelineAberto, calcForecastProRata2026 } from '@/lib/calc';
-import { getCXByManager, getVisitsByManager } from '@/app/settings/fetchActions';
+import { getCXByManager, getVisitsByManager, getChurnByManager } from '@/app/settings/fetchActions';
 
 interface Props {
     manager: Manager;
@@ -29,7 +30,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
     const [loadingExtra, setLoadingExtra] = useState(true);
 
     useEffect(() => {
-        if (manager.cx !== undefined && manager.visits !== undefined) {
+        if (manager.cx !== undefined && manager.visits !== undefined && manager.churn !== undefined) {
             setLoadingExtra(false);
             return;
         }
@@ -38,8 +39,9 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
         Promise.all([
             getCXByManager(manager.id),
             getVisitsByManager(manager.id),
-        ]).then(([cx, v]) => {
-            onChange({ ...manager, cx, visits: v });
+            getChurnByManager(manager.id),
+        ]).then(([cx, v, ch]) => {
+            onChange({ ...manager, cx, visits: v, churn: ch });
             setLoadingExtra(false);
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,7 +90,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
 
             {/* Tabs: Info + Pipeline + Visitas + CX */}
             <Tabs defaultValue="info" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 bg-zinc-950 border border-zinc-800 mb-6">
+                <TabsList className="grid w-full grid-cols-5 bg-zinc-950 border border-zinc-800 mb-6">
                     <TabsTrigger value="info" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
                         Informações
                     </TabsTrigger>
@@ -100,6 +102,9 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                     </TabsTrigger>
                     <TabsTrigger value="cx" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
                         🤝 CX
+                    </TabsTrigger>
+                    <TabsTrigger value="churn" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
+                        📉 Churn
                     </TabsTrigger>
                 </TabsList>
 
@@ -311,6 +316,19 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                             </div>
                         ) : (
                             <CXEditor items={manager.cx || []} onChange={(cx) => handleChange('cx', cx)} />
+                        )}
+                    </div>
+                </TabsContent>
+
+                {/* ── Tab Churn ── */}
+                <TabsContent value="churn">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 min-h-[400px]">
+                        {loadingExtra ? (
+                            <div className="flex items-center justify-center py-20 text-zinc-500">
+                                <Loader2 className="w-6 h-6 animate-spin mr-2" /> Carregando Churn...
+                            </div>
+                        ) : (
+                            <ChurnEditor items={manager.churn || []} onChange={(ch) => handleChange('churn', ch)} />
                         )}
                     </div>
                 </TabsContent>
