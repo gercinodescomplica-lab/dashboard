@@ -145,22 +145,6 @@ export function ForecastKpis({ manager, lightActive = false }: ForecastKpisProps
                     </div>
                 </div>
 
-                {/* Forecast Total (TCV bruto) */}
-                <div className={`border rounded-xl p-3.5 flex flex-col justify-between min-w-0 transition-colors duration-200 ${kpiCard}`}>
-                    <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-1.5">
-                            <BarChart2 className={`w-3.5 h-3.5 ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`} />
-                            <span className={`text-[11px] font-semibold uppercase tracking-wider ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>
-                                Forecast Total
-                                <InfoTip text="Projeção total bruta = Contratos Herdados + TCV de todos os projetos ativos no pipeline (Quente, Morno, Frio e Contratado). Não aplica pro-rata." lightActive={lightActive} />
-                            </span>
-                        </div>
-                    </div>
-                    <div className={`text-lg sm:text-xl font-bold font-mono mt-1 tracking-tighter truncate ${lightActive ? 'text-indigo-600' : 'text-indigo-300'}`}>
-                        {formatCurrency(forecastTotal)}
-                    </div>
-                </div>
-
                 {/* Forecast Pro-rata 2026 */}
                 <div className={`border rounded-xl p-3.5 flex flex-col justify-between min-w-0 ring-1 ring-violet-500/30 transition-colors duration-200 ${kpiCard}`}>
                     <div className="flex items-center justify-between mb-1">
@@ -174,6 +158,22 @@ export function ForecastKpis({ manager, lightActive = false }: ForecastKpisProps
                     </div>
                     <div className={`text-lg sm:text-xl font-bold font-mono mt-1 tracking-tighter truncate ${lightActive ? 'text-violet-600' : 'text-violet-300'}`}>
                         {formatCurrency(forecastProRata)}
+                    </div>
+                </div>
+
+                {/* Forecast Total (TCV bruto) */}
+                <div className={`border rounded-xl p-3.5 flex flex-col justify-between min-w-0 transition-colors duration-200 ${kpiCard}`}>
+                    <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5">
+                            <BarChart2 className={`w-3.5 h-3.5 ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`} />
+                            <span className={`text-[11px] font-semibold uppercase tracking-wider ${lightActive ? 'text-indigo-600' : 'text-indigo-400'}`}>
+                                Forecast Total
+                                <InfoTip text="Projeção total bruta = Contratos Herdados + TCV de todos os projetos ativos no pipeline (Quente, Morno, Frio e Contratado). Não aplica pro-rata." lightActive={lightActive} />
+                            </span>
+                        </div>
+                    </div>
+                    <div className={`text-lg sm:text-xl font-bold font-mono mt-1 tracking-tighter truncate ${lightActive ? 'text-indigo-600' : 'text-indigo-300'}`}>
+                        {formatCurrency(forecastTotal)}
                     </div>
                 </div>
             </div>
