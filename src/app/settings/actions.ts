@@ -9,9 +9,14 @@ import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 
 // Replace with a safer server-side check-1
 export async function verifySettingsKey(key: string) {
+    if (!key || typeof key !== 'string') return false;
+    const trimmed = key.trim();
     const correctKey = process.env.SETTINGS_KEY || 'prodam2026';
-    return key === correctKey;
+    const diretoriaKey = process.env.DIRETORIA_KEY;
+    const directorateKey = process.env.DIRECTORATE_KEY;
+    return trimmed === correctKey || (!!diretoriaKey && trimmed === diretoriaKey) || (!!directorateKey && trimmed === directorateKey);
 }
+
 
 export async function saveCXData(managerId: string, items: CXItem[]) {
     try {

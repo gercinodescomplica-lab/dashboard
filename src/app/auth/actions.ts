@@ -1,7 +1,15 @@
 'use server';
 
 export async function verifyAccessKey(key: string) {
-    const correctKey = process.env.FRONTEND_KEY;
-    if (!correctKey) return false;
-    return key === correctKey;
+    if (!key || typeof key !== 'string') return false;
+    const trimmed = key.trim();
+
+    const validKeys = [
+        process.env.FRONTEND_KEY,
+        process.env.DIRETORIA_KEY,
+        process.env.DIRECTORATE_KEY,
+    ].filter(Boolean);
+
+    return validKeys.includes(trimmed);
 }
+
