@@ -2201,3 +2201,25 @@ completa), e a planilha precisa ser legível (nada de célula "null"/vazia crua)
   Rótulo ganha inicial maiúscula; cabeçalho em negrito + congelado + autofiltro + larguras de
   coluna.
 - `scripts/verify-cx-export.ts` — +14 asserts (legibilidade + filtro).
+
+### Addendum 4 (2026-09-01)
+
+Pedido do usuário: ao arrastar um card pra outro bucket, o card herda o status do bucket (ex.:
+soltar em "Concluído" => resolvido), e a planilha reflete isso.
+
+- **`src/lib/cx-status.ts`** (novo) — `statusForBucketName(name)` (nome do bucket -> enum
+  pendente/analise/resolvido por heurística de texto; null => pendente) e `percentForStatus`
+  (só força %=100 quando vira resolvido). `board-config.ts` re-exporta ambos.
+- **`actions.ts`** — `statusFromPercent` removido. `createCXPlannerItem` e `updateCXPlannerItem`
+  passam a derivar `status` do `bucketId` (via `statusForBucketId` -> `fetchCXBuckets`).
+  `moveCXPlannerItem` agora roteia por `updateCXPlannerItem({ bucketId })`, então arrastar =
+  status + % coerentes. `updateCXPlannerItem`: se `bucketId` no patch, recalcula status/%; senão
+  só o % (sem tocar no status).
+- **`CXPlannerItemModal.tsx`** — badge de status agora mostra `statusForBucketName(bucket
+  selecionado)` ("herdado do bucket"), não mais derivado do %.
+- **`planner-sync.ts`** — o status gravado no import também passa a refletir o bucket de destino
+  (escolhe o bucket pelo status derivado do %, depois grava o status do bucket). Sem bucket
+  nenhum => status derivado puro.
+- A planilha não mudou de código: a coluna "Status" já vem de `status === 'resolvido'`, então
+  passa a bater com o bucket automaticamente.
+- `scripts/verify-cx-export.ts` — +7 asserts (statusForBucketName / percentForStatus).
