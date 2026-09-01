@@ -58,6 +58,14 @@ function mapCriticidade(prio?: string): 'baixa' | 'media' | 'alta' {
     return 'baixa';
 }
 
+// Board /settings/cx-planner: nome do bucket para cada status derivado.
+// Bate com os buckets semeados em 0014_seed_cx_buckets.sql.
+const BUCKET_NAME_FOR_STATUS: Record<'pendente' | 'analise' | 'resolvido', string> = {
+    pendente: 'CX - Em Análise',
+    analise: 'CX - Em Análise',
+    resolvido: 'Concluído',
+};
+
 async function main() {
     console.log(`→ ${apply ? 'APPLY' : 'DRY-RUN'} against ${url} (NODE_ENV=${nodeEnv})`);
     console.log(`→ reading ${jsonPath}`);
@@ -85,6 +93,14 @@ async function main() {
     }
     console.log(`→ ${clientToManager.size} client-acronyms mapped from servedClients`);
 
+    // Buckets do board — pra cada tarefa cair na coluna certa já na importação
+    const bucketsRes = await client.execute(`SELECT id, name FROM cx_buckets ORDER BY position`);
+    const bucketRows = bucketsRes.rows as unknown as { id: number; name: string }[];
+    const bucketIdByName = new Map(bucketRows.map(r => [String(r.name).trim().toLowerCase(), r.id]));
+    const firstBucketId: number | null = bucketRows[0]?.id ?? null;
+    const bucketForStatus = (status: 'pendente' | 'analise' | 'resolvido'): number | null =>
+        bucketIdByName.get(BUCKET_NAME_FOR_STATUS[status].toLowerCase()) ?? firstBucketId;
+
     // Carrega external_ids já existentes
     const existingRes = await client.execute(`SELECT external_id FROM cx WHERE external_id IS NOT NULL`);
     const existing = new Set((existingRes.rows as any[]).map(r => r.external_id as string));
@@ -104,6 +120,7 @@ async function main() {
             continue;
         }
         byManager.set(match.name, (byManager.get(match.name) ?? 0) + 1);
+        const status = mapStatus(t.percentComplete);
         toInsert.push({
             external_id: t.id,
             manager_id: match.id,
@@ -111,8 +128,9 @@ async function main() {
             titulo: assunto || t.title,
             problema: t.Description ?? '',
             solucao_proposta: '',
-            status: mapStatus(t.percentComplete),
+            status,
             criticidade: mapCriticidade(t.prioridade),
+            bucket_id: bucketForStatus(status),
             is_visible: 1,
             created_at: t.datainicio || new Date().toISOString(),
         });
@@ -152,9 +170,9 @@ async function main() {
     console.log(`\n→ inserindo ${toInsert.length} registros...`);
     for (const row of toInsert) {
         await client.execute({
-            sql: `INSERT INTO cx (external_id, manager_id, cliente, titulo, problema, solucao_proposta, status, criticidade, is_visible, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            args: [row.external_id, row.manager_id, row.cliente, row.titulo, row.problema, row.solucao_proposta, row.status, row.criticidade, row.is_visible, row.created_at],
+            sql: `INSERT INTO cx (external_id, manager_id, cliente, titulo, problema, solucao_proposta, status, criticidade, bucket_id, is_visible, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            args: [row.external_id, row.manager_id, row.cliente, row.titulo, row.problema, row.solucao_proposta, row.status, row.criticidade, row.bucket_id, row.is_visible, row.created_at],
         });
     }
     console.log('✓ done.');

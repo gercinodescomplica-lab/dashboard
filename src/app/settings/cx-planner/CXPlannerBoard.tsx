@@ -379,6 +379,28 @@ export function CXPlannerBoard() {
                         <option value="">Todas as prioridades</option>
                         {PRIORIDADE_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                     </select>
+
+                    <div className="ml-auto">
+                        {newBucketMode ? (
+                            <input
+                                autoFocus
+                                value={newBucketName}
+                                onChange={(e) => setNewBucketName(e.target.value)}
+                                onBlur={submitNewBucket}
+                                onKeyDown={(e) => { if (e.key === 'Enter') submitNewBucket(); if (e.key === 'Escape') { setNewBucketMode(false); setNewBucketName(''); } }}
+                                placeholder="Nome do bucket + Enter"
+                                className={`text-xs font-semibold rounded-lg px-2.5 py-1.5 border focus:outline-none w-48 ${T.renameInput}`}
+                            />
+                        ) : (
+                            <button
+                                type="button"
+                                onClick={() => setNewBucketMode(true)}
+                                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${T.toolBtn}`}
+                            >
+                                <Plus className="w-3.5 h-3.5" /> Novo bucket
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 

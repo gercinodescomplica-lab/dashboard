@@ -445,6 +445,7 @@ export async function fetchCXByExternalIds(externalIds: string[]) {
             externalId: cx.externalId,
             status: cx.status,
             criticidade: cx.criticidade,
+            bucketId: cx.bucketId,
         })
         .from(cx)
         .where(inArray(cx.externalId, externalIds));

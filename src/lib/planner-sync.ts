@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { db } from '@/db/index';
 import { cx } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { fetchManagersForClientMatch, fetchCXByExternalIds } from '@/db/queries';
+import { fetchManagersForClientMatch, fetchCXByExternalIds, fetchCXBuckets } from '@/db/queries';
 
 // ── Schema ───────────────────────────────────────────────────────────────
 // Mirrors the raw shape that "Listar minhas tarefas" + "Obter uma tarefa"
@@ -99,6 +99,18 @@ const CRITICIDADE_LABEL: Record<'baixa' | 'media' | 'alta', string> = {
     alta: 'Alta',
 };
 
+// Board /settings/cx-planner: a coluna (bucket) para onde cada tarefa
+// importada do Planner vai, decidida pelo status derivado. Os nomes batem
+// com os buckets semeados em 0014_seed_cx_buckets.sql; se algum foi
+// renomeado/apagado, cai no primeiro bucket por posição (ou null se não
+// houver bucket nenhum). Só se aplica a itens NOVOS ou a itens ainda sem
+// bucket — nunca move um card que o time já organizou.
+const BUCKET_NAME_FOR_STATUS: Record<'pendente' | 'analise' | 'resolvido', string> = {
+    pendente: 'CX - Em Análise',
+    analise: 'CX - Em Análise',
+    resolvido: 'Concluído',
+};
+
 // Real Planner exports send full ISO datetimes ("2026-08-05T10:00:00Z") for
 // datainicio/datafim, not bare "YYYY-MM-DD" — but dataInicio/dataFim are
 // stored and consumed downstream (CXPlannerCard, the date <Input>) as plain
@@ -151,6 +163,12 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
         existing.filter((r) => r.externalId).map((r) => [r.externalId as string, r])
     );
 
+    const buckets = await fetchCXBuckets();
+    const bucketIdByName = new Map(buckets.map((b) => [b.name.trim().toLowerCase(), b.id]));
+    const firstBucketId = buckets[0]?.id ?? null;
+    const bucketForStatus = (status: 'pendente' | 'analise' | 'resolvido'): number | null =>
+        bucketIdByName.get(BUCKET_NAME_FOR_STATUS[status].toLowerCase()) ?? firstBucketId;
+
     // Whole batch is one transaction: either the full sync from this run
     // lands, or none of it does. Avoids a partial write (e.g. task 80/132
     // fails) followed by an error that makes it look like nothing was saved
@@ -202,6 +220,9 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     status: newStatus,
                     criticidade: newCriticidade,
                     externalId: t.id,
+                    // Só preenche o bucket se a linha ainda não tem um — não
+                    // desfaz a organização que o time já fez no board.
+                    ...(existingRow.bucketId == null ? { bucketId: bucketForStatus(newStatus) } : {}),
                     // A linha volta a espelhar o Planner — qualquer edição
                     // manual feita no Settings antes deste sync deixa de
                     // divergir, então o aviso de "editado manualmente" some.
@@ -221,6 +242,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     status: newStatus,
                     criticidade: newCriticidade,
                     externalId: t.id,
+                    bucketId: bucketForStatus(newStatus),
                     solucaoProposta: '',
                     isVisible: true,
                     createdAt: t.datainicio || new Date().toISOString(),
