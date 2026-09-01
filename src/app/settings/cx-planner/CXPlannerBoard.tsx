@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus, RefreshCw, Search, X, Sun, Moon, Users, Download, MoreVertical, ChevronLeft, ChevronRight, Pencil, Trash2, Check } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Search, X, Sun, Moon, Users, Download, MoreVertical, ChevronLeft, ChevronRight, Pencil, Trash2, Check, GripVertical } from 'lucide-react';
 import { CXBoardItem, CXBucket, CXUser } from '@/db/queries';
 import { applyBodyTheme, THEME_STORAGE_KEY } from '@/lib/themeSync';
 import {
@@ -13,6 +13,7 @@ import {
     createBucketAction,
     renameBucketAction,
     moveBucketAction,
+    reorderBucketsAction,
     deleteBucketAction,
     CXPlannerFormValues,
 } from './actions';
@@ -57,6 +58,7 @@ export function CXPlannerBoard() {
     const [renameValue, setRenameValue] = useState('');
     const [menuBucketId, setMenuBucketId] = useState<number | null>(null);
     const [confirmDeleteBucketId, setConfirmDeleteBucketId] = useState<number | null>(null);
+    const [draggingBucketId, setDraggingBucketId] = useState<number | null>(null);
 
     const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
     const lightActive = theme === 'light';
@@ -142,6 +144,28 @@ export function CXPlannerBoard() {
     const handleDrop = async (col: ColumnKey, e: React.DragEvent) => {
         e.preventDefault();
         setDragOverCol(null);
+
+        // Reordenar coluna: o cabeçalho arrastado carrega o id do bucket.
+        const draggedBucketStr = e.dataTransfer.getData('application/x-bucket-id');
+        if (draggedBucketStr) {
+            setDraggingBucketId(null);
+            if (col === ENTRADA) return; // soltar na "Entrada" não reordena
+            const draggedId = Number(draggedBucketStr);
+            const targetId = col as number;
+            if (draggedId === targetId) return;
+            const ids = buckets.map((b) => b.id);
+            const from = ids.indexOf(draggedId);
+            const to = ids.indexOf(targetId);
+            if (from === -1 || to === -1) return;
+            const next = [...buckets];
+            const [moved] = next.splice(from, 1);
+            next.splice(to, 0, moved);
+            const reordered = next.map((b, i) => ({ ...b, position: i }));
+            setBuckets(reordered);
+            await reorderBucketsAction(reordered.map((b) => b.id));
+            return;
+        }
+
         const id = Number(e.dataTransfer.getData('text/plain'));
         if (!id) return;
         const previous = items.find((i) => i.id === id);
@@ -371,7 +395,17 @@ export function CXPlannerBoard() {
                             onDrop={(e) => handleDrop(col.key, e)}
                             className={`rounded-xl border p-3 flex flex-col gap-3 min-h-[200px] w-[300px] shrink-0 transition-colors ${dragOverCol === col.key ? T.columnDragOver : T.columnBg}`}
                         >
-                            <div className="flex items-center justify-between gap-2 relative">
+                            <div
+                                className={`flex items-center justify-between gap-2 relative ${draggingBucketId === (col.bucket?.id ?? -1) ? 'opacity-40' : ''}`}
+                                draggable={Boolean(col.bucket) && !isRenaming}
+                                onDragStart={(e) => {
+                                    if (!col.bucket) return;
+                                    e.dataTransfer.setData('application/x-bucket-id', String(col.bucket.id));
+                                    e.dataTransfer.effectAllowed = 'move';
+                                    setDraggingBucketId(col.bucket.id);
+                                }}
+                                onDragEnd={() => setDraggingBucketId(null)}
+                            >
                                 {isRenaming ? (
                                     <input
                                         autoFocus
@@ -382,7 +416,10 @@ export function CXPlannerBoard() {
                                         className={`flex-1 text-xs font-bold rounded px-2 py-1 border focus:outline-none ${T.renameInput}`}
                                     />
                                 ) : (
-                                    <h2 className={`text-xs font-bold uppercase tracking-wider truncate ${T.columnHeadText}`}>{col.label} ({colItems.length})</h2>
+                                    <h2 className={`flex items-center gap-1 text-xs font-bold uppercase tracking-wider truncate ${T.columnHeadText} ${col.bucket ? 'cursor-grab active:cursor-grabbing' : ''}`}>
+                                        {col.bucket && <GripVertical className="w-3.5 h-3.5 shrink-0 opacity-50" />}
+                                        <span className="truncate">{col.label} ({colItems.length})</span>
+                                    </h2>
                                 )}
                                 <div className="flex items-center gap-1 shrink-0">
                                     <button type="button" onClick={() => openCreate(col.key === ENTRADA ? null : (col.key as number))} className={`transition-colors ${T.addBtn}`} title="Nova tarefa">

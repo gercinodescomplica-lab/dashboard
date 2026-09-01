@@ -382,6 +382,14 @@ export async function swapCXBucketPositions(idA: number, idB: number): Promise<v
     await db.update(cxBuckets).set({ position: a.position }).where(eq(cxBuckets.id, idB));
 }
 
+// Grava a ordem completa das colunas de uma vez — usado pelo drag-and-drop
+// de reordenar bucket no board (position = índice na lista recebida).
+export async function setCXBucketPositions(orderedIds: number[]): Promise<void> {
+    for (let i = 0; i < orderedIds.length; i++) {
+        await db.update(cxBuckets).set({ position: i }).where(eq(cxBuckets.id, orderedIds[i]));
+    }
+}
+
 // Excluir bucket: primeiro solta os cards (bucket_id -> null, caem na coluna
 // "Entrada"), depois apaga a linha. O null é explícito porque as FKs podem
 // não estar habilitadas na conexão LibSQL.

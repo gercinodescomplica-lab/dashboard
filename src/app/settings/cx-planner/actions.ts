@@ -11,6 +11,7 @@ import {
     createCXBucket,
     renameCXBucket,
     swapCXBucketPositions,
+    setCXBucketPositions,
     deleteCXBucket,
     fetchCXUsers,
     createCXUser,
@@ -185,6 +186,12 @@ export async function moveBucketAction(id: number, direction: 'left' | 'right'):
     const targetIdx = direction === 'left' ? idx - 1 : idx + 1;
     if (targetIdx < 0 || targetIdx >= buckets.length) return;
     await swapCXBucketPositions(id, buckets[targetIdx].id);
+}
+
+// Reordenação por drag-and-drop de coluna: recebe todos os ids de bucket na
+// nova ordem e grava position = índice.
+export async function reorderBucketsAction(orderedIds: number[]): Promise<void> {
+    await setCXBucketPositions(orderedIds);
 }
 
 export async function deleteBucketAction(id: number): Promise<void> {
