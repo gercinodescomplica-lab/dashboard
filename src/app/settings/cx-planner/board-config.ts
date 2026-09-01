@@ -1,8 +1,13 @@
 import { CXStatus } from '@/types/manager';
 
-// Rótulos de status para o badge read-only do modal. O status não é mais
-// coluna do board (as colunas agora são buckets) nem editável — é derivado
-// do % de conclusão (ver statusFromPercent em actions.ts).
+// statusForBucketName / percentForStatus vivem em src/lib/cx-status.ts (também
+// usados pelo import do Planner) — re-exportados aqui pra quem já importa de
+// board-config.
+export { statusForBucketName, percentForStatus } from '@/lib/cx-status';
+
+// Rótulos de status para o badge read-only do modal. O status não é editável
+// direto — é herdado do bucket em que o card está (ver statusForBucketName).
+// A aba CX do gerente (CXTab.tsx) continua lendo esse enum.
 export const STATUS_LABELS: Record<CXStatus, string> = {
     pendente: 'Pendente',
     analise: 'Em Análise',

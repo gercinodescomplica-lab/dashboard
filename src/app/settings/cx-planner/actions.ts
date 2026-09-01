@@ -2,6 +2,7 @@
 
 import {
     fetchAllCXItemsForBoard,
+    fetchCXItemById,
     deleteCXItem,
     fetchManagersList,
     fetchManagerById,
@@ -23,6 +24,7 @@ import {
 } from '@/db/queries';
 import { mapCriticidade } from '@/lib/planner-sync';
 import { CXStatus } from '@/types/manager';
+import { statusForBucketName, percentForStatus } from './board-config';
 
 export type CXPlannerFormValues = {
     managerId: string;
@@ -62,12 +64,12 @@ function normalizeDate(v: string): string | null {
     return v.trim() === '' ? null : v;
 }
 
-// status é sempre derivado do % de conclusão — nunca escolhido na UI.
-// Mesma regra de mapStatus (planner-sync.ts) e statusForPercent (modal antigo).
-function statusFromPercent(percent: number): CXStatus {
-    if (percent >= 100) return 'resolvido';
-    if (percent > 0) return 'analise';
-    return 'pendente';
+// status é herdado do bucket em que o card está (nome do bucket -> enum).
+// bucket null (coluna "Entrada") => pendente. Ver statusForBucketName.
+async function statusForBucketId(bucketId: number | null): Promise<CXStatus> {
+    if (bucketId == null) return 'pendente';
+    const buckets = await fetchCXBuckets();
+    return statusForBucketName(buckets.find((b) => b.id === bucketId)?.name);
 }
 
 export async function verifyCXPlannerKey(key: string) {
@@ -99,6 +101,8 @@ export async function createCXPlannerItem(input: CXPlannerFormValues): Promise<C
     const manager = await fetchManagerById(input.managerId);
     if (!manager) return null;
 
+    const status = await statusForBucketId(input.bucketId);
+
     const created = await createCXItem({
         managerId: input.managerId,
         cliente: input.cliente,
@@ -106,11 +110,11 @@ export async function createCXPlannerItem(input: CXPlannerFormValues): Promise<C
         problema: input.problema,
         solucaoProposta: input.solucaoProposta,
         subtitulo: input.subtitulo.trim() || null,
-        status: statusFromPercent(input.percentComplete),
+        status,
         criticidade: mapCriticidade(input.prioridadeTexto),
         dataInicio: normalizeDate(input.dataInicio),
         dataFim: normalizeDate(input.dataFim),
-        percentComplete: input.percentComplete,
+        percentComplete: percentForStatus(status, input.percentComplete),
         prioridadeTexto: input.prioridadeTexto || null,
         responsavelId: input.responsavelId,
         bucketId: input.bucketId,
@@ -137,15 +141,23 @@ export async function updateCXPlannerItem(
     if (patch.dataInicio !== undefined) payload.dataInicio = normalizeDate(patch.dataInicio);
     if (patch.dataFim !== undefined) payload.dataFim = normalizeDate(patch.dataFim);
     if (patch.responsavelId !== undefined) payload.responsavelId = patch.responsavelId;
-    if (patch.bucketId !== undefined) payload.bucketId = patch.bucketId;
     if (patch.isVisible !== undefined) payload.isVisible = patch.isVisible;
     if (patch.prioridadeTexto !== undefined) {
         payload.prioridadeTexto = patch.prioridadeTexto || null;
         payload.criticidade = mapCriticidade(patch.prioridadeTexto);
     }
-    if (patch.percentComplete !== undefined) {
+
+    // O status é herdado do bucket. Se o bucket veio no patch (drag entre
+    // colunas ou troca no modal), recalcula status + % coerente. Se só o %
+    // mudou, respeita o valor mas não mexe no status.
+    if (patch.bucketId !== undefined) {
+        payload.bucketId = patch.bucketId;
+        const status = await statusForBucketId(patch.bucketId);
+        payload.status = status;
+        const basePct = patch.percentComplete ?? (await fetchCXItemById(id))?.percentComplete ?? 0;
+        payload.percentComplete = percentForStatus(status, basePct);
+    } else if (patch.percentComplete !== undefined) {
         payload.percentComplete = patch.percentComplete;
-        payload.status = statusFromPercent(patch.percentComplete);
     }
 
     const updated = await updateCXItem(id, payload);
@@ -157,10 +169,11 @@ export async function deleteCXPlannerItem(id: number): Promise<void> {
     await deleteCXItem(id);
 }
 
+// Arrastar um card pra outra coluna: além do bucket, o status (e o % quando
+// vira "resolvido") passam a refletir o bucket de destino — ver
+// updateCXPlannerItem.
 export async function moveCXPlannerItem(id: number, bucketId: number | null): Promise<CXBoardItem | null> {
-    const updated = await updateCXItem(id, { bucketId });
-    if (!updated) return null;
-    return hydrate(id);
+    return updateCXPlannerItem(id, { bucketId });
 }
 
 // Recarrega o item já no formato do board (com managerName / responsavelName /

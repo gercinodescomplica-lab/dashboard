@@ -3,6 +3,7 @@ import { db } from '@/db/index';
 import { cx } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { fetchManagersForClientMatch, fetchCXByExternalIds, fetchCXBuckets } from '@/db/queries';
+import { statusForBucketName } from '@/lib/cx-status';
 
 // ── Schema ───────────────────────────────────────────────────────────────
 // Mirrors the raw shape that "Listar minhas tarefas" + "Obter uma tarefa"
@@ -165,6 +166,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
 
     const buckets = await fetchCXBuckets();
     const bucketIdByName = new Map(buckets.map((b) => [b.name.trim().toLowerCase(), b.id]));
+    const bucketNameById = new Map(buckets.map((b) => [b.id, b.name]));
     const firstBucketId = buckets[0]?.id ?? null;
     const bucketForStatus = (status: 'pendente' | 'analise' | 'resolvido'): number | null =>
         bucketIdByName.get(BUCKET_NAME_FOR_STATUS[status].toLowerCase()) ?? firstBucketId;
@@ -182,7 +184,16 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                 continue;
             }
 
-            const newStatus = mapStatus(t.percentComplete);
+            // O bucket é escolhido pelo status derivado do %; o status
+            // gravado então passa a refletir o bucket (mesma regra do board:
+            // arrastar pra "Concluído" = resolvido). Se não há bucket nenhum,
+            // cai no status derivado puro.
+            const derivedStatus = mapStatus(t.percentComplete);
+            const newBucketId = bucketForStatus(derivedStatus);
+            const newStatus =
+                newBucketId == null
+                    ? derivedStatus
+                    : statusForBucketName(bucketNameById.get(newBucketId));
             const newCriticidade = mapCriticidade(t.prioridade);
             const newProblema = t.Description ?? '';
 
@@ -222,7 +233,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     externalId: t.id,
                     // Só preenche o bucket se a linha ainda não tem um — não
                     // desfaz a organização que o time já fez no board.
-                    ...(existingRow.bucketId == null ? { bucketId: bucketForStatus(newStatus) } : {}),
+                    ...(existingRow.bucketId == null ? { bucketId: newBucketId } : {}),
                     // A linha volta a espelhar o Planner — qualquer edição
                     // manual feita no Settings antes deste sync deixa de
                     // divergir, então o aviso de "editado manualmente" some.
@@ -242,7 +253,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                     status: newStatus,
                     criticidade: newCriticidade,
                     externalId: t.id,
-                    bucketId: bucketForStatus(newStatus),
+                    bucketId: newBucketId,
                     solucaoProposta: '',
                     isVisible: true,
                     createdAt: t.datainicio || new Date().toISOString(),

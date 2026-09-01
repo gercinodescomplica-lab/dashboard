@@ -1,6 +1,7 @@
 // Faz as vezes de teste (não há test runner). Roda: npx tsx scripts/verify-cx-export.ts
 import { buildCXPlannerWorkbook, CONSOLIDATED_HEADERS } from '../src/lib/cx-planner-export';
 import { filterCXBoardItems } from '../src/app/settings/cx-planner/cx-filter';
+import { statusForBucketName, percentForStatus } from '../src/lib/cx-status';
 import type { CXBoardItem, CXBucket, CXUser } from '../src/db/queries';
 
 function assert(cond: unknown, msg: string) {
@@ -129,5 +130,14 @@ assert(filterCXBoardItems(items, { bucket: '1', prioridade: 'Média' }).length =
 const cw = buildCXPlannerWorkbook({ items: filterCXBoardItems(items, { bucket: '1' }), buckets, users, managers });
 assert(cw.getWorksheet('Dados Consolidados')!.rowCount === 2, 'export filtrado: 1 header + 1 item');
 assert(cw.getWorksheet('Buckets')!.rowCount === 3, 'export filtrado: abas de referência seguem completas');
+
+// ── statusForBucketName / percentForStatus ──────────────────────────────
+assert(statusForBucketName('Concluído') === 'resolvido', 'bucket "Concluído" => status resolvido');
+assert(statusForBucketName('CX - Em Análise') === 'analise', 'bucket "CX - Em Análise" => analise');
+assert(statusForBucketName('Área Técnica - Em andamento') === 'analise', 'bucket "Em andamento" => analise');
+assert(statusForBucketName('Backlog') === 'pendente', 'bucket "Backlog" => pendente');
+assert(statusForBucketName(null) === 'pendente', 'sem bucket => pendente');
+assert(percentForStatus('resolvido', 20) === 100, 'resolvido força % = 100');
+assert(percentForStatus('analise', 20) === 20, 'analise preserva o %');
 
 console.log('\n✓ todos os asserts passaram');

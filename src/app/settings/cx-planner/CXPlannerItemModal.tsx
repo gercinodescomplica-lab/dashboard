@@ -14,9 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Trash2 } from 'lucide-react';
 import { CXBoardItem } from '@/db/queries';
-import { CXStatus } from '@/types/manager';
 import { CXPlannerFormValues } from './actions';
-import { PRIORIDADE_OPTIONS, PRIORIDADE_CONFIG, PRIORIDADE_FALLBACK, STATUS_LABELS, PrioridadeTexto } from './board-config';
+import { PRIORIDADE_OPTIONS, PRIORIDADE_CONFIG, PRIORIDADE_FALLBACK, STATUS_LABELS, PrioridadeTexto, statusForBucketName } from './board-config';
 import { parseCXLogEntries } from '@/lib/cx-log';
 
 interface ManagerOption {
@@ -68,14 +67,6 @@ function priorityFromCriticidade(criticidade: string | null | undefined): Priori
     if (criticidade === 'alta') return 'Urgente';
     if (criticidade === 'media') return 'Importante';
     return PRIORIDADE_FALLBACK;
-}
-
-// Só para exibição no badge read-only — o status real é derivado no server
-// (statusFromPercent em actions.ts). Não altera o form.
-function derivedStatus(percent: number): CXStatus {
-    if (percent >= 100) return 'resolvido';
-    if (percent > 0) return 'analise';
-    return 'pendente';
 }
 
 export function CXPlannerItemModal({
@@ -407,11 +398,11 @@ export function CXPlannerItemModal({
                         <div className="flex items-center gap-2">
                             <span
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${T.statusActive}`}
-                                title="Derivado automaticamente do % de conclusão"
+                                title="Herdado do bucket em que o card está"
                             >
-                                {STATUS_LABELS[derivedStatus(values.percentComplete)]}
+                                {STATUS_LABELS[statusForBucketName(bucketOptions.find((b) => b.id === values.bucketId)?.name)]}
                             </span>
-                            <span className={`text-[11px] ${T.helperText}`}>derivado do % de conclusão</span>
+                            <span className={`text-[11px] ${T.helperText}`}>herdado do bucket</span>
                         </div>
                     </div>
 
