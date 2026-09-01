@@ -64,10 +64,21 @@ export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerC
     };
 
     return (
-        <button
-            type="button"
+        // <div role="button"> em vez de <button>: um <button> nativo engole o
+        // gesto de arrastar em alguns navegadores, quebrando o drag-and-drop
+        // do card entre buckets. Com div, o `draggable` do wrapper (no board)
+        // funciona e o clique continua abrindo o modal.
+        <div
+            role="button"
+            tabIndex={0}
             onClick={onClick}
-            className={`w-full text-left border border-l-4 ${style.border} rounded-lg p-2 flex flex-col gap-1 transition-colors duration-200 ${T.card}`}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onClick();
+                }
+            }}
+            className={`w-full text-left border border-l-4 ${style.border} rounded-lg p-2 flex flex-col gap-1 transition-colors duration-200 cursor-pointer ${T.card}`}
         >
             <div className="flex items-center justify-between gap-2">
                 <span className={`text-[10.5px] font-semibold truncate ${T.header}`}>{item.managerName} · {item.cliente}</span>
@@ -125,6 +136,6 @@ export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerC
                     </span>
                 )}
             </div>
-        </button>
+        </div>
     );
 }

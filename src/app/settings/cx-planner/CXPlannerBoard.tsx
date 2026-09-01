@@ -60,6 +60,7 @@ export function CXPlannerBoard() {
     const [menuBucketId, setMenuBucketId] = useState<number | null>(null);
     const [confirmDeleteBucketId, setConfirmDeleteBucketId] = useState<number | null>(null);
     const [draggingBucketId, setDraggingBucketId] = useState<number | null>(null);
+    const [draggingItemId, setDraggingItemId] = useState<number | null>(null);
 
     const [theme, setThemeState] = useState<'dark' | 'light'>('dark');
     const lightActive = theme === 'light';
@@ -168,6 +169,7 @@ export function CXPlannerBoard() {
         }
 
         const id = Number(e.dataTransfer.getData('text/plain'));
+        setDraggingItemId(null);
         if (!id) return;
         const previous = items.find((i) => i.id === id);
         if (!previous) return;
@@ -490,7 +492,17 @@ export function CXPlannerBoard() {
 
                             <div className="flex flex-col gap-2">
                                 {colItems.map((item) => (
-                                    <div key={item.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', String(item.id))}>
+                                    <div
+                                        key={item.id}
+                                        draggable
+                                        onDragStart={(e) => {
+                                            e.dataTransfer.setData('text/plain', String(item.id));
+                                            e.dataTransfer.effectAllowed = 'move';
+                                            setDraggingItemId(item.id ?? null);
+                                        }}
+                                        onDragEnd={() => setDraggingItemId(null)}
+                                        className={`transition-opacity ${draggingItemId === item.id ? 'opacity-40' : ''}`}
+                                    >
                                         <CXPlannerCard item={item} onClick={() => openEdit(item)} lightActive={lightActive} />
                                     </div>
                                 ))}
