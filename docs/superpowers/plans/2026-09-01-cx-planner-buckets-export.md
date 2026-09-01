@@ -2161,3 +2161,23 @@ reordenar bucket por **drag-and-drop** (não só o menu ⋯).
 
 Também: `scripts/clear-cx.ts:31` (erro de tipo pré-existente, fora do plano) recebeu um
 `as unknown as` pra desbloquear o `tsc`/build — commit à parte.
+
+### Addendum 2 (2026-09-01)
+
+Pedido do usuário: no import do JSON os itens já devem cair nas colunas certas (não numa pilha
+"Entrada"), e ter um lugar visível pra criar bucket.
+
+- **`syncPlannerTasks`** (`src/lib/planner-sync.ts`) — agora resolve um bucket por status derivado
+  (`resolvido` → "Concluído"; `pendente`/`analise` → "CX - Em Análise"; fallback = 1º bucket por
+  posição; null se não houver bucket). Aplica no INSERT sempre e no UPDATE só quando `bucket_id`
+  ainda é null (não desfaz organização manual). `fetchCXByExternalIds` (queries.ts) passou a
+  devolver `bucketId`.
+- **`scripts/import-cx-planner.ts`** — mesma lógica no path ad-hoc.
+- **`scripts/backfill-cx-buckets.ts`** (novo) — distribui os itens já existentes sem bucket pela
+  mesma regra. `--apply` pra gravar. Rodado uma vez no banco local (148 itens: 15 → "CX - Em
+  Análise", 133 → "Concluído").
+- **CXPlannerBoard.tsx** — botão "Novo bucket" na barra de filtros (à direita), além do
+  "+ Adicionar bucket" no fim das colunas.
+
+Isso desvia do "não tocar em planner-sync.ts" do plano original — feito a pedido explícito do
+usuário durante a execução.
