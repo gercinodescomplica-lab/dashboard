@@ -2181,3 +2181,23 @@ Pedido do usuário: no import do JSON os itens já devem cair nas colunas certas
 
 Isso desvia do "não tocar em planner-sync.ts" do plano original — feito a pedido explícito do
 usuário durante a execução.
+
+### Addendum 3 (2026-09-01)
+
+Pedido do usuário: o "Baixar Excel" deve respeitar os filtros ativos (sem filtro = planilha
+completa), e a planilha precisa ser legível (nada de célula "null"/vazia crua).
+
+- **`src/app/settings/cx-planner/cx-filter.ts`** (novo) — `filterCXBoardItems(items, params)`,
+  predicado único compartilhado entre `CXPlannerBoard` (colunas) e o route do export. Reverte a
+  decisão original "export sempre o board inteiro".
+- **`export/route.ts`** — lê `q/manager/cliente/bucket/responsavel/prioridade` da query string e
+  aplica antes de montar o workbook. Sem params => planilha completa. Abas Buckets/Usuários
+  seguem completas (dado de referência).
+- **`CXPlannerBoard.tsx`** — `filteredItems` passa a usar `filterCXBoardItems`; `downloadExcel`
+  monta a query string com os filtros ativos.
+- **`cx-planner-export.ts`** — legibilidade: `É Recorrente`/`Atrasados` viram "Sim"/"Não" na aba
+  "Dados Consolidados" (a "Tarefas" continua "true"/"false" pra reimport); categoria/responsável/
+  prioridade vazios viram "Entrada (sem bucket)" / "Sem responsável" / "Sem prioridade"; área do
+  Rótulo ganha inicial maiúscula; cabeçalho em negrito + congelado + autofiltro + larguras de
+  coluna.
+- `scripts/verify-cx-export.ts` — +14 asserts (legibilidade + filtro).
