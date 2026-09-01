@@ -63,6 +63,10 @@ export interface CXItem {
   dataFim?: string | null;
   percentComplete?: number | null;
   prioridadeTexto?: string | null;
+  // Board /settings/cx-planner — ver 0013_cx_planner_buckets.sql
+  bucketId?: number | null;
+  responsavelId?: number | null;
+  subtitulo?: string | null;
 }
 
 export interface Visit {

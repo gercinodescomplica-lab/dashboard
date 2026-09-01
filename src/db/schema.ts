@@ -59,7 +59,29 @@ export const cx = sqliteTable('cx', {
     dataFim: text('data_fim'),
     percentComplete: integer('percent_complete'),
     prioridadeTexto: text('prioridade_texto'),
+    // Board /settings/cx-planner: qual coluna (bucket) o item ocupa. null =
+    // coluna virtual "Entrada". onDelete: set null declarado, mas o null é
+    // feito explicitamente em deleteCXBucket (FKs podem estar off no LibSQL).
+    bucketId: integer('bucket_id').references(() => cxBuckets.id, { onDelete: 'set null' }),
+    // "Atribuído a" do Planner — aponta para cx_users. null = sem responsável.
+    responsavelId: integer('responsavel_id').references(() => cxUsers.id, { onDelete: 'set null' }),
+    // Área/rótulo livre exibido como subtítulo do card (ex.: "Infraestrutura").
+    subtitulo: text('subtitulo'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const cxBuckets = sqliteTable('cx_buckets', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    // Ordem das colunas no board /settings/cx-planner (0-based). Itens com
+    // cx.bucketId = null caem numa coluna virtual "Entrada", sempre a primeira.
+    position: integer('position').notNull(),
+});
+
+export const cxUsers = sqliteTable('cx_users', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    email: text('email'),
 });
 
 export const visits = sqliteTable('visits', {
