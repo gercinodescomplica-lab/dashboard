@@ -2138,3 +2138,26 @@ Nenhuma inconsistência encontrada.
 **2. Inline Execution** — Execute tasks in this session using executing-plans, batch execution with checkpoints.
 
 **Which approach?**
+
+---
+
+## Addendum (2026-09-01, durante execução)
+
+Pedido do usuário no meio da execução: colunas lado a lado como antes / como o Planner, e
+reordenar bucket por **drag-and-drop** (não só o menu ⋯).
+
+- **`0014_seed_cx_buckets.sql`** (novo) — semeia os 4 buckets do board real do Planner
+  (`CX - Em Análise`, `Área Técnica - Em andamento`, `Comercial / Cliente`, `Concluído`),
+  idempotente, só se `cx_buckets` estiver vazia. Assim o board abre com as colunas lado a lado
+  em vez de só a "Entrada" (todos os ~148 itens legados entram sem bucket).
+- **`setCXBucketPositions(orderedIds)`** (queries.ts) + **`reorderBucketsAction(orderedIds)`**
+  (actions.ts) — grava `position = índice`.
+- **CXPlannerBoard.tsx** — cabeçalho da coluna (só buckets reais, não "Entrada") vira `draggable`
+  com um ícone `GripVertical`; `onDragStart` seta `application/x-bucket-id`; `handleDrop` ganha um
+  branch no topo que, se o drag for de bucket, reordena a lista e persiste. O menu ⋯
+  (mover ⬅/➡) continua funcionando.
+- Layout já era `flex gap-4 overflow-x-auto` com colunas `w-[300px] shrink-0` — lado a lado com
+  scroll horizontal, estilo Planner. Sem mudança.
+
+Também: `scripts/clear-cx.ts:31` (erro de tipo pré-existente, fora do plano) recebeu um
+`as unknown as` pra desbloquear o `tsc`/build — commit à parte.
