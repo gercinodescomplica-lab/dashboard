@@ -1,10 +1,13 @@
 import { CXStatus } from '@/types/manager';
 
-export const STATUS_COLUMNS: { key: CXStatus; label: string }[] = [
-    { key: 'pendente', label: 'Pendente' },
-    { key: 'analise', label: 'Em Análise' },
-    { key: 'resolvido', label: 'Resolvido' },
-];
+// Rótulos de status para o badge read-only do modal. O status não é mais
+// coluna do board (as colunas agora são buckets) nem editável — é derivado
+// do % de conclusão (ver statusFromPercent em actions.ts).
+export const STATUS_LABELS: Record<CXStatus, string> = {
+    pendente: 'Pendente',
+    analise: 'Em Análise',
+    resolvido: 'Resolvido',
+};
 
 // Mesmas 3 opções que o Planner realmente usa (Urgente/Importante/Média —
 // confirmado contra o export real de 132 tarefas; "Normal" quase não

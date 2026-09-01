@@ -11,11 +11,6 @@ interface CXPlannerCardProps {
     lightActive?: boolean;
 }
 
-// Defense-in-depth: dataFim is expected to be a bare "YYYY-MM-DD" (normalized
-// at the write point in src/lib/planner-sync.ts), but stay robust against a
-// full ISO-datetime string too — either an already-imported row from before
-// that fix, or any future producer of this field — by always taking just the
-// first 10 chars before using it as a date.
 function toDateOnly(v: string | null | undefined): string {
     return (v ?? '').slice(0, 10);
 }
@@ -28,16 +23,24 @@ function isOverdue(dataFim: string | null | undefined, status: string): boolean 
     return deadline < new Date(new Date().toDateString());
 }
 
+// Iniciais do responsável p/ o "avatar" redondo estilo Planner.
+function initials(name: string): string {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function firstName(name: string): string {
+    return name.trim().split(/\s+/)[0] ?? name;
+}
+
 export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerCardProps) {
     const style = prioridadeStyle(item.prioridadeTexto);
     const overdue = isOverdue(item.dataFim, item.status);
     const percent = Math.max(0, Math.min(100, item.percentComplete ?? 0));
     const fimBR = formatDateOnlyBR(item.dataFim);
-    // Data da última edição: a entrada mais recente do log em `problema` (o
-    // sync do Planner sempre prepende a atualização mais nova no topo — ver
-    // syncPlannerTasks em planner-sync.ts — então a primeira entrada com
-    // data é a mais recente). Itens criados direto no board (sem entradas
-    // datadas no texto) caem no fallback de `createdAt`.
+
     const logEntries = parseCXLogEntries(item.problema);
     const firstDatedEntry = logEntries.find((e) => e.date);
     const lastEditedDisplay = firstDatedEntry
@@ -49,12 +52,15 @@ export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerC
         header: lightActive ? 'text-zinc-500' : 'text-zinc-400',
         eyeOff: lightActive ? 'text-zinc-400' : 'text-zinc-600',
         title: lightActive ? 'text-zinc-800' : 'text-zinc-200',
+        subtitle: lightActive ? 'bg-zinc-100 text-zinc-600' : 'bg-zinc-800 text-zinc-300',
         barBg: lightActive ? 'bg-zinc-200' : 'bg-zinc-800',
         percentText: lightActive ? 'text-zinc-500' : 'text-zinc-600',
         prazoChip: overdue
             ? (lightActive ? 'bg-red-100 text-red-700' : 'bg-red-500/20 text-red-400')
             : (lightActive ? 'bg-zinc-100 text-zinc-700' : 'bg-zinc-800 text-zinc-200'),
         editedText: lightActive ? 'text-zinc-500' : 'text-zinc-400',
+        avatar: lightActive ? 'bg-indigo-100 text-indigo-700' : 'bg-indigo-500/20 text-indigo-300',
+        responsavelText: lightActive ? 'text-zinc-600' : 'text-zinc-300',
     };
 
     return (
@@ -78,30 +84,47 @@ export function CXPlannerCard({ item, onClick, lightActive = false }: CXPlannerC
                     )}
                 </div>
             </div>
+
             <p className={`text-[13px] font-medium line-clamp-1 leading-snug ${T.title}`}>{item.titulo || item.problema}</p>
+
+            {item.subtitulo && (
+                <span className={`self-start px-1.5 py-px rounded text-[10px] font-medium ${T.subtitle}`}>
+                    {item.subtitulo}
+                </span>
+            )}
+
             <div className="flex items-center gap-2">
                 <div className={`flex-1 h-1 rounded-full overflow-hidden min-w-6 ${T.barBg}`}>
                     <div className="h-full bg-indigo-500" style={{ width: `${percent}%` }} />
                 </div>
                 <span className={`text-[9px] shrink-0 tabular-nums ${T.percentText}`}>{percent}%</span>
             </div>
-            {(fimBR || lastEditedDisplay) && (
-                <div className="flex items-center justify-between gap-2">
-                    {fimBR ? (
+
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                    {fimBR && (
                         <span
                             title={overdue ? `Prazo vencido em ${fimBR}` : `Prazo: ${fimBR}`}
                             className={`flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-md text-[11px] font-bold font-mono ${T.prazoChip}`}
                         >
                             <CalendarClock className="w-3.5 h-3.5" /> {fimBR}
                         </span>
-                    ) : <span />}
-                    {lastEditedDisplay && (
-                        <span title={`Última atualização: ${lastEditedDisplay}`} className={`flex items-center gap-1 shrink-0 text-[10.5px] font-mono ${T.editedText}`}>
-                            <History className="w-3 h-3" /> {lastEditedDisplay}
+                    )}
+                    {item.responsavelName && (
+                        <span className={`flex items-center gap-1 min-w-0 ${T.responsavelText}`} title={`Responsável: ${item.responsavelName}`}>
+                            <span className={`flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold shrink-0 ${T.avatar}`}>
+                                {initials(item.responsavelName)}
+                            </span>
+                            <span className="text-[10.5px] truncate">{firstName(item.responsavelName)}</span>
                         </span>
                     )}
                 </div>
-            )}
+                {lastEditedDisplay && (
+                    <span title={`Última atualização: ${lastEditedDisplay}`} className={`flex items-center gap-1 shrink-0 text-[10.5px] font-mono ${T.editedText}`}>
+                        <History className="w-3 h-3" /> {lastEditedDisplay}
+                    </span>
+                )}
+            </div>
         </button>
     );
 }
