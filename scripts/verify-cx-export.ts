@@ -1,5 +1,6 @@
 // Faz as vezes de teste (não há test runner). Roda: npx tsx scripts/verify-cx-export.ts
 import { buildCXPlannerWorkbook, CONSOLIDATED_HEADERS } from '../src/lib/cx-planner-export';
+import { filterCXBoardItems } from '../src/app/settings/cx-planner/cx-filter';
 import type { CXBoardItem, CXBucket, CXUser } from '../src/db/queries';
 
 function assert(cond: unknown, msg: string) {
@@ -39,7 +40,7 @@ const items = [
         bucketId: 1,
         responsavelId: 10,
         responsavelName: 'Maria Jose da Silva',
-        subtitulo: 'Infraestrutura',
+        subtitulo: 'infraestrutura',
     },
     {
         id: 101,
@@ -86,13 +87,17 @@ assert(row2[1] === 'SEGES - Wi-Fi Intermitente', 'Nome da tarefa = "cliente - ti
 assert(row2[2] === 'CX - Em Análise', 'Categoria (legível) = nome do bucket');
 assert(row2[4] === 'Em andamento', 'Status textual "Em andamento" p/ não-resolvido');
 assert(row2[6] === 'Maria Jose da Silva', 'Atribuído a (legível) = nome do responsável');
-assert(row2[17] === 'KAM 3;Infraestrutura', 'Rótulos = "TAG;area"');
+assert(row2[11] === 'Não', 'É Recorrente legível = "Não"');
+assert(row2[12] === 'Sim', 'Atrasados legível = "Sim" p/ prazo vencido');
+assert(row2[17] === 'KAM 3;Infraestrutura', 'Rótulos = "TAG;Área" (área com inicial maiúscula)');
 assert(row2[18] === 'Encaminhado à rede', 'Notas = solução proposta');
 
 const row3 = (cons.getRow(3).values as unknown[]).slice(1);
 assert(row3[0] === 'abc-123', 'item com externalId usa o externalId');
-assert(row3[2] === '', 'Categoria vazia quando bucketId = null');
+assert(row3[2] === 'Entrada (sem bucket)', 'Categoria legível = "Entrada (sem bucket)" quando bucketId null');
 assert(row3[4] === 'Concluída', 'Status textual "Concluída" p/ resolvido');
+assert(row3[6] === 'Sem responsável', 'Atribuído a legível = "Sem responsável" quando null');
+assert(row3[12] === 'Não', 'Atrasados legível = "Não" p/ item resolvido');
 assert(row3[13] === '2026-07-20', 'Concluído em = data fim p/ resolvido');
 assert(row3[17] === 'KAM 3', 'Rótulos só com a tag quando não há subtítulo');
 
@@ -100,6 +105,7 @@ const tarefas = wb.getWorksheet('Tarefas')!;
 const trow2 = (tarefas.getRow(2).values as unknown[]).slice(1);
 assert(trow2[2] === '1', 'Tarefas: Categoria = id do bucket');
 assert(trow2[6] === '10', 'Tarefas: Atribuído a = id do usuário');
+assert(trow2[11] === 'false', 'Tarefas: É Recorrente mantém "false" (aba de máquina)');
 
 const bk = wb.getWorksheet('Buckets')!;
 assert(bk.rowCount === 3, 'Buckets: header + 2 linhas');
@@ -107,5 +113,21 @@ const us = wb.getWorksheet('Usuários')!;
 assert(us.rowCount === 2, 'Usuários: header + 1 linha');
 const metas = wb.getWorksheet('Metas')!;
 assert(metas.rowCount === 1, 'Metas: só o cabeçalho');
+
+// ── filterCXBoardItems ──────────────────────────────────────────────────
+assert(filterCXBoardItems(items, {}).length === 2, 'filtro vazio => todos os itens');
+assert(filterCXBoardItems(items, { bucket: '1' }).length === 1, 'filtro por bucket id');
+assert(filterCXBoardItems(items, { bucket: 'entrada' }).length === 1, 'filtro "entrada" => só sem bucket');
+assert(filterCXBoardItems(items, { responsavel: '10' }).length === 1, 'filtro por responsável id');
+assert(filterCXBoardItems(items, { responsavel: 'none' }).length === 1, 'filtro "none" => só sem responsável');
+assert(filterCXBoardItems(items, { prioridade: 'Média' }).length === 1, 'filtro por prioridade');
+assert(filterCXBoardItems(items, { manager: 'kam3-andrea' }).length === 2, 'filtro por gerente');
+assert(filterCXBoardItems(items, { q: 'sigpec' }).length === 1, 'busca livre bate no título');
+assert(filterCXBoardItems(items, { q: 'infra' }).length === 1, 'busca livre bate no subtítulo');
+assert(filterCXBoardItems(items, { bucket: '1', prioridade: 'Média' }).length === 0, 'filtros combinam (AND)');
+
+const cw = buildCXPlannerWorkbook({ items: filterCXBoardItems(items, { bucket: '1' }), buckets, users, managers });
+assert(cw.getWorksheet('Dados Consolidados')!.rowCount === 2, 'export filtrado: 1 header + 1 item');
+assert(cw.getWorksheet('Buckets')!.rowCount === 3, 'export filtrado: abas de referência seguem completas');
 
 console.log('\n✓ todos os asserts passaram');

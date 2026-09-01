@@ -21,6 +21,7 @@ import { CXPlannerCard } from './CXPlannerCard';
 import { CXPlannerItemModal } from './CXPlannerItemModal';
 import { CXUsersModal } from './CXUsersModal';
 import { PRIORIDADE_OPTIONS } from './board-config';
+import { filterCXBoardItems, ENTRADA_KEY } from './cx-filter';
 
 interface ManagerOption {
     id: string;
@@ -28,8 +29,8 @@ interface ManagerOption {
 }
 
 // bucketId null => coluna virtual "Entrada". Usamos essa sentinela como chave
-// de coluna no board (nunca vai pro banco).
-const ENTRADA = 'entrada';
+// de coluna no board (nunca vai pro banco) — a mesma de cx-filter.ts.
+const ENTRADA = ENTRADA_KEY;
 type ColumnKey = number | typeof ENTRADA;
 
 export function CXPlannerBoard() {
@@ -226,25 +227,24 @@ export function CXPlannerBoard() {
         [items]
     );
 
-    const filteredItems = useMemo(() => {
-        const q = query.trim().toLowerCase();
-        return items.filter((item) => {
-            if (managerFilter && item.managerId !== managerFilter) return false;
-            if (clienteFilter && item.cliente !== clienteFilter) return false;
-            if (bucketFilter === ENTRADA && item.bucketId != null) return false;
-            if (bucketFilter && bucketFilter !== ENTRADA && String(item.bucketId) !== bucketFilter) return false;
-            if (responsavelFilter === 'none' && item.responsavelId != null) return false;
-            if (responsavelFilter && responsavelFilter !== 'none' && String(item.responsavelId) !== responsavelFilter) return false;
-            if (prioridadeFilter && item.prioridadeTexto !== prioridadeFilter) return false;
+    // Mesmos parâmetros que o export usa — montados uma vez e reaproveitados
+    // no predicado compartilhado (filterCXBoardItems) e na URL do download.
+    const activeFilters = useMemo(
+        () => ({
+            q: query,
+            manager: managerFilter,
+            cliente: clienteFilter,
+            bucket: bucketFilter,
+            responsavel: responsavelFilter,
+            prioridade: prioridadeFilter,
+        }),
+        [query, managerFilter, clienteFilter, bucketFilter, responsavelFilter, prioridadeFilter]
+    );
 
-            if (!q) return true;
-            const haystack = [
-                item.managerName, item.cliente, item.titulo, item.problema, item.solucaoProposta,
-                item.subtitulo, item.responsavelName, item.prioridadeTexto, item.dataInicio, item.dataFim,
-            ].filter(Boolean).join(' ').toLowerCase();
-            return haystack.includes(q);
-        });
-    }, [items, query, managerFilter, clienteFilter, bucketFilter, responsavelFilter, prioridadeFilter]);
+    const filteredItems = useMemo(
+        () => filterCXBoardItems(items, activeFilters),
+        [items, activeFilters]
+    );
 
     const hasActiveFilter = Boolean(query || managerFilter || clienteFilter || bucketFilter || responsavelFilter || prioridadeFilter);
     const clearFilters = () => {
@@ -278,7 +278,17 @@ export function CXPlannerBoard() {
         } catch {
             key = '';
         }
-        window.open(`/settings/cx-planner/export?key=${encodeURIComponent(key)}`, '_blank');
+        // Sem filtro ativo => planilha completa; com filtro => a planilha sai
+        // exatamente com o que está visível no board (o route aplica o mesmo
+        // predicado de filterCXBoardItems).
+        const params = new URLSearchParams({ key });
+        if (activeFilters.q.trim()) params.set('q', activeFilters.q.trim());
+        if (activeFilters.manager) params.set('manager', activeFilters.manager);
+        if (activeFilters.cliente) params.set('cliente', activeFilters.cliente);
+        if (activeFilters.bucket) params.set('bucket', activeFilters.bucket);
+        if (activeFilters.responsavel) params.set('responsavel', activeFilters.responsavel);
+        if (activeFilters.prioridade) params.set('prioridade', activeFilters.prioridade);
+        window.open(`/settings/cx-planner/export?${params.toString()}`, '_blank');
     };
 
     const T = {
