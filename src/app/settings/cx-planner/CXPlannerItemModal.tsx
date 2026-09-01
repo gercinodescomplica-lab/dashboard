@@ -16,7 +16,7 @@ import { Trash2 } from 'lucide-react';
 import { CXBoardItem } from '@/db/queries';
 import { CXStatus } from '@/types/manager';
 import { CXPlannerFormValues } from './actions';
-import { PRIORIDADE_OPTIONS, PRIORIDADE_CONFIG, PRIORIDADE_FALLBACK, STATUS_COLUMNS, PrioridadeTexto } from './board-config';
+import { PRIORIDADE_OPTIONS, PRIORIDADE_CONFIG, PRIORIDADE_FALLBACK, STATUS_LABELS, PrioridadeTexto } from './board-config';
 import { parseCXLogEntries } from '@/lib/cx-log';
 
 interface ManagerOption {
@@ -29,25 +29,30 @@ interface CXPlannerItemModalProps {
     onOpenChange: (open: boolean) => void;
     item: CXBoardItem | null;
     managerOptions: ManagerOption[];
+    bucketOptions: { id: number; name: string }[];
+    userOptions: { id: number; name: string }[];
+    subtituloSuggestions: string[];
     defaultManagerId?: string;
-    defaultStatus?: CXStatus;
+    defaultBucketId?: number | null;
     onSave: (values: CXPlannerFormValues) => Promise<void>;
     onDelete?: () => Promise<void>;
     lightActive?: boolean;
 }
 
-function emptyValues(defaultManagerId = '', defaultStatus: CXStatus = 'pendente'): CXPlannerFormValues {
+function emptyValues(defaultManagerId = '', defaultBucketId: number | null = null): CXPlannerFormValues {
     return {
         managerId: defaultManagerId,
         cliente: '',
         titulo: '',
         problema: '',
         solucaoProposta: '',
-        status: defaultStatus,
+        subtitulo: '',
         dataInicio: '',
         dataFim: '',
         percentComplete: 0,
         prioridadeTexto: PRIORIDADE_FALLBACK,
+        responsavelId: null,
+        bucketId: defaultBucketId,
         isVisible: true,
     };
 }
@@ -65,7 +70,9 @@ function priorityFromCriticidade(criticidade: string | null | undefined): Priori
     return PRIORIDADE_FALLBACK;
 }
 
-function statusForPercent(percent: number): CXStatus {
+// Só para exibição no badge read-only — o status real é derivado no server
+// (statusFromPercent em actions.ts). Não altera o form.
+function derivedStatus(percent: number): CXStatus {
     if (percent >= 100) return 'resolvido';
     if (percent > 0) return 'analise';
     return 'pendente';
@@ -76,13 +83,16 @@ export function CXPlannerItemModal({
     onOpenChange,
     item,
     managerOptions,
+    bucketOptions,
+    userOptions,
+    subtituloSuggestions,
     defaultManagerId,
-    defaultStatus,
+    defaultBucketId,
     onSave,
     onDelete,
     lightActive = false,
 }: CXPlannerItemModalProps) {
-    const [values, setValues] = useState<CXPlannerFormValues>(emptyValues(defaultManagerId, defaultStatus));
+    const [values, setValues] = useState<CXPlannerFormValues>(emptyValues(defaultManagerId, defaultBucketId ?? null));
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -104,24 +114,26 @@ export function CXPlannerItemModal({
                 titulo: item.titulo,
                 problema: item.problema,
                 solucaoProposta: item.solucaoProposta,
-                status: item.status,
+                subtitulo: item.subtitulo ?? '',
                 dataInicio: (item.dataInicio ?? '').slice(0, 10),
                 dataFim: (item.dataFim ?? '').slice(0, 10),
                 percentComplete: item.percentComplete ?? 0,
                 prioridadeTexto: item.prioridadeTexto ?? priorityFromCriticidade(item.criticidade),
+                responsavelId: item.responsavelId ?? null,
+                bucketId: item.bucketId ?? null,
                 isVisible: item.isVisible ?? true,
             });
         } else {
-            setValues(emptyValues(defaultManagerId, defaultStatus));
+            setValues(emptyValues(defaultManagerId, defaultBucketId ?? null));
         }
-    }, [open, item, defaultManagerId, defaultStatus]);
+    }, [open, item, defaultManagerId, defaultBucketId]);
 
     const update = <K extends keyof CXPlannerFormValues>(field: K, value: CXPlannerFormValues[K]) => {
         setValues((prev) => ({ ...prev, [field]: value }));
     };
 
     const handlePercentChange = (percent: number) => {
-        setValues((prev) => ({ ...prev, percentComplete: percent, status: statusForPercent(percent) }));
+        setValues((prev) => ({ ...prev, percentComplete: percent }));
     };
 
     const handleSave = async () => {
@@ -246,6 +258,22 @@ export function CXPlannerItemModal({
                     </div>
 
                     <div className="space-y-1.5">
+                        <Label className={T.label}>Subtítulo / área</Label>
+                        <Input
+                            value={values.subtitulo}
+                            onChange={(e) => update('subtitulo', e.target.value)}
+                            placeholder="Ex: Infraestrutura"
+                            list="cx-subtitulo-suggestions"
+                            className={T.field}
+                        />
+                        <datalist id="cx-subtitulo-suggestions">
+                            {subtituloSuggestions.map((s) => (
+                                <option key={s} value={s} />
+                            ))}
+                        </datalist>
+                    </div>
+
+                    <div className="space-y-1.5">
                         <Label className={T.label}>Descrição do problema</Label>
                         {logEntries.length > 1 && (
                             <div className={`max-h-32 overflow-y-auto rounded-md border px-3 py-2 flex flex-col gap-2 mb-1.5 ${T.historyBox}`}>
@@ -324,6 +352,43 @@ export function CXPlannerItemModal({
                         </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <Label className={T.label}>Responsável</Label>
+                            <Select
+                                value={values.responsavelId == null ? 'none' : String(values.responsavelId)}
+                                onValueChange={(v) => update('responsavelId', v === 'none' ? null : Number(v))}
+                            >
+                                <SelectTrigger className={T.field}>
+                                    <SelectValue placeholder="— nenhum —" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">— nenhum —</SelectItem>
+                                    {userOptions.map((u) => (
+                                        <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className={T.label}>Bucket</Label>
+                            <Select
+                                value={values.bucketId == null ? 'none' : String(values.bucketId)}
+                                onValueChange={(v) => update('bucketId', v === 'none' ? null : Number(v))}
+                            >
+                                <SelectTrigger className={T.field}>
+                                    <SelectValue placeholder="Entrada (sem bucket)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="none">Entrada (sem bucket)</SelectItem>
+                                    {bucketOptions.map((b) => (
+                                        <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+
                     <div className="space-y-1.5">
                         <Label className={T.label}>% de conclusão — {values.percentComplete}%</Label>
                         <input
@@ -339,22 +404,15 @@ export function CXPlannerItemModal({
 
                     <div className="space-y-1.5">
                         <Label className={T.label}>Status</Label>
-                        <div className="flex gap-2 flex-wrap">
-                            {STATUS_COLUMNS.map((s) => (
-                                <button
-                                    key={s.key}
-                                    type="button"
-                                    onClick={() => update('status', s.key)}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${values.status === s.key
-                                        ? `${T.statusActive} ring-2 ring-offset-1 ${T.ringOffset} ring-current`
-                                        : T.chipInactive
-                                        }`}
-                                >
-                                    {s.label}
-                                </button>
-                            ))}
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${T.statusActive}`}
+                                title="Derivado automaticamente do % de conclusão"
+                            >
+                                {STATUS_LABELS[derivedStatus(values.percentComplete)]}
+                            </span>
+                            <span className={`text-[11px] ${T.helperText}`}>derivado do % de conclusão</span>
                         </div>
-                        <p className={`text-[11px] ${T.helperText}`}>Sugerido automaticamente pelo % de conclusão, mas pode ser mudado aqui.</p>
                     </div>
 
                     <label className="flex items-center gap-2 cursor-pointer group">
