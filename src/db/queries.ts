@@ -1,6 +1,6 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato, proposta, systemSettings } from './schema';
-import { eq, like, desc, or, inArray } from 'drizzle-orm';
+import { managers, projects, cx, cxBuckets, cxUsers, visits, contrato, proposta, systemSettings } from './schema';
+import { eq, like, desc, asc, or, inArray } from 'drizzle-orm';
 import { Manager, CXItem, Visit } from '../types/manager';
 
 /**
@@ -350,6 +350,64 @@ export async function fetchManagersForClientMatch() {
 
 // ─── CX Queries ────────────────────────────────────────────────────────────────
 
+export type CXBucket = { id: number; name: string; position: number };
+export type CXUser = { id: number; name: string; email: string | null };
+
+export async function fetchCXBuckets(): Promise<CXBucket[]> {
+    return db.select().from(cxBuckets).orderBy(asc(cxBuckets.position));
+}
+
+export async function createCXBucket(name: string): Promise<CXBucket> {
+    const existing = await db.select({ position: cxBuckets.position }).from(cxBuckets);
+    const nextPos = existing.length === 0 ? 0 : Math.max(...existing.map((r) => r.position)) + 1;
+    const rows = await db.insert(cxBuckets).values({ name, position: nextPos }).returning();
+    return rows[0];
+}
+
+export async function renameCXBucket(id: number, name: string): Promise<void> {
+    await db.update(cxBuckets).set({ name }).where(eq(cxBuckets.id, id));
+}
+
+// Troca a posição de dois buckets — usado pelos botões "mover ⬅ / ➡" do
+// cabeçalho da coluna. Duas linhas só, sem transação (LibSQL embedded).
+export async function swapCXBucketPositions(idA: number, idB: number): Promise<void> {
+    const rows = await db
+        .select({ id: cxBuckets.id, position: cxBuckets.position })
+        .from(cxBuckets)
+        .where(inArray(cxBuckets.id, [idA, idB]));
+    const a = rows.find((r) => r.id === idA);
+    const b = rows.find((r) => r.id === idB);
+    if (!a || !b) return;
+    await db.update(cxBuckets).set({ position: b.position }).where(eq(cxBuckets.id, idA));
+    await db.update(cxBuckets).set({ position: a.position }).where(eq(cxBuckets.id, idB));
+}
+
+// Excluir bucket: primeiro solta os cards (bucket_id -> null, caem na coluna
+// "Entrada"), depois apaga a linha. O null é explícito porque as FKs podem
+// não estar habilitadas na conexão LibSQL.
+export async function deleteCXBucket(id: number): Promise<void> {
+    await db.update(cx).set({ bucketId: null }).where(eq(cx.bucketId, id));
+    await db.delete(cxBuckets).where(eq(cxBuckets.id, id));
+}
+
+export async function fetchCXUsers(): Promise<CXUser[]> {
+    return db.select().from(cxUsers).orderBy(asc(cxUsers.name));
+}
+
+export async function createCXUser(name: string, email: string | null): Promise<CXUser> {
+    const rows = await db.insert(cxUsers).values({ name, email }).returning();
+    return rows[0];
+}
+
+export async function updateCXUser(id: number, data: { name: string; email: string | null }): Promise<void> {
+    await db.update(cxUsers).set(data).where(eq(cxUsers.id, id));
+}
+
+export async function deleteCXUser(id: number): Promise<void> {
+    await db.update(cx).set({ responsavelId: null }).where(eq(cx.responsavelId, id));
+    await db.delete(cxUsers).where(eq(cxUsers.id, id));
+}
+
 export async function createCXItem(data: typeof cx.$inferInsert) {
     const rows = await db.insert(cx).values(data).returning();
     return rows[0];
@@ -390,6 +448,10 @@ export async function fetchCXByExternalIds(externalIds: string[]) {
 export type CXBoardItem = CXItem & {
     managerId: string;
     managerName: string;
+    bucketId: number | null;
+    responsavelId: number | null;
+    responsavelName: string | null;
+    subtitulo: string | null;
 };
 
 export async function fetchAllCXItemsForBoard(): Promise<CXBoardItem[]> {
@@ -412,9 +474,14 @@ export async function fetchAllCXItemsForBoard(): Promise<CXBoardItem[]> {
             dataFim: cx.dataFim,
             percentComplete: cx.percentComplete,
             prioridadeTexto: cx.prioridadeTexto,
+            bucketId: cx.bucketId,
+            responsavelId: cx.responsavelId,
+            responsavelName: cxUsers.name,
+            subtitulo: cx.subtitulo,
         })
         .from(cx)
         .innerJoin(managers, eq(cx.managerId, managers.id))
+        .leftJoin(cxUsers, eq(cx.responsavelId, cxUsers.id))
         .orderBy(desc(cx.createdAt));
 
     return rows.map((r) => ({
