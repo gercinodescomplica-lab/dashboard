@@ -314,7 +314,6 @@ export function CXPlannerBoard() {
         menu: lightActive ? 'bg-white border-zinc-200 text-zinc-700' : 'bg-zinc-900 border-zinc-800 text-zinc-200',
         menuItem: lightActive ? 'hover:bg-zinc-100' : 'hover:bg-zinc-800',
         renameInput: lightActive ? 'bg-white border-zinc-300 text-zinc-900' : 'bg-zinc-950 border-zinc-700 text-zinc-100',
-        newBucketCol: lightActive ? 'border-zinc-300 text-zinc-500 hover:border-indigo-400 hover:text-indigo-600' : 'border-zinc-800 text-zinc-500 hover:border-indigo-500/60 hover:text-indigo-400',
     };
 
     const selectClassName = `border rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-indigo-500/50 transition-colors ${T.select}`;
@@ -504,24 +503,6 @@ export function CXPlannerBoard() {
                         </div>
                     );
                 })}
-
-                <div className="w-[220px] shrink-0">
-                    {newBucketMode ? (
-                        <input
-                            autoFocus
-                            value={newBucketName}
-                            onChange={(e) => setNewBucketName(e.target.value)}
-                            onBlur={submitNewBucket}
-                            onKeyDown={(e) => { if (e.key === 'Enter') submitNewBucket(); if (e.key === 'Escape') { setNewBucketMode(false); setNewBucketName(''); } }}
-                            placeholder="Nome do bucket"
-                            className={`w-full text-xs font-bold rounded-lg px-3 py-2 border focus:outline-none ${T.renameInput}`}
-                        />
-                    ) : (
-                        <button type="button" onClick={() => setNewBucketMode(true)} className={`w-full flex items-center justify-center gap-1.5 rounded-xl border border-dashed py-3 text-xs font-semibold transition-colors ${T.newBucketCol}`}>
-                            <Plus className="w-4 h-4" /> Adicionar bucket
-                        </button>
-                    )}
-                </div>
             </div>
 
             <CXPlannerItemModal
