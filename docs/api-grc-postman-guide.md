@@ -9,14 +9,17 @@
 
 Todos os endpoints exigem um Bearer Token no header `Authorization`.
 
-| Operação | Chave (`env`) | Valor atual (dev) |
+| Operação | Chave (`env`) | Onde obter |
 |---|---|---|
-| Leitura (contratos, data) | `EXTERNAL_API_KEY` | `FZb/kfOX6gsUB2ED0FeVSyMOakm7BKtNt5xACkg+zX8=` |
-| Escrita GRC (projetos, visitas, CX) | `GRC_API_KEY` | `dev-grc-key-change-in-prod` |
+| Leitura (contratos, data) | `EXTERNAL_API_KEY` | Arquivo `.env` na raiz do projeto |
+| Escrita GRC (projetos, visitas, CX) | `GRC_API_KEY` | Arquivo `.env` na raiz do projeto |
+
+> ⚠️ Nenhum valor de chave é escrito neste guia — leia sempre do `.env`, que é ignorado pelo git.
+> Chave que já apareceu em arquivo versionado deve ser **rotacionada**: o histórico do git (e o remoto) mantém o valor antigo.
 
 **Header obrigatório em todas as requisições de escrita:**
 ```
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 ```
 
@@ -60,7 +63,7 @@ Content-Type: application/json
 
 ```http
 POST http://localhost:6000/api/external/v1/grc/cx
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -107,7 +110,7 @@ Envie apenas os campos que quer alterar — os demais permanecem iguais.
 
 ```http
 PATCH http://localhost:6000/api/external/v1/grc/cx/42
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -119,7 +122,7 @@ Content-Type: application/json
 
 ```http
 PATCH http://localhost:6000/api/external/v1/grc/cx/42
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -149,7 +152,7 @@ Content-Type: application/json
 
 ```http
 POST http://localhost:6000/api/external/v1/grc/visits
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -190,7 +193,7 @@ Content-Type: application/json
 
 ```http
 PATCH http://localhost:6000/api/external/v1/grc/visits/17
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -222,7 +225,7 @@ Content-Type: application/json
 
 ```http
 POST http://localhost:6000/api/external/v1/grc/projects
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -264,7 +267,7 @@ Content-Type: application/json
 
 ```http
 PATCH http://localhost:6000/api/external/v1/grc/projects/88
-Authorization: Bearer dev-grc-key-change-in-prod
+Authorization: Bearer $GRC_API_KEY
 Content-Type: application/json
 
 {
@@ -337,6 +340,6 @@ Content-Type: application/json
 1. Criar uma **Collection** chamada `Dashboard DRM — GRC API`
 2. Na aba **Variables** da collection, adicionar:
    - `base_url` = `http://localhost:6000`
-   - `grc_token` = `dev-grc-key-change-in-prod`
+   - `grc_token` = valor de `GRC_API_KEY` no `.env` (não commitar)
 3. Na aba **Authorization** da collection, selecionar `Bearer Token` e usar `{{grc_token}}`
 4. Todas as requests herdam o token automaticamente — só precisar configurar uma vez

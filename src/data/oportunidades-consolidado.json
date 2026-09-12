@@ -1,0 +1,250 @@
+{
+  "levantamento": "Oportunidades não avançadas ou pendentes por falha interna",
+  "data_consolidacao": "2026-09-10",
+  "gerentes": [
+    {
+      "gerente_id": "KAM1",
+      "gerente_nome": "Malde",
+      "data_coleta": "2026-09-10",
+      "oportunidades": [
+        {
+          "orgao": "SME",
+          "produto_tema": "Contratação direta com NOMO",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": null,
+          "status": "perdida",
+          "causa_raiz": "demora_interna",
+          "descricao": "SME decidiu contratar a NOMO diretamente por conta da demora da PRODAM em fechar a parceria; havia incerteza interna se o produto era de interesse para a PRODAM Store."
+        },
+        {
+          "orgao": "SME",
+          "produto_tema": "Ironfence (monitoramento de redes)",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": null,
+          "status": "perdida",
+          "causa_raiz": "demora_interna",
+          "descricao": "SME perdeu o interesse no produto por conta da demora da PRODAM."
+        },
+        {
+          "orgao": "SME",
+          "produto_tema": "Fornecimento de 1560 links de internet (SD-WAN)",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": null,
+          "status": "perdida",
+          "causa_raiz": "descasamento_produto",
+          "descricao": "SME pediu 1560 links de internet; o produto oferecido (SD-WAN) não interessou. SME abriu pregão próprio no mercado."
+        },
+        {
+          "orgao": "SME",
+          "produto_tema": "Licenças Microsoft",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": null,
+          "status": "em_risco",
+          "causa_raiz": "concorrencia_licitacao",
+          "descricao": "SME está preparando licitação própria para licenças Microsoft."
+        },
+        {
+          "orgao": "SME",
+          "produto_tema": "Wi-Fi e Backup",
+          "tinha_proposta_formal": true,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": null,
+          "status": "em_negociacao",
+          "causa_raiz": "precificacao",
+          "descricao": "SME considerou o preço alto. Já houve revisão de escopo e cronograma de instalação, e as propostas foram reenviadas."
+        }
+      ]
+    },
+    {
+      "gerente_id": "KAM3",
+      "gerente_nome": "Andrea Juliana de Carvalho Barroso",
+      "data_coleta": "2026-09-09",
+      "oportunidades": [
+        {
+          "orgao": "SEGES",
+          "produto_tema": "IA – Uso de API com IA",
+          "tinha_proposta_formal": false,
+          "valor_indicado": 1500000.00,
+          "envolvidos": ["Denis Paul", "Wagner", "Dárcio"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "precificacao",
+          "descricao": "Falta precificar para gerar proposta comercial de todas as IAs."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "IA – Digitalização e análise de documentos",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Dárcio (ARQUIP)", "equipe Denis Paul"],
+          "area_bloqueadora": null,
+          "status": "em_customizacao",
+          "causa_raiz": "estruturacao_tecnica",
+          "descricao": "Solução depende da conclusão da customização em andamento pela equipe do Denis Paul."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "ENVIA SP",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Gabinete", "Thais", "Wagner", "Marcelo"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "estruturacao_tecnica",
+          "descricao": "Sistema de transmissão para o Governo Federal; falta disponibilizar a solução para o cliente e precificar."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "IA – ACTOS",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Dennis Paul", "Wagner", "Cassiana"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "precificacao",
+          "descricao": "Projeto que facilita envio de notas fiscais. Falta precificar para gerar proposta comercial."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "IA – TRIADE",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Dennis Paul", "Wagner", "Cassiana"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "precificacao",
+          "descricao": "Falta precificar para gerar proposta comercial."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "IA – Pesquisa de Preços",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Dennis Paul", "Wagner", "Cassiana"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "precificacao",
+          "descricao": "Falta precificar para gerar proposta comercial."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "FFI Eletrônico",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Thais", "Jadir (Gabinete SEGES)"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "estruturacao_tecnica",
+          "descricao": "Projeto solicitado pela Secretaria; falta estruturar a solução com reconhecimento facial conforme solicitado."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "Modernização – CENTS",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Larissa (COPATS)"],
+          "area_bloqueadora": null,
+          "status": "perdida",
+          "causa_raiz": "tempo_resposta",
+          "descricao": "Oportunidade não avançou dentro da janela necessária; a SEGES passou a conduzir a demanda internamente ('perdemos o tempo; SEGES está fazendo isso')."
+        },
+        {
+          "orgao": "SEGES",
+          "produto_tema": "Contratação de Analista de Requisitos – SIGPEC",
+          "tinha_proposta_formal": true,
+          "valor_indicado": null,
+          "envolvidos": ["DDS"],
+          "area_bloqueadora": null,
+          "status": "nao_avancou",
+          "causa_raiz": "descasamento_escopo",
+          "descricao": "Proposta apresentada pela DDS ficou fora do que a SEGES solicitou, tornando-a inviável."
+        }
+      ]
+    },
+    {
+      "gerente_id": "GRCC",
+      "gerente_nome": "Débora",
+      "data_coleta": "2026-09-10",
+      "oportunidades": [
+        {
+          "orgao": "Detran São Paulo",
+          "produto_tema": "Central de Serviço",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": "DIT",
+          "status": "nao_avancou",
+          "causa_raiz": "falta_estrutura_produto",
+          "descricao": "DIT recusou e deu negativa, informando que não há aderência à estrutura atualmente disponível na Central de Serviços da PRODAM."
+        },
+        {
+          "orgao": "Prefeitura de Birigui",
+          "produto_tema": "Sistema para controle de Táxi, Moto-Táxi e Moto-Frete",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": "DIT",
+          "status": "pendente",
+          "causa_raiz": "falta_produto",
+          "descricao": "DIT recusou, informando não ter o serviço solicitado (SaaS). Em verificação de parceiro para viabilizar."
+        },
+        {
+          "orgao": "Fundação Universidade Virtual do Estado de São Paulo (UNIVESP)",
+          "produto_tema": "Central de Atendimento",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": "DIT",
+          "status": "nao_avancou",
+          "causa_raiz": "falta_estrutura_produto",
+          "descricao": "DIT recusou e deu negativa, informando que não há aderência à estrutura atualmente disponível na Central de Serviços da PRODAM."
+        }
+      ]
+    },
+    {
+      "gerente_id": "GRC1",
+      "gerente_nome": "Bruno",
+      "data_coleta": "2026-09-10",
+      "oportunidades": [
+        {
+          "orgao": "PGM",
+          "produto_tema": "Solução Neo4J (parceiro Red)",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["Denilson", "Bia (CGM)"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "falta_produto_interno",
+          "descricao": "PGM demonstrou forte interesse na solução Neo4J oferecida pelo parceiro Red, mas a solução ainda não foi transformada em produto interno da PRODAM. Sem produto formalizado, não é possível avançar a venda. Também identificado potencial de compra na CGM e no TCM."
+        }
+      ]
+    },
+    {
+      "gerente_id": "GRC4",
+      "gerente_nome": "Bia",
+      "data_coleta": "2026-09-10",
+      "oportunidades": [
+        {
+          "orgao": "CGM",
+          "produto_tema": "Sistema de FFI",
+          "tinha_proposta_formal": false,
+          "valor_indicado": null,
+          "envolvidos": ["DDS"],
+          "area_bloqueadora": null,
+          "status": "pendente",
+          "causa_raiz": "precificacao",
+          "descricao": "Falta precificação do sistema de FFI (DDS) para a CGM, pois a solução não passou em RD."
+        }
+      ]
+    }
+  ]
+}

@@ -13,6 +13,7 @@ import { CXTab } from './tabs/CXTab';
 import { VisitsTab } from './tabs/VisitsTab';
 import { ClientsTab } from './tabs/ClientsTab';
 import { ChurnTab } from './tabs/ChurnTab';
+import { OportunidadesRisco } from './OportunidadesRisco';
 import { getCXByManager, getVisitsByManager, getChurnByManager } from '@/app/settings/fetchActions';
 import { Loader2, Building2 } from 'lucide-react';
 
@@ -123,6 +124,10 @@ export function SingleManagerView({ manager, lightActive = false }: SingleManage
                     <div className={`lg:col-span-7 border rounded-2xl p-4 sm:p-8 backdrop-blur-md flex flex-col min-h-0 min-h-[300px] lg:min-h-0 transition-colors duration-200 ${T.panel}`}>
                         <PipelineBars pipeline={manager.pipeline} managerName={manager.name} lightActive={lightActive} />
                     </div>
+                </div>
+                {/* ── Oportunidades em Risco (levantamento por gerência; hoje vem do JSON, depois do banco) ── */}
+                <div className={`border rounded-2xl p-6 sm:p-8 backdrop-blur-md transition-colors duration-200 ${T.panel}`}>
+                    <OportunidadesRisco managerRole={manager.role} managerId={manager.id} lightActive={lightActive} />
                 </div>
             </TabsContent>
 

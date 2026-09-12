@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Manager, Project } from '@/types/manager';
 import { formatCurrency, formatPercentage } from '@/lib/format';
+import { OportunidadesRiscoDRM } from './OportunidadesRiscoDRM';
 import {
     calculateGap,
     calculateAchievementPercentage,
@@ -584,6 +585,9 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                     </div>
                 </div>
 
+                {/* ── OPORTUNIDADES EM RISCO (LEVANTAMENTO CONSOLIDADO DAS GERÊNCIAS) ── */}
+                <OportunidadesRiscoDRM lightActive={lightActive} />
+
             </div>
 
             {/* ── Drill-down Modal ─────────────────────────── */}
@@ -688,6 +692,7 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                     </div>
                 </DialogContent>
             </Dialog>
+
         </TooltipProvider>
     );
 }
