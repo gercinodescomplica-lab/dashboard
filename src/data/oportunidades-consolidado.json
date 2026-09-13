@@ -245,6 +245,35 @@
           "descricao": "Falta precificação do sistema de FFI (DDS) para a CGM, pois a solução não passou em RD."
         }
       ]
+    },
+    {
+      "gerente_id": "GRC2",
+      "gerente_nome": "Paulo Rogério",
+      "data_coleta": "2026-09-10",
+      "oportunidades": [
+        {
+          "orgao": "SMUL",
+          "produto_tema": "Virtualização Arlequim",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": "DIT",
+          "status": "nao_avancou",
+          "causa_raiz": "falta_produto",
+          "descricao": "DIT informou que não seguirá com o Arlequim; produto semelhante só estará disponível em dezembro."
+        },
+        {
+          "orgao": "SMADS",
+          "produto_tema": "Virtualização Arlequim",
+          "tinha_proposta_formal": null,
+          "valor_indicado": null,
+          "envolvidos": [],
+          "area_bloqueadora": "DIT",
+          "status": "nao_avancou",
+          "causa_raiz": "falta_produto",
+          "descricao": "DIT informou que não seguirá com o Arlequim; produto semelhante só estará disponível em dezembro."
+        }
+      ]
     }
   ]
 }

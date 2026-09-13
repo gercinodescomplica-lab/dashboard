@@ -10,7 +10,7 @@ import { getFaturamento2025Action } from '@/app/settings/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, Handshake, MapPin, Sun, Moon } from 'lucide-react';
+import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, MapPin, Sun, Moon } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import { CidadesView } from '@/components/cidades/CidadesView';
@@ -254,14 +254,6 @@ export function DashboardShell() {
                             Contratos
                         </Link>
 
-                        {/* Propostas */}
-                        <Link
-                            href="/proposals"
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
-                        >
-                            <Handshake className="w-4 h-4" />
-                            Propostas
-                        </Link>
                     </nav>
                 </div>
 
