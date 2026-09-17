@@ -197,7 +197,7 @@ function SectionBlock({ section, colors, lightActive }: { section: OrgSection; c
 function DepartmentColumn({ dept, lightActive }: { dept: OrgDepartment; lightActive: boolean }) {
     const colors = getColorMap(lightActive)[dept.color];
     return (
-        <div className="flex flex-col">
+        <div className="flex flex-col flex-1 min-w-0">
             <div className={`mx-auto w-[1.5px] h-3 -mt-6 ${lightActive ? 'bg-zinc-300' : 'bg-zinc-800'}`} />
             <div className={`${colors.header} p-2 text-center rounded-t-lg border ${colors.headerBorder} shadow-sm`}>
                 <span className="block text-sm font-bold text-white leading-tight">{dept.name}</span>
@@ -352,7 +352,7 @@ export default function OrganizationChartView({ initialData, lightActive = false
 
                 <div className={`w-full h-[1.5px] mb-6 ${lineColor}`} />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 flex-1">
+                <div className="flex flex-row flex-nowrap items-start gap-4 flex-1">
                     {data.departments.map((d) => (
                         <DepartmentColumn key={d.id} dept={d} lightActive={lightActive} />
                     ))}
