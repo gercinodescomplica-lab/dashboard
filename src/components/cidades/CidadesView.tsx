@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { fetchCidadesLeads, extractLeadDate } from '@/services/cidades.service';
+import { fetchCidadesLeads } from '@/services/cidades.service';
+import { extractLeadDate } from '@/lib/grcc/normalizar';
 import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat, MotivoPerdaStat } from '@/types/cidades';
 import { formatCurrency } from '@/lib/format';
 import { BrazilHeatMap } from './BrazilHeatMap';
@@ -169,7 +170,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             const data = await fetchCidadesLeads();
             setLeads(data);
         } catch (err: any) {
-            setError(err?.message || 'Falha ao conectar com a fonte de dados do Power Automate.');
+            setError(err?.message || 'Falha ao carregar os leads da GRCC.');
         } finally {
             setIsLoading(false);
         }
@@ -451,7 +452,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
         return (
             <div className={`h-[600px] w-full flex flex-col items-center justify-center gap-4 border rounded-2xl ${lightActive ? 'bg-white text-zinc-500 border-zinc-200' : 'bg-zinc-950 text-zinc-400 border-zinc-900'}`}>
                 <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
-                <p className="text-base font-medium">Carregando módulo de Cidades do Power Automate...</p>
+                <p className="text-base font-medium">Carregando leads da GRCC...</p>
             </div>
         );
     }
@@ -534,7 +535,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
 
                     <button
                         onClick={loadData}
-                        title="Atualizar Dados do Power Automate"
+                        title="Atualizar leads"
                         className={`p-1.5 rounded-lg transition-colors ml-1 ${T.refreshBtn}`}
                     >
                         <RefreshCw className="w-4 h-4" />
@@ -621,7 +622,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                                 Linha do Tempo de Fechamentos Mapeados
                                             </h3>
                                             <p className={`text-xs ${T.subtext}`}>
-                                                Datas de fechamento extraídas do Excel/Power Automate (ordenadas cronologicamente)
+                                                Datas de fechamento do cadastro da GRCC (ordenadas cronologicamente)
                                             </p>
                                         </div>
                                     </div>
@@ -738,7 +739,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             <div className={`border rounded-xl p-3 mt-3 flex items-center gap-3 ${T.avisoBox}`}>
                                 <AlertCircle className="w-5 h-5 text-amber-400 shrink-0" />
                                 <p className={`text-[11px] leading-tight ${T.avisoText}`}>
-                                    <strong className={T.avisoStrong}>Aviso Comercial:</strong> As datas foram sincronizadas e extraídas do Excel/Webhook do Power Automate.
+                                    <strong className={T.avisoStrong}>Aviso Comercial:</strong> As datas vêm do cadastro de leads da GRCC.
                                 </p>
                             </div>
                         </div>
