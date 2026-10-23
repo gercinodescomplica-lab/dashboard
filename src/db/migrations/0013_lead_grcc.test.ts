@@ -28,4 +28,11 @@ describe('0013_lead_grcc', () => {
         const v = await db.$client.execute("select value from system_settings where key = 'grcc_versao'");
         expect(v.rows[0]?.value).toBe('0');
     });
+
+    it('rodar de novo não falha nem duplica as categorias semeadas', async () => {
+        await applyMigrations();
+        const { db } = await import('@/db/index');
+        const cats = await db.$client.execute("select count(*) as n from dropdown_options where field = 'grcc_categoria'");
+        expect(Number(cats.rows[0].n)).toBe(7);
+    });
 });

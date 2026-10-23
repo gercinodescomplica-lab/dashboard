@@ -33,6 +33,19 @@ describe('actions /grcc', () => {
         process.env.GRCC_KEY = antes;
     });
 
+    it('GRCC_KEY com espaço/quebra de linha no fim (colada no painel) ainda aceita a chave aparada', async () => {
+        const antes = process.env.GRCC_KEY;
+        try {
+            process.env.GRCC_KEY = 'chave-certa\n';
+            expect(await a.verificarChaveGrcc('chave-certa')).toBe(true);
+            process.env.GRCC_KEY = '  \n';
+            expect(await a.verificarChaveGrcc('')).toBe(false);
+            expect(await a.verificarChaveGrcc('  ')).toBe(false);
+        } finally {
+            process.env.GRCC_KEY = antes;
+        }
+    });
+
     it('recusa escrita com chave inválida e não grava', async () => {
         expect(await a.salvarLead('errada', null, dados)).toEqual({ ok: false, erro: 'Chave GRCC inválida.' });
         expect(await a.excluirLead('errada', 1)).toEqual({ ok: false, erro: 'Chave GRCC inválida.' });

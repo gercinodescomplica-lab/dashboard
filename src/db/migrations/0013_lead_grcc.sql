@@ -41,7 +41,7 @@ ALTER TABLE `projects` ADD `lead_grcc_id` integer REFERENCES `lead_grcc`(`id`);
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS `projects_lead_grcc_id_unique` ON `projects` (`lead_grcc_id`);
 --> statement-breakpoint
-INSERT INTO `dropdown_options` (`field`, `value`)
+INSERT OR IGNORE INTO `dropdown_options` (`field`, `value`)
 SELECT 'grcc_categoria', v FROM (
 	SELECT 'Novo' AS v, 1 AS o UNION ALL SELECT 'Validação', 2 UNION ALL SELECT 'Parceiro', 3
 	UNION ALL SELECT 'Em tratativas', 4 UNION ALL SELECT 'No cliente', 5 UNION ALL SELECT 'Contratado', 6

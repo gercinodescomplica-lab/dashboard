@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LEAD_VAZIO, type LeadGrcc } from '@/lib/grcc/tipos';
@@ -24,9 +24,35 @@ beforeEach(() => {
 });
 
 describe('LeadPainel', () => {
-    it('mostra onde o lead cai no pipeline da Débora', () => {
-        render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
-        expect(screen.getByText(/No pipeline da Débora: Q4 · quente/)).toBeInTheDocument();
+    describe('com o relógio fixado', () => {
+        // O trimestre depende do ano corrente: sem fixar a data, este teste quebraria em 2027.
+        afterEach(() => vi.useRealTimers());
+
+        it('mostra onde o lead cai no pipeline da Débora', () => {
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(new Date('2026-10-23T12:00:00'));
+            render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
+            expect(screen.getByText(/No pipeline da Débora: Q4 · quente/)).toBeInTheDocument();
+        });
+
+        it('em outro ano a mesma previsão não está mapeada', () => {
+            vi.useFakeTimers({ toFake: ['Date'] });
+            vi.setSystemTime(new Date('2027-03-01T12:00:00'));
+            render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
+            expect(screen.getByText(/No pipeline da Débora: não mapeado/)).toBeInTheDocument();
+        });
+    });
+
+    it('salvou mas a recarga da tela falhou: fecha sem dizer que não salvou', async () => {
+        const user = userEvent.setup();
+        salvarLead.mockResolvedValue({ ok: true, valor: lead });
+        const onGravado = vi.fn().mockRejectedValue(new Error('recarga'));
+        const onFechar = vi.fn();
+        render(<LeadPainel aberto lead={lead} listas={listas} onFechar={onFechar} onGravado={onGravado} />);
+        await user.click(screen.getByRole('button', { name: 'Salvar' }));
+        await waitFor(() => expect(onFechar).toHaveBeenCalled());
+        expect(onGravado).toHaveBeenCalledWith('Lead atualizado.');
+        expect(screen.queryByText(/Não foi possível salvar agora/)).not.toBeInTheDocument();
     });
 
     it('motivo da perda só aparece em Perda e os erros do servidor aparecem no campo', async () => {

@@ -13,7 +13,8 @@ import type { LeadGrcc, LeadGrccDados, LinhaPlanilha, ProblemaLinha, ResultadoAc
 const CHAVE_INVALIDA = { ok: false as const, erro: 'Chave GRCC inválida.' };
 
 function chaveValida(chave: string): boolean {
-    const correta = process.env.GRCC_KEY;
+    // Valor colado no painel da Vercel costuma vir com quebra de linha no fim; vazio após trim = fechado.
+    const correta = process.env.GRCC_KEY?.trim();
     if (!correta || typeof chave !== 'string') return false;
     return chave.trim() === correta;
 }

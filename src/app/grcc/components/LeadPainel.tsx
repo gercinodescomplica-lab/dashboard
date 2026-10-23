@@ -96,20 +96,23 @@ export function LeadPainel({
         setSalvando(true);
         setErroGeral(null);
         const valor = Number(valorTexto.replace(/\./g, '').replace(',', '.')) || 0;
+        let r: Awaited<ReturnType<typeof salvarLead>>;
         try {
-            const r = await salvarLead(chave, lead?.id ?? null, { ...dados, valor });
-            if (!r.ok) {
-                setErros(r.erros ?? {});
-                setErroGeral(r.erro);
-                return;
-            }
-            await onGravado(lead ? 'Lead atualizado.' : 'Lead cadastrado.');
-            onFechar();
+            r = await salvarLead(chave, lead?.id ?? null, { ...dados, valor });
         } catch {
             setErroGeral('Não foi possível salvar agora. Tente novamente.');
-        } finally {
             setSalvando(false);
+            return;
         }
+        setSalvando(false);
+        if (!r.ok) {
+            setErros(r.erros ?? {});
+            setErroGeral(r.erro);
+            return;
+        }
+        // Já salvou: se a recarga da tela falhar, o pai mostra o próprio erro — não é falha ao salvar.
+        await onGravado(lead ? 'Lead atualizado.' : 'Lead cadastrado.').catch(() => {});
+        onFechar();
     };
 
     const excluir = async () => {
