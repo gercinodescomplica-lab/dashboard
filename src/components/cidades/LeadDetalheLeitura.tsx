@@ -8,25 +8,27 @@ import { brl, dataBr } from '@/app/grcc/components/formato';
 import type { EventoHistorico } from '@/lib/grcc/tipos';
 import type { LeadCidade } from '@/types/cidades';
 
-type Carga = { id: number; eventos: EventoHistorico[]; erro: boolean };
+type Carga = { chave: string; eventos: EventoHistorico[]; erro: boolean };
 
 export function LeadDetalheLeitura({ lead, onFechar, claro }: { lead: LeadCidade | null; onFechar: () => void; claro: boolean }) {
     const [carga, setCarga] = useState<Carga | null>(null);
     const leadId = lead?.id ?? null;
+    // Muda quando o lead é trocado ou editado (reload ao vivo) -> recarrega a linha do tempo.
+    const chave = lead ? JSON.stringify(lead) : null;
 
     useEffect(() => {
-        if (leadId === null) return;
+        if (leadId === null || chave === null) return;
         let cancelado = false;
         historicoDoLead(leadId)
-            .then((eventos) => !cancelado && setCarga({ id: leadId, eventos, erro: false }))
-            .catch(() => !cancelado && setCarga({ id: leadId, eventos: [], erro: true }));
+            .then((eventos) => !cancelado && setCarga({ chave, eventos, erro: false }))
+            .catch(() => !cancelado && setCarga({ chave, eventos: [], erro: true }));
         return () => {
             cancelado = true;
         };
-    }, [leadId]);
+    }, [leadId, chave]);
 
     // Só vale a carga do lead atualmente aberto (evita histórico de outro lead).
-    const atual = carga && carga.id === leadId ? carga : null;
+    const atual = carga && carga.chave === chave ? carga : null;
 
     const linha = (rotulo: string, valor?: string | null) =>
         valor ? (
@@ -37,7 +39,12 @@ export function LeadDetalheLeitura({ lead, onFechar, claro }: { lead: LeadCidade
         ) : null;
 
     return (
-        <Sheet open={!!lead} onOpenChange={(o) => !o && onFechar()}>
+        <Sheet open={!!lead} onOpenChange={(o) => {
+                if (!o) {
+                    setCarga(null);
+                    onFechar();
+                }
+            }}>
             <SheetContent side="right" className={`w-full sm:max-w-lg overflow-y-auto ${claro ? 'bg-white text-zinc-900' : 'bg-zinc-950 border-zinc-800 text-zinc-100'}`}>
                 {lead && (
                     <>

@@ -171,7 +171,8 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     const [selectedUf, setSelectedUf] = useState<string>('TODAS');
     const [selectedCategoria, setSelectedCategoria] = useState<string>('TODAS');
 
-    const [leadAberto, setLeadAberto] = useState<LeadCidade | null>(null);
+    const [leadAbertoId, setLeadAbertoId] = useState<number | null>(null);
+    const leadAberto = leadAbertoId === null ? null : (leads.find((l) => l.id === leadAbertoId) ?? null);
     const [ultimoImport, setUltimoImport] = useState<UltimoImport | null>(null);
     const [movimentos, setMovimentos] = useState<Movimentacao[]>([]);
     const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
@@ -631,7 +632,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             <MovimentacoesRecentes
                                 itens={movimentos}
                                 claro={lightActive}
-                                onAbrir={(id) => setLeadAberto(leads.find((l) => l.id === id) ?? null)}
+                                onAbrir={(id) => setLeadAbertoId(id)}
                             />
                         </div>
                     )}
@@ -1229,7 +1230,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             <tbody className={`divide-y text-xs ${T.tbodyDivide}`}>
                                 {filteredLeads.length > 0 ? (
                                     filteredLeads.map((lead) => (
-                                        <tr key={lead.id} onClick={() => setLeadAberto(lead)} className={`cursor-pointer transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
+                                        <tr key={lead.id} onClick={() => setLeadAbertoId(lead.id)} className={`cursor-pointer transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
                                             <td className="p-3 text-center">
                                                 <span className="inline-block font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]">
                                                     {lead.uf || 'N/A'}
@@ -1355,7 +1356,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             </Dialog>
 
 
-            <LeadDetalheLeitura lead={leadAberto} onFechar={() => setLeadAberto(null)} claro={lightActive} />
+            <LeadDetalheLeitura lead={leadAberto} onFechar={() => setLeadAbertoId(null)} claro={lightActive} />
 
             {avisoAoVivo && (
                 <div role="status" className="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-indigo-500/40 text-indigo-200 text-sm px-4 py-2.5 rounded-xl shadow-xl">
