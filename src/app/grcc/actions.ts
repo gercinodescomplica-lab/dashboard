@@ -63,18 +63,27 @@ export async function confirmarImportacao(
 ): Promise<ResultadoAcao<{ novos: number; alterados: number }>> {
     if (!chaveValida(chave)) return CHAVE_INVALIDA;
 
-    // Não confia no navegador: cada linha é revalidada aqui; as inválidas são descartadas.
-    const linhas: LinhaPlanilha[] = [];
-    for (const l of input.linhas) {
-        const v = validarLead(l.dados);
-        if (v.ok) linhas.push({ linha: l.linha, dados: v.dados });
-    }
-
     try {
+        if (!Array.isArray(input?.linhas) || !Array.isArray(input.problemas)) {
+            return { ok: false, erro: 'Importação inválida. Envie a planilha de novo.' };
+        }
+        // Não confia no navegador: cada linha é revalidada aqui; as inválidas viram problemas.
+        const linhas: LinhaPlanilha[] = [];
+        const problemas: ProblemaLinha[] = [...input.problemas];
+        for (const l of input.linhas) {
+            const v = validarLead(l?.dados);
+            if (v.ok) {
+                linhas.push({ linha: l.linha, dados: v.dados });
+            } else {
+                const cliente = typeof l?.dados?.cliente === 'string' ? l.dados.cliente : '';
+                problemas.push({ linha: Number(l?.linha) || 0, cliente, motivo: Object.values(v.erros).join(' ') });
+            }
+        }
+
         const r = await aplicarImportGrcc({
             arquivo: String(input.arquivo).slice(0, 200),
             linhas,
-            problemas: input.problemas,
+            problemas,
             substituirPipelineManual: input.substituirPipelineManual === true,
         });
         revalidar();

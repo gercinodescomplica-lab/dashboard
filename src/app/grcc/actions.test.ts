@@ -60,6 +60,8 @@ describe('actions /grcc', () => {
     });
 
     it('confirmarImportacao valida cada linha no servidor (payload adulterado vira problema, não grava)', async () => {
+        const queries = await import('@/db/queries');
+        const espiao = vi.spyOn(queries, 'aplicarImportGrcc');
         const r = await a.confirmarImportacao('chave-certa', {
             arquivo: 'a.xlsx',
             linhas: [{ linha: 2, dados: { ...dados, cliente: 'Outro', valor: -5 } }],
@@ -68,5 +70,23 @@ describe('actions /grcc', () => {
         });
         expect(r).toEqual({ ok: true, valor: { novos: 0, alterados: 0 } });
         expect((await svc.carregarPainelGrcc()).leads.find((l) => l.cliente === 'Outro')).toBeUndefined();
+        const enviado = espiao.mock.calls[0][0];
+        expect(enviado.linhas).toEqual([]);
+        expect(enviado.problemas).toHaveLength(1);
+        expect(enviado.problemas[0]).toMatchObject({ linha: 2, cliente: 'Outro' });
+        expect(enviado.problemas[0].motivo).not.toBe('');
+        espiao.mockRestore();
+    });
+
+    it('payload malformado devolve falha em vez de lançar', async () => {
+        const base = { arquivo: 'a.xlsx', problemas: [], substituirPipelineManual: false };
+        for (const linhas of [null, 'x']) {
+            expect(await a.confirmarImportacao('chave-certa', { ...base, linhas } as never)).toMatchObject({ ok: false });
+        }
+        expect(await a.confirmarImportacao('chave-certa', { ...base, linhas: [], problemas: null } as never)).toMatchObject({ ok: false });
+        for (const linhas of [[null], [{ linha: 2 }]]) {
+            const r = await a.confirmarImportacao('chave-certa', { ...base, linhas } as never);
+            expect(r).toEqual({ ok: true, valor: { novos: 0, alterados: 0 } });
+        }
     });
 });
