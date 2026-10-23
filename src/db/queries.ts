@@ -1,6 +1,6 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn } from './schema';
-import { eq, like, desc, or, inArray } from 'drizzle-orm';
+import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn, leadGrcc, leadGrccHistorico, dropdownOptions } from './schema';
+import { eq, like, desc, or, inArray, and, isNull, sql } from 'drizzle-orm';
 import { Manager, CXItem, Visit, ChurnItem } from '../types/manager';
 
 /**
@@ -636,3 +636,307 @@ export async function savePlannerLastSyncedAt(epochMs: number): Promise<void> {
         });
 }
 
+// ─── GRCC — leads (/grcc) ────────────────────────────────────────────────────
+//
+// Toda escrita roda numa transação que grava, juntos: o lead, o evento de histórico, o
+// projeto gerado no pipeline da Débora e o +1 em `grcc_versao` (que o dashboard consulta
+// para atualizar ao vivo). Nunca existe mudança sem histórico nem lead sem projeto.
+
+import { diffLead } from '../lib/grcc/diff';
+import { dadosDoLead, montarPrevia } from '../lib/grcc/previa';
+import { projetoDoLead } from '../lib/grcc/pipeline';
+import {
+    CAMPOS_LISTA,
+    FIELD_DA_LISTA,
+    type CampoLista,
+    type CategoriaGrcc,
+    type EventoHistorico,
+    type LeadGrcc,
+    type LeadGrccDados,
+    type LinhaPlanilha,
+    type Movimentacao,
+    type Mudanca,
+    type OrigemEvento,
+    type ProblemaLinha,
+    type ProjetoManual,
+    type UltimoImport,
+} from '../lib/grcc/tipos';
+
+export class ErroGrcc extends Error {}
+
+const AUTOR_GRCC = 'GRCC';
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type Executor = typeof db | Tx;
+
+function linhaParaLead(r: typeof leadGrcc.$inferSelect): LeadGrcc {
+    return {
+        id: r.id,
+        cliente: r.cliente,
+        solicitacao: r.solicitacao,
+        status: r.status,
+        categoria: r.categoria as CategoriaGrcc,
+        etapa: r.etapa,
+        situacao: r.situacao,
+        motivoPerda: r.motivoPerda,
+        familiaDemanda: r.familiaDemanda,
+        valor: r.valor,
+        uf: r.uf,
+        municipio: r.municipio,
+        regiao: r.regiao,
+        contatoNome: r.contatoNome,
+        contatoEmail: r.contatoEmail,
+        contatoTelefone: r.contatoTelefone,
+        previsaoFechamento: r.previsaoFechamento,
+        inicioFaturamento: r.inicioFaturamento,
+        duracaoMeses: r.duracaoMeses,
+        criadoEm: r.criadoEm,
+        atualizadoEm: r.atualizadoEm,
+    };
+}
+
+function linhaParaEvento(r: typeof leadGrccHistorico.$inferSelect): EventoHistorico {
+    let mudancas: Mudanca[] = [];
+    try {
+        mudancas = JSON.parse(r.mudancas);
+    } catch {
+        mudancas = [];
+    }
+    return { id: r.id, leadId: r.leadId, quando: r.quando, origem: r.origem, arquivo: r.arquivo, autor: r.autor, mudancas };
+}
+
+export async function listLeadsGrcc(): Promise<LeadGrcc[]> {
+    const rows = await db.select().from(leadGrcc).where(isNull(leadGrcc.excluidoEm)).orderBy(desc(leadGrcc.atualizadoEm));
+    return rows.map(linhaParaLead);
+}
+
+export async function getLeadGrcc(id: number): Promise<LeadGrcc | null> {
+    const [r] = await db.select().from(leadGrcc).where(and(eq(leadGrcc.id, id), isNull(leadGrcc.excluidoEm)));
+    return r ? linhaParaLead(r) : null;
+}
+
+/** Gerente dono do pipeline gerado: role GRCC com o maior ano. */
+export async function fetchGerenteGrcc(ex: Executor = db): Promise<{ id: string; year: number } | null> {
+    const [m] = await ex
+        .select({ id: managers.id, year: managers.year })
+        .from(managers)
+        .where(eq(managers.role, 'GRCC'))
+        .orderBy(desc(managers.year))
+        .limit(1);
+    return m ?? null;
+}
+
+async function exigirGerente(tx: Tx) {
+    const g = await fetchGerenteGrcc(tx);
+    if (!g) throw new ErroGrcc('Gerente da GRCC não encontrado (nenhum gerente com papel "GRCC").');
+    return g;
+}
+
+async function registrarEvento(tx: Tx, leadId: number, origem: OrigemEvento, mudancas: Mudanca[], arquivo: string | null, quando: string) {
+    await tx.insert(leadGrccHistorico).values({ leadId, quando, origem, arquivo, autor: AUTOR_GRCC, mudancas: JSON.stringify(mudancas) });
+}
+
+async function sincronizarProjeto(tx: Tx, lead: LeadGrcc, gerente: { id: string; year: number }) {
+    const p = projetoDoLead(lead, gerente);
+    await tx
+        .insert(projects)
+        .values(p)
+        .onConflictDoUpdate({
+            target: projects.leadGrccId,
+            set: {
+                managerId: p.managerId,
+                quarter: p.quarter,
+                orgao: p.orgao,
+                name: p.name,
+                value: p.value,
+                temperature: p.temperature,
+                description: p.description,
+                durationMonths: p.durationMonths,
+                startDate: p.startDate,
+            },
+        });
+}
+
+async function incrementarVersao(tx: Tx) {
+    await tx.run(sql`
+        INSERT INTO system_settings (key, value, updated_at) VALUES ('grcc_versao', '1', ${new Date().toISOString()})
+        ON CONFLICT(key) DO UPDATE SET value = CAST(CAST(value AS INTEGER) + 1 AS TEXT), updated_at = excluded.updated_at
+    `);
+}
+
+/** Valores novos de etapa/situação/motivo/família entram na lista suspensa (a planilha manda). */
+async function acrescentarAsListas(tx: Tx, dados: LeadGrccDados[]) {
+    const existentes = await tx.select().from(dropdownOptions).where(like(dropdownOptions.field, 'grcc_%'));
+    const conhecidos = new Set(existentes.map((o) => `${o.field}|${o.value}`));
+    const novos: { field: string; value: string }[] = [];
+    for (const d of dados) {
+        for (const campo of CAMPOS_LISTA) {
+            if (campo === 'categoria') continue;
+            const valor = d[campo];
+            if (!valor) continue;
+            const field = FIELD_DA_LISTA[campo];
+            const k = `${field}|${valor}`;
+            if (conhecidos.has(k)) continue;
+            conhecidos.add(k);
+            novos.push({ field, value: valor });
+        }
+    }
+    if (novos.length > 0) await tx.insert(dropdownOptions).values(novos);
+}
+
+async function gravarLead(
+    tx: Tx,
+    id: number | null,
+    dados: LeadGrccDados,
+    origem: 'cadastro' | 'edicao' | 'importacao',
+    arquivo: string | null,
+    gerente: { id: string; year: number },
+    agora: string
+): Promise<{ lead: LeadGrcc; mudou: boolean }> {
+    if (id === null) {
+        const [r] = await tx.insert(leadGrcc).values({ ...dados, criadoEm: agora, atualizadoEm: agora }).returning();
+        const lead = linhaParaLead(r);
+        await registrarEvento(tx, lead.id, origem === 'importacao' ? 'importacao' : 'cadastro', diffLead(null, dados), arquivo, agora);
+        await sincronizarProjeto(tx, lead, gerente);
+        return { lead, mudou: true };
+    }
+
+    const [atualRow] = await tx.select().from(leadGrcc).where(and(eq(leadGrcc.id, id), isNull(leadGrcc.excluidoEm)));
+    if (!atualRow) throw new ErroGrcc('Lead não encontrado (pode ter sido excluído).');
+    const atual = linhaParaLead(atualRow);
+    const mudancas = diffLead(dadosDoLead(atual), dados);
+    if (mudancas.length === 0) return { lead: atual, mudou: false };
+
+    const [r] = await tx.update(leadGrcc).set({ ...dados, atualizadoEm: agora }).where(eq(leadGrcc.id, id)).returning();
+    const lead = linhaParaLead(r);
+    await registrarEvento(tx, id, origem, mudancas, arquivo, agora);
+    await sincronizarProjeto(tx, lead, gerente);
+    return { lead, mudou: true };
+}
+
+export async function salvarLeadGrcc(id: number | null, dados: LeadGrccDados): Promise<{ lead: LeadGrcc; mudou: boolean }> {
+    return db.transaction(async (tx) => {
+        const gerente = await exigirGerente(tx);
+        const r = await gravarLead(tx, id, dados, id === null ? 'cadastro' : 'edicao', null, gerente, new Date().toISOString());
+        if (r.mudou) {
+            await acrescentarAsListas(tx, [dados]);
+            await incrementarVersao(tx);
+        }
+        return r;
+    });
+}
+
+export async function excluirLeadGrcc(id: number): Promise<void> {
+    await db.transaction(async (tx) => {
+        const agora = new Date().toISOString();
+        const atualizados = await tx
+            .update(leadGrcc)
+            .set({ excluidoEm: agora, atualizadoEm: agora })
+            .where(and(eq(leadGrcc.id, id), isNull(leadGrcc.excluidoEm)))
+            .returning({ id: leadGrcc.id });
+        if (atualizados.length === 0) throw new ErroGrcc('Lead não encontrado (pode ter sido excluído).');
+        await registrarEvento(tx, id, 'exclusao', [], null, agora);
+        await tx.delete(projects).where(eq(projects.leadGrccId, id));
+        await incrementarVersao(tx);
+    });
+}
+
+export async function fetchProjetosManuaisGrcc(): Promise<ProjetoManual[]> {
+    const g = await fetchGerenteGrcc();
+    if (!g) return [];
+    const rows = await db
+        .select({ id: projects.id, orgao: projects.orgao, name: projects.name, value: projects.value, quarter: projects.quarter })
+        .from(projects)
+        .where(and(eq(projects.managerId, g.id), isNull(projects.leadGrccId)));
+    return rows;
+}
+
+/**
+ * Confirma uma importação. O servidor NÃO confia na prévia do navegador: reclassifica as
+ * linhas contra o banco atual. Import nunca exclui leads ausentes da planilha.
+ * Primeira importação (tabela vazia) com projetos manuais da Débora exige
+ * `substituirPipelineManual = true` — eles são apagados na mesma transação.
+ */
+export async function aplicarImportGrcc(input: {
+    arquivo: string;
+    linhas: LinhaPlanilha[];
+    problemas: ProblemaLinha[];
+    substituirPipelineManual: boolean;
+}): Promise<{ novos: number; alterados: number }> {
+    return db.transaction(async (tx) => {
+        const gerente = await exigirGerente(tx);
+        const existentesRows = await tx.select().from(leadGrcc).where(isNull(leadGrcc.excluidoEm));
+        const existentes = existentesRows.map(linhaParaLead);
+
+        if (existentes.length === 0) {
+            const manuais = await tx
+                .select({ id: projects.id })
+                .from(projects)
+                .where(and(eq(projects.managerId, gerente.id), isNull(projects.leadGrccId)));
+            if (manuais.length > 0) {
+                if (!input.substituirPipelineManual) {
+                    throw new ErroGrcc('Confirme a substituição do pipeline manual da Débora antes de gravar.');
+                }
+                await tx.delete(projects).where(and(eq(projects.managerId, gerente.id), isNull(projects.leadGrccId)));
+            }
+        }
+
+        const previa = montarPrevia(input.linhas, input.problemas, existentes);
+        const agora = new Date().toISOString();
+        for (const n of previa.novos) await gravarLead(tx, null, n.dados, 'importacao', input.arquivo, gerente, agora);
+        for (const a of previa.alterados) await gravarLead(tx, a.leadId, a.dados, 'importacao', input.arquivo, gerente, agora);
+
+        await acrescentarAsListas(tx, [...previa.novos.map((n) => n.dados), ...previa.alterados.map((a) => a.dados)]);
+
+        const resumo: UltimoImport = { arquivo: input.arquivo, quando: agora, novos: previa.novos.length, alterados: previa.alterados.length };
+        await tx
+            .insert(systemSettings)
+            .values({ key: 'grcc_ultimo_import', value: JSON.stringify(resumo), updatedAt: agora })
+            .onConflictDoUpdate({ target: systemSettings.key, set: { value: JSON.stringify(resumo), updatedAt: agora } });
+        if (resumo.novos + resumo.alterados > 0) await incrementarVersao(tx);
+
+        return { novos: resumo.novos, alterados: resumo.alterados };
+    });
+}
+
+export async function fetchHistoricoLead(leadId: number): Promise<EventoHistorico[]> {
+    const rows = await db
+        .select()
+        .from(leadGrccHistorico)
+        .where(eq(leadGrccHistorico.leadId, leadId))
+        .orderBy(desc(leadGrccHistorico.quando), desc(leadGrccHistorico.id));
+    return rows.map(linhaParaEvento);
+}
+
+export async function fetchMovimentacoesRecentes(limite = 15): Promise<Movimentacao[]> {
+    const rows = await db
+        .select({ ev: leadGrccHistorico, cliente: leadGrcc.cliente, solicitacao: leadGrcc.solicitacao })
+        .from(leadGrccHistorico)
+        .innerJoin(leadGrcc, eq(leadGrcc.id, leadGrccHistorico.leadId))
+        .orderBy(desc(leadGrccHistorico.quando), desc(leadGrccHistorico.id))
+        .limit(limite);
+    return rows.map((r) => ({ ...linhaParaEvento(r.ev), cliente: r.cliente, solicitacao: r.solicitacao }));
+}
+
+export async function lerVersaoGrcc(): Promise<number> {
+    const [r] = await db.select().from(systemSettings).where(eq(systemSettings.key, 'grcc_versao'));
+    return r ? Number(r.value) || 0 : 0;
+}
+
+export async function lerUltimoImportGrcc(): Promise<UltimoImport | null> {
+    const [r] = await db.select().from(systemSettings).where(eq(systemSettings.key, 'grcc_ultimo_import'));
+    if (!r) return null;
+    try {
+        return JSON.parse(r.value) as UltimoImport;
+    } catch {
+        return null;
+    }
+}
+
+export async function fetchListasGrcc(): Promise<Record<CampoLista, string[]>> {
+    const rows = await db.select().from(dropdownOptions).where(like(dropdownOptions.field, 'grcc_%')).orderBy(dropdownOptions.id);
+    const listas = Object.fromEntries(CAMPOS_LISTA.map((c) => [c, [] as string[]])) as Record<CampoLista, string[]>;
+    for (const campo of CAMPOS_LISTA) {
+        listas[campo] = rows.filter((r) => r.field === FIELD_DA_LISTA[campo]).map((r) => r.value);
+    }
+    return listas;
+}
