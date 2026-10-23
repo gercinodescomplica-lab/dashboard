@@ -191,3 +191,16 @@ export const LEAD_VAZIO: LeadGrccDados = {
     inicioFaturamento: null,
     duracaoMeses: 12,
 };
+
+export type ResultadoAcao<T> =
+    | { ok: true; valor: T }
+    | { ok: false; erro: string; erros?: Partial<Record<keyof LeadGrccDados, string>> };
+
+export interface PainelGrcc {
+    leads: LeadGrcc[];
+    listas: Record<CampoLista, string[]>;
+    movimentacoes: Movimentacao[];
+    ultimoImport: UltimoImport | null;
+    projetosManuais: ProjetoManual[];
+    versao: number;
+}
