@@ -24,6 +24,8 @@ export interface Project {
   startDate?: string;
   billingStartMonth?: number;
   history?: ProjectHistoryItem[];
+  /** Preenchido quando o projeto é gerado por um lead da GRCC (/grcc) — não editável no Settings. */
+  leadGrccId?: number;
 }
 
 export interface QuarterData {

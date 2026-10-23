@@ -28,6 +28,8 @@ export const projects = sqliteTable('projects', {
     startDate: text('start_date'),
     billingStartMonth: integer('billing_start_month'),
     history: text('history'),
+    // Projeto gerado a partir de um lead da GRCC (dono = /grcc). Nulo = projeto manual.
+    leadGrccId: integer('lead_grcc_id').unique(),
 });
 
 export const cx = sqliteTable('cx', {
@@ -144,6 +146,42 @@ export const churn = sqliteTable('churn', {
     descricao: text('descricao').notNull(),
     motivo: text('motivo').notNull(),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const leadGrcc = sqliteTable('lead_grcc', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    cliente: text('cliente').notNull(),
+    solicitacao: text('solicitacao').notNull().default(''),
+    status: text('status'),
+    categoria: text('categoria').notNull().default('Novo'),
+    etapa: text('etapa'),
+    situacao: text('situacao'),
+    motivoPerda: text('motivo_perda'),
+    familiaDemanda: text('familia_demanda'),
+    valor: real('valor').notNull().default(0),
+    uf: text('uf'),
+    municipio: text('municipio'),
+    regiao: text('regiao'),
+    contatoNome: text('contato_nome'),
+    contatoEmail: text('contato_email'),
+    contatoTelefone: text('contato_telefone'),
+    previsaoFechamento: text('previsao_fechamento'), // "YYYY-MM-DD"
+    inicioFaturamento: text('inicio_faturamento'), // "YYYY-MM-DD", só Contratado
+    duracaoMeses: integer('duracao_meses').notNull().default(12),
+    criadoEm: text('criado_em').notNull(),
+    atualizadoEm: text('atualizado_em').notNull(),
+    excluidoEm: text('excluido_em'), // soft delete
+});
+
+// Somente acréscimo: nada atualiza nem apaga linhas daqui.
+export const leadGrccHistorico = sqliteTable('lead_grcc_historico', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    leadId: integer('lead_id').notNull().references(() => leadGrcc.id),
+    quando: text('quando').notNull(),
+    origem: text('origem', { enum: ['cadastro', 'edicao', 'importacao', 'exclusao'] }).notNull(),
+    arquivo: text('arquivo'),
+    autor: text('autor').notNull(),
+    mudancas: text('mudancas').notNull(), // JSON: [{ campo, de, para }]
 });
 
 
