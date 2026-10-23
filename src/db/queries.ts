@@ -35,6 +35,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
                     durationMonths: p.durationMonths ?? 12,
                     startDate: p.startDate ?? undefined,
                     billingStartMonth: p.billingStartMonth ?? undefined,
+                    leadGrccId: p.leadGrccId ?? undefined,
                     history: (() => {
                         if (!p.history) return undefined;
                         try {

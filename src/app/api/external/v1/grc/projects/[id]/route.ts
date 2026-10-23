@@ -43,6 +43,13 @@ export async function PATCH(
         );
     }
 
+    if (existing.leadGrccId) {
+        return NextResponse.json(
+            { error: 'Projeto gerado pela GRCC (/grcc) — edite o lead, não o projeto.' },
+            { status: 409 }
+        );
+    }
+
     let body: unknown;
     try {
         body = await request.json();

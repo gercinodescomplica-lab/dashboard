@@ -3,7 +3,7 @@
 import { db } from '@/db/index';
 import { managers, projects, cx, visits, churn } from '@/db/schema';
 import { Manager, CXItem, Visit, ChurnItem } from '@/types/manager';
-import { eq } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 
@@ -159,8 +159,9 @@ export async function saveManagerData(m: Manager) {
             }
         });
 
-        // 2. Delete existing projects to replace them
-        await db.delete(projects).where(eq(projects.managerId, m.id));
+        // 2. Delete existing MANUAL projects to replace them. Projetos com leadGrccId são
+        //    gerados pela /grcc (dono = cadastro de leads) e nunca são apagados/regravados aqui.
+        await db.delete(projects).where(and(eq(projects.managerId, m.id), isNull(projects.leadGrccId)));
 
         // 3. Assemble and inserts new projects if any
         const allProjectsToInsert: any[] = [];
@@ -169,6 +170,7 @@ export async function saveManagerData(m: Manager) {
             const quarter = m.pipeline[qKey as keyof typeof m.pipeline];
             if (quarter && quarter.projects) {
                 quarter.projects.forEach(proj => {
+                    if (proj.leadGrccId) return; // gerado pela /grcc — o que vier do editor é descartado
                     allProjectsToInsert.push({
                         managerId: m.id,
                         quarter: qKey as 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado',
@@ -235,7 +237,8 @@ export async function cloneManager(sourceId: string, newName: string): Promise<{
         const sourceProjects = await db.select().from(projects).where(eq(projects.managerId, sourceId));
         if (sourceProjects.length > 0) {
             await db.insert(projects).values(
-                sourceProjects.map(({ id: _id, managerId: _mid, ...rest }) => ({ ...rest, managerId: newId }))
+                // leadGrccId é unique: o clone vira projeto manual.
+                sourceProjects.map(({ id: _id, managerId: _mid, leadGrccId: _lead, ...rest }) => ({ ...rest, managerId: newId }))
             );
         }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { authenticate } from '@/lib/api-auth';
 import { db } from '@/db/index';
 import { managers, cx, visits, projects } from '@/db/schema';
@@ -221,7 +221,7 @@ export async function PATCH(request: Request) {
             if (projectDeleteIds.length > 0) {
                 const deleted = await tx
                     .delete(projects)
-                    .where(and(inArray(projects.id, projectDeleteIds), eq(projects.managerId, managerId)))
+                    .where(and(inArray(projects.id, projectDeleteIds), eq(projects.managerId, managerId), isNull(projects.leadGrccId)))
                     .returning({ id: projects.id });
                 summary.projects.deleted = deleted.length;
             }
@@ -238,7 +238,7 @@ export async function PATCH(request: Request) {
                             temperature: item.temperature,
                             description: item.description,
                         }))
-                        .where(and(eq(projects.id, item.id), eq(projects.managerId, managerId)))
+                        .where(and(eq(projects.id, item.id), eq(projects.managerId, managerId), isNull(projects.leadGrccId)))
                         .returning({ id: projects.id });
                     if (updated.length) summary.projects.updated++;
                 } else {

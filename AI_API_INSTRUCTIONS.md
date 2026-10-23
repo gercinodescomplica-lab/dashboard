@@ -71,3 +71,8 @@ Quando você, IA, for extrair dados deste endpoint para responder ao usuário:
 3.  **Use Dados Reais:** Confie nos dados estruturados dentro de `servedClients` para listar clientes e evite inventar ou deduzir quais órgãos pertencem a quem. O que está na API é a fonte da verdade.
 4.  **Resuma listas densas:** Se o usuário pedir "a carteira do Barone" e o `servedClients` tiver 15 nomes, liste-os claramente em bullet points utilizando o markdown adequado.
 5.  **Não exponha a Chave da API:** Ao mostrar exemplos ou explicar o que você consumiu, nunca mostre a variável do `.env` no texto em claro para o usuário final em um cenário de produção.
+
+
+## Projetos gerados pela GRCC
+
+Projetos com `leadGrccId` são gerados pela GRCC e não aceitam PATCH (409) nem são apagados/alterados pelo `/grc/sync`.

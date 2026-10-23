@@ -288,3 +288,8 @@ Implementação: `src/lib/planner-pull.ts` (throttle + fetch + parse) e
 - **403 Forbidden:** Token de API inválido.
 - **404 Not Found:** Recurso (contrato) não encontrado para o identificador fornecido.
 - **500 Internal Server Error:** Erro genérico no servidor.
+
+
+## Projetos gerados pela GRCC
+
+Projetos com `leadGrccId` são gerados pela GRCC e não aceitam PATCH (409) nem são apagados/alterados pelo `/grc/sync`.
