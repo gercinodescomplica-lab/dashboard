@@ -930,7 +930,9 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - Produces: `ALIASES_COLUNA: Record<keyof LeadGrccDados, string[]>`, `COLUNAS_OBRIGATORIAS`,
   `lerLinhasPlanilha(linhas: unknown[][]): ResultadoPlanilha` (linha 0 = cabeçalho).
 
-- [ ] **Step 1 (GATE): Fechar os aliases contra o `.xlsx` real**
+- [x] **Step 1 (GATE): Fechar os aliases contra o `.xlsx` real**
+
+> Cabeçalhos conferidos contra os campos do fluxo Power Automate (`cidades.service.ts`), sem o .xlsx: `cliente`, `solicitacao`, `solicitacao_padrao`, `status`, `categoria`, `categoria_padrao`, `etapa_padrao`, `situacao_padrao`, `motivo_padrao`, `familia_demanda`, `valor`, `uf`, `municipio`, `regiao`, `contato_nome`, `contato_email`, `contato_telefone`, `previsao_fechamento` — cada chave cai no campo certo de `ALIASES_COLUNA` (teste "mapeia cada campo do fluxo Power Automate"). Nenhum alias foi acrescentado. Aba lida: a primeira (`ABA_PADRAO` a definir na Task 12).
 
 Peça ao usuário a planilha. Coloque-a **fora do repositório** (tem nome/e-mail/telefone de contatos), ex.:
 `C:\Users\p017886\AppData\Local\Temp\claude\C--projeto-dashboard-dashboard\86ba7457-68cc-4f54-882c-1168fbd46d48\scratchpad\grcc.xlsx`,
