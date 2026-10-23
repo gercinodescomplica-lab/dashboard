@@ -145,6 +145,51 @@ describe('aplicarImportGrcc', () => {
         expect(await db.select().from(s.projects).where(eq(s.projects.managerId, 'grc1-x'))).toHaveLength(1);
         expect(await db.select().from(s.projects).where(isNull(s.projects.leadGrccId))).toHaveLength(1);
     });
+
+    it('cutover sem nenhum lead válido não apaga o pipeline manual', async () => {
+        await db.insert(s.projects).values({ managerId: 'grcc-debora', quarter: 'q3', name: 'Nuvem', value: 1, temperature: 'quente' });
+        await expect(
+            q.aplicarImportGrcc({
+                arquivo: 'a.xlsx',
+                linhas: [],
+                problemas: [{ linha: 2, cliente: 'X', motivo: 'Valor ilegível' }],
+                substituirPipelineManual: true,
+            })
+        ).rejects.toThrow('Nenhum lead válido para substituir o pipeline manual.');
+        expect(await q.fetchProjetosManuaisGrcc()).toHaveLength(1);
+        expect(await q.lerVersaoGrcc()).toBe(0);
+        expect(await q.lerUltimoImportGrcc()).toBeNull();
+    });
+
+    it('cutover que falha no meio desfaz tudo (projetos manuais, leads, histórico e versão)', async () => {
+        await db.insert(s.projects).values({ managerId: 'grcc-debora', quarter: 'q3', name: 'Nuvem', value: 1, temperature: 'quente' });
+        await expect(
+            q.aplicarImportGrcc({
+                arquivo: 'a.xlsx',
+                linhas: [
+                    { linha: 2, dados: lead() },
+                    // valor NOT NULL: o insert da segunda linha falha depois da primeira gravada
+                    { linha: 3, dados: lead({ cliente: 'Câmara de Osasco', municipio: 'Osasco', valor: null as unknown as number }) },
+                ],
+                problemas: [],
+                substituirPipelineManual: true,
+            })
+        ).rejects.toThrow();
+        const manuais = await q.fetchProjetosManuaisGrcc();
+        expect(manuais.map((p) => p.name)).toEqual(['Nuvem']);
+        expect(await db.select().from(s.projects).where(eq(s.projects.managerId, 'grcc-debora'))).toHaveLength(1);
+        expect(await db.select().from(s.leadGrcc)).toEqual([]);
+        expect(await db.select().from(s.leadGrccHistorico)).toEqual([]);
+        expect(await q.lerVersaoGrcc()).toBe(0);
+        expect(await q.lerUltimoImportGrcc()).toBeNull();
+    });
+
+    it('cutover com leads apaga os manuais e sobe a versão', async () => {
+        await db.insert(s.projects).values({ managerId: 'grcc-debora', quarter: 'q3', name: 'Nuvem', value: 1, temperature: 'quente' });
+        await q.aplicarImportGrcc({ arquivo: 'a.xlsx', linhas: [{ linha: 2, dados: lead() }], problemas: [], substituirPipelineManual: true });
+        expect(await q.fetchProjetosManuaisGrcc()).toEqual([]);
+        expect(await q.lerVersaoGrcc()).toBeGreaterThan(0);
+    });
 });
 
 describe('fetchMovimentacoesRecentes', () => {

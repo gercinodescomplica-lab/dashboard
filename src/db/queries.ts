@@ -868,6 +868,11 @@ export async function aplicarImportGrcc(input: {
         const existentesRows = await tx.select().from(leadGrcc).where(isNull(leadGrcc.excluidoEm));
         const existentes = existentesRows.map(linhaParaLead);
 
+        // A prévia vem ANTES de qualquer escrita: o cutover só apaga o pipeline manual se houver
+        // leads para pôr no lugar.
+        const previa = montarPrevia(input.linhas, input.problemas, existentes);
+
+        let apagouManuais = false;
         if (existentes.length === 0) {
             const manuais = await tx
                 .select({ id: projects.id })
@@ -877,11 +882,12 @@ export async function aplicarImportGrcc(input: {
                 if (!input.substituirPipelineManual) {
                     throw new ErroGrcc('Confirme a substituição do pipeline manual da Débora antes de gravar.');
                 }
+                if (previa.novos.length === 0) throw new ErroGrcc('Nenhum lead válido para substituir o pipeline manual.');
                 await tx.delete(projects).where(and(eq(projects.managerId, gerente.id), isNull(projects.leadGrccId)));
+                apagouManuais = true;
             }
         }
 
-        const previa = montarPrevia(input.linhas, input.problemas, existentes);
         const agora = new Date().toISOString();
         for (const n of previa.novos) await gravarLead(tx, null, n.dados, 'importacao', input.arquivo, gerente, agora);
         for (const a of previa.alterados) await gravarLead(tx, a.leadId, a.dados, 'importacao', input.arquivo, gerente, agora);
@@ -893,7 +899,7 @@ export async function aplicarImportGrcc(input: {
             .insert(systemSettings)
             .values({ key: 'grcc_ultimo_import', value: JSON.stringify(resumo), updatedAt: agora })
             .onConflictDoUpdate({ target: systemSettings.key, set: { value: JSON.stringify(resumo), updatedAt: agora } });
-        if (resumo.novos + resumo.alterados > 0) await incrementarVersao(tx);
+        if (apagouManuais || resumo.novos + resumo.alterados > 0) await incrementarVersao(tx);
 
         return { novos: resumo.novos, alterados: resumo.alterados };
     });
