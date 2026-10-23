@@ -67,8 +67,19 @@ export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProj
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {quarterData.projects.map((p, idx) => (
-                        <div key={idx} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center relative group">
+                    {quarterData.projects.map((p, idx) => {
+                        const gerado = !!p.leadGrccId;
+                        return (
+                        <div key={idx} className={`bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center relative group ${gerado ? 'opacity-80 mt-3' : ''}`}>
+                            {gerado && (
+                                <div className="absolute -top-2.5 left-4 flex items-center gap-2 text-[11px]">
+                                    <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 font-semibold">
+                                        Gerenciado pela GRCC
+                                    </span>
+                                    <a href="/grcc" className="text-indigo-400 hover:underline">Editar em /grcc</a>
+                                </div>
+                            )}
+                            <fieldset disabled={gerado} className="contents">
 
                             {/* Form Grid */}
                             <div className="flex-1 w-full flex flex-col justify-center">
@@ -157,8 +168,10 @@ export function QuarterEditor({ qKey, quarterData, manager, onChange, onMoveProj
                                     <Trash2 className="w-4 h-4 mx-auto" />
                                 </Button>
                             </div>
+                            </fieldset>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
