@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { fetchCidadesLeads } from '@/services/cidades.service';
+import { ultimoImportGrcc, movimentacoesRecentes } from '@/services/grcc.service';
+import type { Movimentacao, UltimoImport } from '@/lib/grcc/tipos';
+import { LeadDetalheLeitura } from './LeadDetalheLeitura';
+import { MovimentacoesRecentes } from '@/app/grcc/components/MovimentacoesRecentes';
+import { dataHoraBr } from '@/app/grcc/components/formato';
 import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { extractLeadDate } from '@/lib/grcc/normalizar';
 import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat, MotivoPerdaStat } from '@/types/cidades';
@@ -17,6 +23,7 @@ import {
     Filter,
     Loader2,
     RefreshCw,
+    Pencil,
     ExternalLink,
     Briefcase,
     CheckCircle2,
@@ -164,12 +171,28 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     const [selectedUf, setSelectedUf] = useState<string>('TODAS');
     const [selectedCategoria, setSelectedCategoria] = useState<string>('TODAS');
 
+    const [leadAberto, setLeadAberto] = useState<LeadCidade | null>(null);
+    const [ultimoImport, setUltimoImport] = useState<UltimoImport | null>(null);
+    const [movimentos, setMovimentos] = useState<Movimentacao[]>([]);
+    const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
+    const carregarOrigem = async () => {
+        try {
+            const [u, m] = await Promise.all([ultimoImportGrcc(), movimentacoesRecentes(8)]);
+            setUltimoImport(u);
+            setMovimentos(m);
+        } catch {}
+    };
+    useEffect(() => {
+        carregarOrigem();
+    }, []);
+
     const loadData = async () => {
         try {
             setIsLoading(true);
             setError(null);
             const data = await fetchCidadesLeads();
             setLeads(data);
+            setCarregadoEm(new Date().toISOString());
         } catch (err: any) {
             setError(err?.message || 'Falha ao carregar os leads da GRCC.');
         } finally {
@@ -187,6 +210,8 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     useVersaoGrcc(async () => {
         try {
             const novos = await fetchCidadesLeads();
+            setCarregadoEm(new Date().toISOString());
+            carregarOrigem();
             setLeads((antigos) => {
                 const porId = new Map(antigos.map((l) => [l.id, JSON.stringify(l)]));
                 const mudaram = new Set(novos.filter((l) => porId.get(l.id) !== JSON.stringify(l)).map((l) => l.id));
@@ -503,6 +528,19 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
         );
     }
 
+    if (leads.length === 0) {
+        return (
+            <div className={`h-[400px] w-full flex flex-col items-center justify-center gap-3 border rounded-2xl p-6 text-center ${T.panel}`}>
+                <Building2 className="w-10 h-10 text-indigo-400" />
+                <h3 className={`text-lg font-bold ${T.heading}`}>Nenhum lead cadastrado ainda</h3>
+                <p className={`text-sm ${T.subtext}`}>Os leads da GRCC são cadastrados e importados na página da GRCC.</p>
+                <Link href="/grcc" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-semibold">
+                    Ir para /grcc
+                </Link>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-6 h-full pb-10">
 
@@ -518,6 +556,11 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                         </h2>
                         <p className={`text-xs ${T.subtext}`}>
                             Monitoramento de oportunidades e contratos públicos/privados por município e estado
+                        </p>
+                        <p className={`text-[11px] mt-1 ${T.subtext}`}>
+                            Fonte: cadastro da GRCC
+                            {ultimoImport && ` · último import: ${ultimoImport.arquivo} (${dataHoraBr(ultimoImport.quando)})`}
+                            {carregadoEm && ` · atualizado em ${dataHoraBr(carregadoEm)}`}
                         </p>
                     </div>
                 </div>
@@ -560,6 +603,14 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                         Leads ({leads.length})
                     </button>
 
+                    <Link
+                        href="/grcc"
+                        title="Gerenciar leads (GRCC)"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${T.tabInactive}`}
+                    >
+                        <Pencil className="w-3.5 h-3.5" /> Gerenciar leads
+                    </Link>
+
                     <button
                         onClick={loadData}
                         title="Atualizar leads"
@@ -573,6 +624,17 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             {/* ── ABA 1: DASHBOARD ────────────────────────────────────────────── */}
             {activeTab === 'dashboard' && (
                 <div className="flex flex-col gap-6">
+
+                    {movimentos.length > 0 && (
+                        <div className={`border rounded-2xl p-4 ${T.panelSoft}`}>
+                            <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${T.subtext}`}>Movimentações recentes</h3>
+                            <MovimentacoesRecentes
+                                itens={movimentos}
+                                claro={lightActive}
+                                onAbrir={(id) => setLeadAberto(leads.find((l) => l.id === id) ?? null)}
+                            />
+                        </div>
+                    )}
 
                     {/* KPI Cards Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
@@ -1167,7 +1229,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             <tbody className={`divide-y text-xs ${T.tbodyDivide}`}>
                                 {filteredLeads.length > 0 ? (
                                     filteredLeads.map((lead) => (
-                                        <tr key={lead.id} className={`transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
+                                        <tr key={lead.id} onClick={() => setLeadAberto(lead)} className={`cursor-pointer transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
                                             <td className="p-3 text-center">
                                                 <span className="inline-block font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]">
                                                     {lead.uf || 'N/A'}
@@ -1292,6 +1354,8 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                 </DialogContent>
             </Dialog>
 
+
+            <LeadDetalheLeitura lead={leadAberto} onFechar={() => setLeadAberto(null)} claro={lightActive} />
 
             {avisoAoVivo && (
                 <div role="status" className="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-indigo-500/40 text-indigo-200 text-sm px-4 py-2.5 rounded-xl shadow-xl">
