@@ -41,6 +41,13 @@ describe('parseDataIso', () => {
     it('ISO', () => expect(parseDataIso('2026-12-01T00:00:00Z')).toBe('2026-12-01'));
     it('Date (read-excel-file devolve Date em célula de data)', () =>
         expect(parseDataIso(new Date(Date.UTC(2026, 0, 31)))).toBe('2026-01-31'));
+    it('data que não existe no calendário → null', () => {
+        expect(parseDataIso('10/22/2026')).toBeNull(); // mm/dd americano: mês 22
+        expect(parseDataIso('31/02/2026')).toBeNull();
+        expect(parseDataIso('2026-02-30')).toBeNull();
+        expect(parseDataIso('2026-13-01')).toBeNull();
+        expect(parseDataIso('29/02/2028')).toBe('2028-02-29');
+    });
     it('vazio/lixo → null', () => {
         expect(parseDataIso('')).toBeNull();
         expect(parseDataIso('sem data')).toBeNull();

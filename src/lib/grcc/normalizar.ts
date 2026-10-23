@@ -68,8 +68,11 @@ export function parseValorBRL(valor: unknown): number | null {
     return Number.isFinite(num) ? num : null;
 }
 
+/** Só devolve datas que existem no calendário (ida e volta pelo Date.UTC: 31/02 e mês 22 caem fora). */
 function iso(y: number, m: number, d: number): string | null {
-    if (!y || m < 1 || m > 12 || d < 1 || d > 31) return null;
+    if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d) || y < 1) return null;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== m - 1 || dt.getUTCDate() !== d) return null;
     return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 

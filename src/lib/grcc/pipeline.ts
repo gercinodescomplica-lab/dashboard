@@ -20,7 +20,7 @@ export function temperaturaDaCategoria(c: CategoriaGrcc): OpportunityTemperature
 export function trimestreDaPrevisao(previsao: string | null, anoGerente: number): Trimestre {
     if (!previsao) return 'nao_mapeado';
     const [ano, mes] = previsao.split('-').map(Number);
-    if (ano !== anoGerente || !mes) return 'nao_mapeado';
+    if (ano !== anoGerente || !Number.isInteger(mes) || mes < 1 || mes > 12) return 'nao_mapeado';
     return (['q1', 'q2', 'q3', 'q4'] as const)[Math.floor((mes - 1) / 3)];
 }
 

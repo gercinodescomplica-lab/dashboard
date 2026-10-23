@@ -21,6 +21,7 @@ describe('trimestreDaPrevisao', () => {
         ['2026-01-15', 'q1'], ['2026-03-31', 'q1'], ['2026-04-01', 'q2'],
         ['2026-09-30', 'q3'], ['2026-12-01', 'q4'],
         ['2027-02-01', 'nao_mapeado'], [null, 'nao_mapeado'],
+        ['2026-13-01', 'nao_mapeado'], ['2026-00-10', 'nao_mapeado'], ['2026-99-01', 'nao_mapeado'], ['lixo', 'nao_mapeado'],
     ])('%s → %s', (previsao, q) => expect(trimestreDaPrevisao(previsao, 2026)).toBe(q));
 });
 
