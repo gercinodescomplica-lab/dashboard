@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { fetchCidadesLeads } from '@/services/cidades.service';
+import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { extractLeadDate } from '@/lib/grcc/normalizar';
 import { LeadCidade, CidadesSummary, CategoriaStat, UfStat, TimelineStat, MotivoPerdaStat } from '@/types/cidades';
 import { formatCurrency } from '@/lib/format';
@@ -179,6 +180,32 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     useEffect(() => {
         loadData();
     }, []);
+
+    // Ao vivo: troca os dados sem spinner (filtros, busca, aba e scroll preservados).
+    const [avisoAoVivo, setAvisoAoVivo] = useState<string | null>(null);
+    const [destacados, setDestacados] = useState<Set<number>>(new Set());
+    useVersaoGrcc(async () => {
+        try {
+            const novos = await fetchCidadesLeads();
+            setLeads((antigos) => {
+                const porId = new Map(antigos.map((l) => [l.id, JSON.stringify(l)]));
+                const mudaram = new Set(novos.filter((l) => porId.get(l.id) !== JSON.stringify(l)).map((l) => l.id));
+                setDestacados(mudaram);
+                setAvisoAoVivo(mudaram.size > 0 ? `Atualizado agora · ${mudaram.size} lead(s) alterado(s)` : 'Atualizado agora');
+                return novos;
+            });
+        } catch {
+            // silencioso
+        }
+    });
+    useEffect(() => {
+        if (!avisoAoVivo) return;
+        const t = setTimeout(() => {
+            setAvisoAoVivo(null);
+            setDestacados(new Set());
+        }, 3000);
+        return () => clearTimeout(t);
+    }, [avisoAoVivo]);
 
     // ─── KPI Calculations ───────────────────────────────────────────────────
     const summary: CidadesSummary = useMemo(() => {
@@ -1140,7 +1167,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             <tbody className={`divide-y text-xs ${T.tbodyDivide}`}>
                                 {filteredLeads.length > 0 ? (
                                     filteredLeads.map((lead) => (
-                                        <tr key={lead.id} className={`transition-colors ${T.rowHover}`}>
+                                        <tr key={lead.id} className={`transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
                                             <td className="p-3 text-center">
                                                 <span className="inline-block font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]">
                                                     {lead.uf || 'N/A'}
@@ -1265,6 +1292,12 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                 </DialogContent>
             </Dialog>
 
+
+            {avisoAoVivo && (
+                <div role="status" className="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-indigo-500/40 text-indigo-200 text-sm px-4 py-2.5 rounded-xl shadow-xl">
+                    {avisoAoVivo}
+                </div>
+            )}
         </div>
     );
 }

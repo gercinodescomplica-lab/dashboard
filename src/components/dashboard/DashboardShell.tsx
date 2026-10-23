@@ -24,6 +24,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { calculateAchievementPercentage, determinePerformanceStatus, sumPipelineContratado2026 } from '@/lib/calc';
 import { applyBodyTheme } from '@/lib/themeSync';
+import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { StatBadge } from './StatBadge';
 
 export function DashboardShell() {
@@ -47,6 +48,10 @@ export function DashboardShell() {
 
     // Persiste a preferência de tema no navegador para sobreviver a atualizações de página (F5).
     useEffect(() => {
+        try {
+            const view = new URLSearchParams(window.location.search).get('view');
+            if (view === 'cidades') setCurrentView('cidades');
+        } catch {}
         try {
             const saved = localStorage.getItem('aibertinho-theme');
             if (saved === 'light' || saved === 'dark') {
@@ -101,6 +106,16 @@ export function DashboardShell() {
         };
         loadManagers();
     }, []);
+
+    // Ao vivo: quando a GRCC grava leads, o pipeline da Débora muda — recarrega só os gerentes,
+    // sem spinner e sem perder ano/gerente/visão selecionados.
+    useVersaoGrcc(async () => {
+        try {
+            setManagers(await fetchDashboardManagers());
+        } catch {
+            // silencioso: o dado atual continua na tela
+        }
+    });
 
     // Compute Years
     const availableYears = useMemo(() => {
