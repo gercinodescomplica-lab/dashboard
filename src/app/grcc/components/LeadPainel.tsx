@@ -59,12 +59,13 @@ export function LeadPainel({
     const [salvando, setSalvando] = useState(false);
     const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
     const [historico, setHistorico] = useState<EventoHistorico[]>([]);
-    const [origem, setOrigem] = useState({ lead, aberto });
+    const idAberto = lead?.id ?? null;
+    const [origem, setOrigem] = useState({ id: idAberto, aberto });
 
     // Reinicia o formulário quando muda o lead aberto (ajuste de estado durante a renderização).
-    if (origem.lead !== lead || origem.aberto !== aberto) {
+    if (origem.id !== idAberto || origem.aberto !== aberto) {
         const d = dadosDe(lead);
-        setOrigem({ lead, aberto });
+        setOrigem({ id: idAberto, aberto });
         setDados(d);
         setValorTexto(textoValor(d));
         setErros({});
@@ -75,15 +76,15 @@ export function LeadPainel({
     }
 
     useEffect(() => {
-        if (!lead || !aberto) return;
+        if (idAberto === null || !aberto) return;
         let cancelado = false;
-        historicoDoLead(lead.id)
+        historicoDoLead(idAberto)
             .then((h) => !cancelado && setHistorico(h))
             .catch(() => !cancelado && setHistorico([]));
         return () => {
             cancelado = true;
         };
-    }, [lead, aberto]);
+    }, [idAberto, aberto]);
 
     const set = <K extends keyof LeadGrccDados>(campo: K, valor: LeadGrccDados[K]) =>
         setDados((d) => ({ ...d, [campo]: valor }));
@@ -95,28 +96,38 @@ export function LeadPainel({
         setSalvando(true);
         setErroGeral(null);
         const valor = Number(valorTexto.replace(/\./g, '').replace(',', '.')) || 0;
-        const r = await salvarLead(chave, lead?.id ?? null, { ...dados, valor });
-        setSalvando(false);
-        if (!r.ok) {
-            setErros(r.erros ?? {});
-            setErroGeral(r.erro);
-            return;
+        try {
+            const r = await salvarLead(chave, lead?.id ?? null, { ...dados, valor });
+            if (!r.ok) {
+                setErros(r.erros ?? {});
+                setErroGeral(r.erro);
+                return;
+            }
+            await onGravado(lead ? 'Lead atualizado.' : 'Lead cadastrado.');
+            onFechar();
+        } catch {
+            setErroGeral('Não foi possível salvar agora. Tente novamente.');
+        } finally {
+            setSalvando(false);
         }
-        await onGravado(lead ? 'Lead atualizado.' : 'Lead cadastrado.');
-        onFechar();
     };
 
     const excluir = async () => {
         if (!lead) return;
         setSalvando(true);
-        const r = await excluirLead(chave, lead.id);
-        setSalvando(false);
-        if (!r.ok) {
-            setErroGeral(r.erro);
-            return;
+        try {
+            const r = await excluirLead(chave, lead.id);
+            if (!r.ok) {
+                setErroGeral(r.erro);
+                return;
+            }
+            await onGravado('Lead excluído.');
+            onFechar();
+        } catch {
+            setErroGeral('Não foi possível excluir agora. Tente novamente.');
+        } finally {
+            setSalvando(false);
         }
-        await onGravado('Lead excluído.');
-        onFechar();
     };
 
     const opcoes = (campo: CampoLista) => {

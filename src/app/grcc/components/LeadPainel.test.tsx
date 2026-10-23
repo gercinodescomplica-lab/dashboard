@@ -52,4 +52,26 @@ describe('LeadPainel', () => {
         await waitFor(() => expect(excluirLead).toHaveBeenCalledWith('k', 5));
         expect(onGravado).toHaveBeenCalledWith('Lead excluído.');
     });
+
+    it('novo objeto do mesmo lead não apaga o que foi digitado; outro id reinicia', async () => {
+        const user = userEvent.setup();
+        const props = { aberto: true, listas, onFechar: () => {}, onGravado: async () => {} };
+        const { rerender } = render(<LeadPainel {...props} lead={lead} />);
+        const campo = screen.getByLabelText(/^Cliente/);
+        await user.clear(campo);
+        await user.type(campo, 'Digitado');
+        rerender(<LeadPainel {...props} lead={{ ...lead, atualizadoEm: '2026-10-21T00:00:00Z' }} />);
+        expect(screen.getByLabelText(/^Cliente/)).toHaveValue('Digitado');
+        rerender(<LeadPainel {...props} lead={{ ...lead, id: 6, cliente: 'Outro' }} />);
+        expect(screen.getByLabelText(/^Cliente/)).toHaveValue('Outro');
+    });
+
+    it('salvarLead que rejeita reabilita Salvar e mostra erro', async () => {
+        const user = userEvent.setup();
+        salvarLead.mockRejectedValue(new Error('rede'));
+        render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
+        await user.click(screen.getByRole('button', { name: 'Salvar' }));
+        expect(await screen.findByText(/Não foi possível salvar agora/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
+    });
 });
