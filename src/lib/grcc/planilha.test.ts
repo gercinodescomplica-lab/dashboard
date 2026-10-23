@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { lerLinhasPlanilha } from './planilha';
+import { validarLead } from './validacao';
 
 const CAB = [
     'Cliente', 'Solicitação', 'Status', 'Categoria', 'Valor', 'UF', 'Município', 'Região',
@@ -156,5 +157,32 @@ describe('lerLinhasPlanilha', () => {
             [2, 'Duplicada (mesmo cliente e solicitação da linha 3)'],
             [3, 'Duplicada (mesmo cliente e solicitação da linha 2)'],
         ]);
+    });
+
+    it('contrato com o servidor: toda linha lida passa na validação de importação; o resto vai para "com problema"', () => {
+        const CAB2 = [...CAB, 'Início do faturamento', 'Duração'];
+        const com = (over: Partial<Record<string, unknown>>, extra: unknown[] = [null, null]) => [...linha(over), ...extra];
+        const r = lerLinhasPlanilha([
+            CAB2,
+            com({ Cliente: 'Prefeitura de Santos', Categoria: 'Contratado' }),
+            com({ Cliente: 'Prefeitura de Campinas', Categoria: 'Perda' }),
+            com({ Cliente: 'Prefeitura de Sorocaba', 'Contato Email': 'n/a' }),
+            com({ Cliente: 'Prefeitura de Osasco' }),
+            com({ Cliente: 'Prefeitura de Jundiaí' }, [null, 999]),
+        ]);
+        expect(r.linhas.map((l) => l.dados.cliente)).toEqual([
+            'Prefeitura de Santos', 'Prefeitura de Campinas', 'Prefeitura de Sorocaba', 'Prefeitura de Osasco',
+        ]);
+        for (const l of r.linhas) expect(validarLead(l.dados, { modo: 'importacao' })).toEqual({ ok: true, dados: l.dados });
+        expect(r.linhas[2].dados.contatoEmail).toBeNull();
+        expect(r.problemas).toHaveLength(1);
+        expect(r.problemas[0]).toMatchObject({ linha: 6, cliente: 'Prefeitura de Jundiaí' });
+        expect(r.problemas[0].motivo).not.toBe('');
+    });
+
+    it('data impossível na planilha vira vazia (pendência) em vez de derrubar a importação', () => {
+        const r = lerLinhasPlanilha([CAB, linha({ 'Previsão de fechamento': '31/02/2026' })]);
+        expect(r.problemas).toEqual([]);
+        expect(r.linhas[0].dados.previsaoFechamento).toBeNull();
     });
 });

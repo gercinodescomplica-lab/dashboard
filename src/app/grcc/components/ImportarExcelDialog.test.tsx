@@ -11,7 +11,7 @@ vi.mock('read-excel-file', () => ({
     ]),
     readSheetNames: vi.fn().mockResolvedValue(['Leads']),
 }));
-const confirmarImportacao = vi.fn().mockResolvedValue({ ok: true, valor: { novos: 1, alterados: 0 } });
+const confirmarImportacao = vi.fn().mockResolvedValue({ ok: true, valor: { novos: 1, alterados: 0, problemas: [] } });
 vi.mock('../actions', () => ({ confirmarImportacao: (...a: unknown[]) => confirmarImportacao(...a) }));
 vi.mock('../KeyGateGrcc', () => ({ useChaveGrcc: () => ({ chave: 'k', sair: () => {} }) }));
 
@@ -61,5 +61,36 @@ describe('ImportarExcelDialog', () => {
         expect(await screen.findByText(/Não foi possível gravar a importação/)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /Gravar 1 lead/ })).toBeEnabled();
         expect(onGravado).not.toHaveBeenCalled();
+    });
+
+    it('depois de gravar mostra as linhas que o servidor recusou, em vez de fechar calado', async () => {
+        confirmarImportacao.mockResolvedValueOnce({
+            ok: true,
+            valor: { novos: 1, alterados: 0, problemas: [{ linha: 7, cliente: 'Prefeitura de Jundiaí', motivo: 'Duração inválida.' }] },
+        });
+        const user = userEvent.setup();
+        const onGravado = vi.fn().mockResolvedValue(undefined);
+        const onFechar = vi.fn();
+        render(<ImportarExcelDialog aberto leadsAtuais={[]} projetosManuais={[]} onFechar={onFechar} onGravado={onGravado} />);
+        await user.upload(screen.getByLabelText(/Arquivo \.xlsx/), new File(['x'], 'leads.xlsx'));
+        await user.click(await screen.findByRole('button', { name: /Gravar 1 lead/ }));
+
+        expect(await screen.findByText(/1 linha não foi gravada/)).toBeInTheDocument();
+        expect(screen.getByText(/Linha 7: Duração inválida\./)).toBeInTheDocument();
+        expect(onGravado).toHaveBeenCalledWith('1 novo, 0 atualizados.');
+        expect(onFechar).not.toHaveBeenCalled();
+        await user.click(screen.getByRole('button', { name: 'Fechar' }));
+        expect(onFechar).toHaveBeenCalled();
+    });
+
+    it('falha ao atualizar a tela depois de gravar não mostra "não foi possível gravar"', async () => {
+        const user = userEvent.setup();
+        const onGravado = vi.fn().mockRejectedValue(new Error('refresh'));
+        const onFechar = vi.fn();
+        render(<ImportarExcelDialog aberto leadsAtuais={[]} projetosManuais={[]} onFechar={onFechar} onGravado={onGravado} />);
+        await user.upload(screen.getByLabelText(/Arquivo \.xlsx/), new File(['x'], 'leads.xlsx'));
+        await user.click(await screen.findByRole('button', { name: /Gravar 1 lead/ }));
+        await waitFor(() => expect(onFechar).toHaveBeenCalled());
+        expect(screen.queryByText(/Não foi possível gravar a importação/)).not.toBeInTheDocument();
     });
 });

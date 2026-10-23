@@ -68,7 +68,8 @@ describe('actions /grcc', () => {
             problemas: [],
             substituirPipelineManual: false,
         });
-        expect(r).toEqual({ ok: true, valor: { novos: 0, alterados: 0 } });
+        expect(r).toMatchObject({ ok: true, valor: { novos: 0, alterados: 0 } });
+        if (r.ok) expect(r.valor.problemas).toEqual([expect.objectContaining({ linha: 2, cliente: 'Outro' })]);
         expect((await svc.carregarPainelGrcc()).leads.find((l) => l.cliente === 'Outro')).toBeUndefined();
         const enviado = espiao.mock.calls[0][0];
         expect(enviado.linhas).toEqual([]);
@@ -86,7 +87,28 @@ describe('actions /grcc', () => {
         expect(await a.confirmarImportacao('chave-certa', { ...base, linhas: [], problemas: null } as never)).toMatchObject({ ok: false });
         for (const linhas of [[null], [{ linha: 2 }]]) {
             const r = await a.confirmarImportacao('chave-certa', { ...base, linhas } as never);
-            expect(r).toEqual({ ok: true, valor: { novos: 0, alterados: 0 } });
+            expect(r).toMatchObject({ ok: true, valor: { novos: 0, alterados: 0 } });
         }
+    });
+
+    it('confirmarImportacao usa a regra de importação: Contratado sem início, Perda sem motivo e e-mail "n/a" entram', async () => {
+        const r = await a.confirmarImportacao('chave-certa', {
+            arquivo: 'b.xlsx',
+            linhas: [
+                { linha: 2, dados: { ...dados, cliente: 'Prefeitura de Santos', municipio: 'Santos', categoria: 'Contratado' } },
+                { linha: 3, dados: { ...dados, cliente: 'Prefeitura de Campinas', municipio: 'Campinas', categoria: 'Perda' } },
+                { linha: 4, dados: { ...dados, cliente: 'Prefeitura de Sorocaba', municipio: 'Sorocaba', contatoEmail: 'n/a' } },
+                { linha: 5, dados: { ...dados, cliente: 'Prefeitura de Jundiaí', municipio: 'Jundiaí', duracaoMeses: 999 } },
+            ],
+            problemas: [{ linha: 9, cliente: 'Do navegador', motivo: 'Cliente vazio' }],
+            substituirPipelineManual: false,
+        });
+        expect(r).toMatchObject({ ok: true, valor: { novos: 3, alterados: 0 } });
+        if (!r.ok) return;
+        // Só as linhas que o SERVIDOR recusou (as do navegador o diálogo já mostrou).
+        expect(r.valor.problemas).toEqual([expect.objectContaining({ linha: 5, cliente: 'Prefeitura de Jundiaí' })]);
+        const leads = (await svc.carregarPainelGrcc()).leads;
+        expect(leads.find((l) => l.cliente === 'Prefeitura de Sorocaba')?.contatoEmail).toBeNull();
+        expect(leads.find((l) => l.cliente === 'Prefeitura de Jundiaí')).toBeUndefined();
     });
 });

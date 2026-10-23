@@ -16,6 +16,7 @@ import {
     textoOuNull,
 } from './normalizar';
 import { acharMunicipio } from './municipios';
+import { validarLead } from './validacao';
 
 /** Aliases já normalizados por `chaveCabecalho`. A ordem importa: o primeiro achado vence. */
 export const ALIASES_COLUNA: Record<keyof LeadGrccDados, string[]> = {
@@ -140,7 +141,13 @@ export function lerLinhasPlanilha(matriz: unknown[][]): ResultadoPlanilha {
             inicioFaturamento: parseDataIso(cel(row, 'inicioFaturamento')),
             duracaoMeses: Number.isInteger(duracao) && duracao > 0 ? duracao : 12,
         };
-        linhas.push({ linha: numero, dados });
+        // Mesma regra que o servidor aplica em confirmarImportacao: o que ele recusaria aparece já aqui.
+        const v = validarLead(dados, { modo: 'importacao' });
+        if (!v.ok) {
+            problemas.push({ linha: numero, cliente, motivo: Object.values(v.erros).join(' ') });
+            return;
+        }
+        linhas.push({ linha: numero, dados: v.dados });
     });
 
     // Duplicadas dentro da própria planilha: as duas saem para "com problema".

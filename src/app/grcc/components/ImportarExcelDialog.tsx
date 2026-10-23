@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { lerLinhasPlanilha } from '@/lib/grcc/planilha';
 import { montarPrevia } from '@/lib/grcc/previa';
-import type { LeadGrcc, Previa, ProjetoManual, ResultadoPlanilha } from '@/lib/grcc/tipos';
+import type { LeadGrcc, Previa, ProblemaLinha, ProjetoManual, ResultadoPlanilha } from '@/lib/grcc/tipos';
 import { confirmarImportacao } from '../actions';
 import { useChaveGrcc } from '../KeyGateGrcc';
 import { brl, rotuloMudanca } from './formato';
@@ -39,6 +39,8 @@ export function ImportarExcelDialog({
     const [gravando, setGravando] = useState(false);
     const [erro, setErro] = useState<string | null>(null);
     const [cutoverOk, setCutoverOk] = useState(false);
+    /** Linhas que o servidor recusou ao gravar (o resto foi gravado). */
+    const [recusadas, setRecusadas] = useState<{ mensagem: string; problemas: ProblemaLinha[] } | null>(null);
 
     const primeiraImportacao = leadsAtuais.length === 0 && projetosManuais.length > 0;
 
@@ -49,6 +51,7 @@ export function ImportarExcelDialog({
         setErro(null);
         setCutoverOk(false);
         setAba('novos');
+        setRecusadas(null);
     };
 
     const fechar = () => {
@@ -85,24 +88,35 @@ export function ImportarExcelDialog({
         if (!previa || !lido || !arquivo) return;
         setGravando(true);
         setErro(null);
+        let r: Awaited<ReturnType<typeof confirmarImportacao>>;
         try {
-            const r = await confirmarImportacao(chave, {
+            r = await confirmarImportacao(chave, {
                 arquivo,
                 linhas: lido.linhas,
                 problemas: lido.problemas,
                 substituirPipelineManual: primeiraImportacao && cutoverOk,
             });
-            if (!r.ok) {
-                setErro(r.erro);
-                return;
-            }
-            await onGravado(`${r.valor.novos} ${r.valor.novos === 1 ? 'novo' : 'novos'}, ${r.valor.alterados} atualizados.`);
-            fechar();
         } catch {
             setErro('Não foi possível gravar a importação. Tente de novo.');
-        } finally {
             setGravando(false);
+            return;
         }
+        setGravando(false);
+        if (!r.ok) {
+            setErro(r.erro);
+            return;
+        }
+        const mensagem = `${r.valor.novos} ${r.valor.novos === 1 ? 'novo' : 'novos'}, ${r.valor.alterados} atualizados.`;
+        // Já gravou: se a recarga da tela falhar, o pai mostra o próprio erro — não é falha de gravação.
+        await onGravado(mensagem).catch(() => {});
+        const problemas = r.valor.problemas ?? [];
+        if (problemas.length === 0) {
+            fechar();
+            return;
+        }
+        setPrevia(null);
+        setLido(null);
+        setRecusadas({ mensagem, problemas });
     };
 
     const linhasLidas = lido ? lido.linhas.length + lido.problemas.length : 0;
@@ -144,6 +158,28 @@ export function ImportarExcelDialog({
                 </label>
 
                 {erro && <p className="text-sm text-red-400">{erro}</p>}
+
+                {recusadas && (
+                    <div className="flex flex-col gap-3">
+                        <p className="text-sm text-emerald-300">Importação gravada: {recusadas.mensagem}</p>
+                        <div className="border border-amber-500/40 bg-amber-500/5 rounded-xl p-3 flex flex-col gap-2 max-h-72 overflow-y-auto text-sm">
+                            <p className="text-amber-200 font-semibold">
+                                {recusadas.problemas.length === 1
+                                    ? '1 linha não foi gravada'
+                                    : `${recusadas.problemas.length} linhas não foram gravadas`}{' '}
+                                — corrija na planilha e importe de novo:
+                            </p>
+                            {recusadas.problemas.map((p) => (
+                                <p key={`${p.linha}-${p.motivo}`} className="text-amber-300">
+                                    Linha {p.linha}: {p.motivo} {p.cliente && <span className="text-zinc-500">({p.cliente})</span>}
+                                </p>
+                            ))}
+                        </div>
+                        <div className="flex justify-end">
+                            <Button onClick={fechar}>Fechar</Button>
+                        </div>
+                    </div>
+                )}
 
                 {previa && (
                     <div className="flex flex-col gap-3">
