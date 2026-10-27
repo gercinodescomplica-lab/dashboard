@@ -6,7 +6,7 @@ import { LeadsGrccTable } from './LeadsGrccTable';
 import { LEAD_VAZIO, type LeadGrcc } from '@/lib/grcc/tipos';
 
 const mk = (id: number, over: Partial<LeadGrcc>): LeadGrcc => ({
-    ...LEAD_VAZIO, id, criadoEm: '2026-10-01T00:00:00Z', atualizadoEm: '2026-10-20T00:00:00Z', ...over,
+    ...LEAD_VAZIO, visivelDashboard: true, id, criadoEm: '2026-10-01T00:00:00Z', atualizadoEm: '2026-10-20T00:00:00Z', ...over,
 });
 
 const leads = [
@@ -35,6 +35,26 @@ describe('LeadsGrccTable', () => {
         render(<LeadsGrccTable leads={leads} onAbrir={() => {}} />);
         await user.type(screen.getByPlaceholderText(/Buscar/), 'camara')
         expect(screen.getAllByRole('row')).toHaveLength(2);
+    });
+
+    it('linha mostra o último andamento e o que falta no cadastro', () => {
+        render(<LeadsGrccTable leads={[mk(9, { cliente: 'Prefeitura X', status: 'Reunião 02/11', uf: 'SP' })]} onAbrir={() => {}} />);
+        expect(screen.getByText('Reunião 02/11')).toBeInTheDocument();
+        expect(screen.getByText('Falta: município, valor, previsão')).toBeInTheDocument();
+    });
+
+    it('"Por cidade" agrupa com "Sem cidade" primeiro e o filtro continua valendo', async () => {
+        const user = userEvent.setup();
+        render(<LeadsGrccTable leads={leads} onAbrir={() => {}} />);
+        await user.click(screen.getByRole('button', { name: 'Por cidade' }));
+        const grupos = screen.getAllByRole('rowheader').map((g) => g.textContent);
+        expect(grupos).toEqual([
+            expect.stringMatching(/^Sem cidade.*1 lead/),
+            expect.stringMatching(/^Indaiatuba · SP.*1 lead/),
+            expect.stringMatching(/^Osasco · SP.*1 lead/),
+        ]);
+        await user.click(screen.getByRole('button', { name: /Perda 1/ }));
+        expect(screen.getAllByRole('rowheader').map((g) => g.textContent)).toEqual([expect.stringMatching(/^Osasco · SP/)]);
     });
 
     it('clique na linha abre o lead', async () => {
