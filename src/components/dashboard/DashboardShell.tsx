@@ -1,7 +1,5 @@
 'use client';
 
-import Image from 'next/image';
-import Link from 'next/link';
 import { useState, useMemo, useEffect } from 'react';
 import { Manager } from '@/types/manager';
 import { fetchDashboardManagers } from '@/services/managers.service';
@@ -10,7 +8,7 @@ import { getFaturamento2025Action } from '@/app/settings/actions';
 import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
-import { Users, Loader2, Building2, Store, LayoutDashboard, Network, PackageSearch, FileText, ChevronDown, BarChart2, MapPin, Sun, Moon } from 'lucide-react';
+import { Users, Loader2, Building2 } from 'lucide-react';
 import OrganizationChartView from './OrganizationChartView';
 import PipelineStoreView from './PipelineStoreView';
 import { CidadesView } from '@/components/cidades/CidadesView';
@@ -26,6 +24,7 @@ import { calculateAchievementPercentage, determinePerformanceStatus, sumPipeline
 import { applyBodyTheme } from '@/lib/themeSync';
 import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { StatBadge } from './StatBadge';
+import { AppHeader, VISOES_APP, type VisaoApp } from '@/components/layout/AppHeader';
 
 export function DashboardShell() {
     const [managers, setManagers] = useState<Manager[]>([]);
@@ -49,8 +48,10 @@ export function DashboardShell() {
     // Persiste a preferência de tema no navegador para sobreviver a atualizações de página (F5).
     useEffect(() => {
         try {
-            const view = new URLSearchParams(window.location.search).get('view');
-            if (view === 'cidades') setCurrentView('cidades');
+            const params = new URLSearchParams(window.location.search);
+            const view = params.get('view');
+            if (view && (VISOES_APP as string[]).includes(view)) setCurrentView(view as VisaoApp);
+            if (params.get('trocarGerente') === '1') setIsModalOpen(true);
         } catch {}
         try {
             const saved = localStorage.getItem('aibertinho-theme');
@@ -182,108 +183,13 @@ export function DashboardShell() {
         <div className={`h-screen w-screen ${storeLightActive ? 'bg-white text-zinc-900' : 'bg-zinc-950 text-zinc-50'} flex flex-col overflow-hidden selection:bg-indigo-500/30 transition-colors duration-200`}>
 
             {/* Header - Fixed Height */}
-            <header className={`relative flex-none p-4 sm:p-6 lg:px-8 border-b ${storeLightActive ? 'border-zinc-200 bg-white' : 'border-zinc-900/50 bg-zinc-950'} z-30 flex items-center justify-between transition-colors duration-200`}>
-                <div className="flex items-center gap-4">
-                    {/* <div className="hidden sm:flex p-2.5 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-                        <MapPin className="w-6 h-6 text-indigo-400" />
-                    </div> */}
-                    <button
-                        onClick={() => setSelectedManagerId('drm')}
-                        className="text-left group transition-all cursor-pointer flex items-center gap-3"
-                    >
-                        {/* Logotipo AIBertinho — não muda com o tema */}
-                        <Image src="/avatars/aibertinho.png" alt="AiBertinho v2 Logo" width={40} height={40} className="rounded-full object-cover shadow-sm group-hover:scale-105 transition-transform" priority />
-                        <div>
-                            <h1 className={`text-2xl font-bold tracking-tight transition-colors flex items-center gap-2 ${storeLightActive ? 'text-zinc-900 group-hover:text-indigo-600' : 'text-zinc-100 group-hover:text-indigo-400'}`}>
-                                AiBertinho <span className="text-xs font-semibold text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">v2.01</span>
-                            </h1>
-                            <p className={`text-sm font-medium ${storeLightActive ? 'text-zinc-500' : 'text-zinc-400'}`}>
-                                Visão Executiva de Gerentes
-                            </p>
-                        </div>
-                    </button>
-
-                    {/* Navigation */}
-                    <nav className={`hidden sm:flex items-center gap-1 ml-6 p-1 rounded-lg border ${storeLightActive ? 'bg-zinc-100 border-zinc-200' : 'bg-zinc-900/50 border-zinc-800/80'}`}>
-                        {/* Dashboard */}
-                        <button
-                            onClick={() => setCurrentView('dashboard')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'dashboard' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
-                        >
-                            <LayoutDashboard className="w-4 h-4" />
-                            Dashboard
-                        </button>
-
-                        {/* Cidades */}
-                        <button
-                            onClick={() => setCurrentView('cidades')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'cidades' ? (storeLightActive ? 'bg-white text-indigo-600 shadow-sm border border-indigo-200' : 'bg-zinc-800 text-indigo-400 shadow-sm border border-indigo-500/30') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
-                        >
-                            <MapPin className={`w-4 h-4 ${storeLightActive ? 'text-indigo-600' : 'text-indigo-400'}`} />
-                            Cidades
-                        </button>
-
-                        {/* Organograma */}
-                        <button
-                            onClick={() => setCurrentView('organograma')}
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'organograma' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
-                        >
-                            <Network className="w-4 h-4" />
-                            Organograma
-                        </button>
-
-                        {/* Store — hover dropdown */}
-                        <div className="relative group">
-                            <button
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${currentView === 'store' || currentView === 'pipeline' ? (storeLightActive ? 'bg-white text-zinc-900 shadow-sm' : 'bg-zinc-800 text-zinc-100 shadow-sm') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50')}`}
-                            >
-                                <Store className="w-4 h-4" />
-                                Store
-                                <ChevronDown className="w-3 h-3 opacity-60" />
-                            </button>
-                            {/* Dropdown */}
-                            <div className={`absolute top-full left-0 mt-1.5 w-52 rounded-xl shadow-2xl py-1.5 invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-all duration-150 z-50 border ${storeLightActive ? 'bg-white border-zinc-200' : 'bg-zinc-900 border-zinc-800'}`}>
-                                <button
-                                    onClick={() => setCurrentView('store')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'store' ? (storeLightActive ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-100 bg-zinc-800') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60')}`}
-                                >
-                                    <BarChart2 className="w-4 h-4 shrink-0" />
-                                    Estatísticas Store
-                                </button>
-                                <button
-                                    onClick={() => setCurrentView('pipeline')}
-                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors ${currentView === 'pipeline' ? (storeLightActive ? 'text-zinc-900 bg-zinc-100' : 'text-zinc-100 bg-zinc-800') : (storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60')}`}
-                                >
-                                    <PackageSearch className="w-4 h-4 shrink-0" />
-                                    Pipeline Store
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Contratos */}
-                        <Link
-                            href="/contracts"
-                            className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${storeLightActive ? 'text-zinc-600 hover:text-zinc-900 hover:bg-white/70' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/50'}`}
-                        >
-                            <FileText className="w-4 h-4" />
-                            Contratos
-                        </Link>
-
-                    </nav>
-                </div>
-
-                <div className="flex items-center gap-4">
-                    {/* Alternância de tema — fixa no header principal. Hoje só reflete no Pipeline Store; no futuro vai controlar o app inteiro. */}
-                    <button
-                        type="button"
-                        onClick={() => setStoreTheme(t => t === 'dark' ? 'light' : 'dark')}
-                        title={storeTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-                        aria-label={storeTheme === 'dark' ? 'Mudar para tema claro' : 'Mudar para tema escuro'}
-                        className={`w-10 h-10 flex items-center justify-center rounded-md border transition-colors ${storeLightActive ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 border-zinc-200' : 'bg-zinc-900 text-amber-300 hover:bg-zinc-800 border-zinc-800'}`}
-                    >
-                        {storeTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                    </button>
-
+            <AppHeader
+                claro={storeLightActive}
+                onAlternarTema={() => setStoreTheme(t => t === 'dark' ? 'light' : 'dark')}
+                visaoAtual={currentView}
+                onNavegar={setCurrentView}
+                onLogo={() => setSelectedManagerId('drm')}
+            >
                     <div className="w-28">
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
                             <SelectTrigger className={storeLightActive ? 'bg-white border-zinc-200 focus:ring-zinc-300 h-10' : 'bg-zinc-900 border-zinc-800 focus:ring-zinc-700 h-10'}>
@@ -377,8 +283,7 @@ export function DashboardShell() {
                             </div>
                         </DialogContent>
                     </Dialog>
-                </div>
-            </header>
+            </AppHeader>
 
             {/* Main Content Area - Scrollable on mobile, handles remaining height */}
             <main className="relative flex-1 min-h-0 p-4 sm:p-6 lg:px-8 flex flex-col w-full overflow-y-auto overflow-x-hidden z-10">

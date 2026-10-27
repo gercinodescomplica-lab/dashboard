@@ -86,6 +86,7 @@ describe('lerLinhasPlanilha', () => {
             solicitacao: 'Solicitacao A', // 'solicitacao' tem prioridade sobre 'solicitacao_padrao'
             status: 'Status X',
             categoria: 'Perda', // 'categoria_padrao' tem prioridade sobre 'categoria'
+            temperatura: null, // o fluxo não traz temperatura: fica automática
             etapa: 'Etapa Y',
             situacao: 'Situacao Z',
             motivoPerda: 'Motivo W',

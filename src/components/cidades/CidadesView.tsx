@@ -3,10 +3,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { fetchCidadesLeads } from '@/services/cidades.service';
-import { ultimoImportGrcc, movimentacoesRecentes } from '@/services/grcc.service';
-import type { Movimentacao, UltimoImport } from '@/lib/grcc/tipos';
 import { LeadDetalheLeitura } from './LeadDetalheLeitura';
-import { MovimentacoesRecentes } from '@/app/grcc/components/MovimentacoesRecentes';
+import { IndicadorModal, type DetalheIndicador } from './IndicadorModal';
+import { contarCidades, ehPerda, leadsDoIndicador, somaValor, type Indicador } from '@/lib/cidades/indicadores';
 import { dataHoraBr } from '@/app/grcc/components/formato';
 import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { extractLeadDate } from '@/lib/grcc/normalizar';
@@ -172,20 +171,11 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     const [selectedCategoria, setSelectedCategoria] = useState<string>('TODAS');
 
     const [leadAbertoId, setLeadAbertoId] = useState<number | null>(null);
+    // Drill-down: o modal do indicador fica "por baixo" enquanto o detalhe de um lead dele está aberto.
+    const [indicador, setIndicador] = useState<Indicador | null>(null);
+    const [indicadorPorBaixo, setIndicadorPorBaixo] = useState(false);
     const leadAberto = leadAbertoId === null ? null : (leads.find((l) => l.id === leadAbertoId) ?? null);
-    const [ultimoImport, setUltimoImport] = useState<UltimoImport | null>(null);
-    const [movimentos, setMovimentos] = useState<Movimentacao[]>([]);
     const [carregadoEm, setCarregadoEm] = useState<string | null>(null);
-    const carregarOrigem = async () => {
-        try {
-            const [u, m] = await Promise.all([ultimoImportGrcc(), movimentacoesRecentes(8)]);
-            setUltimoImport(u);
-            setMovimentos(m);
-        } catch {}
-    };
-    useEffect(() => {
-        carregarOrigem();
-    }, []);
 
     const loadData = async () => {
         try {
@@ -212,7 +202,6 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
         try {
             const novos = await fetchCidadesLeads();
             setCarregadoEm(new Date().toISOString());
-            carregarOrigem();
             setLeads((antigos) => {
                 const porId = new Map(antigos.map((l) => [l.id, JSON.stringify(l)]));
                 const mudaram = new Set(novos.filter((l) => porId.get(l.id) !== JSON.stringify(l)).map((l) => l.id));
@@ -240,43 +229,12 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
         const pipelineTotal = activeLeads.reduce((acc, l) => acc + l.valor, 0);
         const ticketMedio = activeLeads.length > 0 ? pipelineTotal / activeLeads.length : 0;
 
-        // Unique Cities calculation
-        const cidadesSet = new Set<string>();
-        leads.forEach(l => {
-            if (l.municipio && l.municipio.trim() && l.municipio !== '#VALUE!' && l.municipio !== '#VALOR!') {
-                cidadesSet.add(`${l.municipio.trim().toLowerCase()}_${(l.uf || '').toLowerCase()}`);
-            }
-        });
-        const cidadesAtendidas = cidadesSet.size;
+        const cidadesAtendidas = contarCidades(leads);
 
-        const now = new Date();
-        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-        const next90DaysLimit = new Date();
-        next90DaysLimit.setDate(next90DaysLimit.getDate() + 90);
-
-        let previsaoMesAtual = 0;
-        let proximos90Dias = 0;
-        let leadsSemUf = 0;
-
-        for (const lead of leads) {
-            if (!lead.uf) leadsSemUf++;
-
-            const leadDate = extractLeadDate(lead);
-            if (leadDate) {
-                const leadYm = `${leadDate.getFullYear()}-${String(leadDate.getMonth() + 1).padStart(2, '0')}`;
-
-                if (leadYm === currentYearMonth) {
-                    previsaoMesAtual += lead.valor;
-                }
-
-                // Check if date is current or future within 90 days
-                if (leadDate >= startOfCurrentMonth && leadDate <= next90DaysLimit) {
-                    proximos90Dias += lead.valor;
-                }
-            }
-        }
+        // Previsões não contam Perda (mesma regra do modal que abre ao clicar no card).
+        const previsaoMesAtual = somaValor(leadsDoIndicador(leads, 'mes'));
+        const proximos90Dias = somaValor(leadsDoIndicador(leads, 'prox90'));
+        const leadsSemUf = leads.filter((l) => !l.uf).length;
 
         return {
             totalLeads,
@@ -362,7 +320,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
         const map = new Map<string, { label: string; count: number; valor: number }>();
 
         for (const lead of upcomingClosingLeads) {
-            if (!lead.dateObj) continue;
+            if (!lead.dateObj || ehPerda(lead)) continue;
             const y = lead.dateObj.getFullYear();
             const m = lead.dateObj.getMonth() + 1;
             const key = `${y}-${String(m).padStart(2, '0')}`;
@@ -458,6 +416,36 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
     const top10Deals = useMemo(() => {
         return [...leads].sort((a, b) => b.valor - a.valor).slice(0, 10);
     }, [leads]);
+
+    // ─── Drill-down dos indicadores ─────────────────────────────────────────
+    const detalheIndicador: DetalheIndicador | null = useMemo(() => {
+        if (!indicador) return null;
+        const lista = leadsDoIndicador(leads, indicador);
+        if (typeof indicador === 'object') {
+            const barra = monthlyClosingChart.find((m) => m.key === indicador.mes);
+            return { titulo: `Fechamentos previstos · ${barra?.label ?? indicador.mes}`, descricao: 'Leads ativos com previsão de fechamento neste mês (Perda não entra).', leads: lista };
+        }
+        const textos: Record<Exclude<Indicador, object>, [string, string]> = {
+            total: ['Todos os leads', 'Todos os leads do cadastro da GRCC, do maior para o menor valor.'],
+            cidades: ['Cidades atendidas', 'Leads agrupados por município.'],
+            pipeline: ['Pipeline total', 'Leads ativos (sem Perda) que somam o pipeline.'],
+            ticket: ['Ticket médio', `Média de ${formatCurrency(summary.ticketMedio)} sobre estes leads ativos.`],
+            mes: ['Previsão do mês atual', 'Leads ativos com fechamento previsto para este mês.'],
+            prox90: ['Próximos 90 dias', 'Leads ativos com fechamento previsto do início deste mês até daqui a 90 dias.'],
+        };
+        const [titulo, descricao] = textos[indicador];
+        return { titulo, descricao, leads: lista, porCidade: indicador === 'cidades' };
+    }, [indicador, leads, monthlyClosingChart, summary.ticketMedio]);
+
+    const abrirLeadDoIndicador = (id: number) => {
+        setIndicadorPorBaixo(true);
+        setLeadAbertoId(id);
+    };
+
+    const fecharLead = () => {
+        setLeadAbertoId(null);
+        setIndicadorPorBaixo(false);
+    };
 
     // ─── Filtered Table Leads ───────────────────────────────────────────────
     const filteredLeads = useMemo(() => {
@@ -560,7 +548,6 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                         </p>
                         <p className={`text-[11px] mt-1 ${T.subtext}`}>
                             Fonte: cadastro da GRCC
-                            {ultimoImport && ` · último import: ${ultimoImport.arquivo} (${dataHoraBr(ultimoImport.quando)})`}
                             {carregadoEm && ` · atualizado em ${dataHoraBr(carregadoEm)}`}
                         </p>
                     </div>
@@ -626,36 +613,25 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             {activeTab === 'dashboard' && (
                 <div className="flex flex-col gap-6">
 
-                    {movimentos.length > 0 && (
-                        <div className={`border rounded-2xl p-4 ${T.panelSoft}`}>
-                            <h3 className={`text-xs font-semibold uppercase tracking-wider mb-2 ${T.subtext}`}>Movimentações recentes</h3>
-                            <MovimentacoesRecentes
-                                itens={movimentos}
-                                claro={lightActive}
-                                onAbrir={(id) => setLeadAbertoId(id)}
-                            />
-                        </div>
-                    )}
-
                     {/* KPI Cards Row */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
+                        <button type="button" onClick={() => setIndicador('total')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${T.subtext}`}>
                                 <Briefcase className="w-3.5 h-3.5 text-indigo-400" /> Total Leads
                             </span>
                             <span className={`text-2xl font-bold font-mono mt-1 ${T.heading}`}>{summary.totalLeads}</span>
                             <span className={`text-[10px] ${T.subtext}`}>Registros mapeados</span>
-                        </div>
+                        </button>
 
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 shadow-lg ${lightActive ? 'bg-gradient-to-br from-indigo-50 via-white to-white border-indigo-200' : 'bg-gradient-to-br from-indigo-900/40 via-zinc-900/60 to-zinc-900/40 border-indigo-500/30'}`}>
+                        <button type="button" onClick={() => setIndicador('cidades')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 shadow-lg ${lightActive ? 'bg-gradient-to-br from-indigo-50 via-white to-white border-indigo-200' : 'bg-gradient-to-br from-indigo-900/40 via-zinc-900/60 to-zinc-900/40 border-indigo-500/30'}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${lightActive ? 'text-indigo-700' : 'text-indigo-300'}`}>
                                 <Building2 className="w-4 h-4 text-indigo-400" /> Cidades Atendidas
                             </span>
                             <span className={`text-2xl font-bold font-mono mt-1 ${T.heading}`}>{summary.cidadesAtendidas}</span>
                             <span className={`text-[10px] ${T.subtext}`}>Municípios distintos atados</span>
-                        </div>
+                        </button>
 
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
+                        <button type="button" onClick={() => setIndicador('pipeline')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${T.subtext}`}>
                                 <DollarSign className="w-3.5 h-3.5 text-emerald-400" /> Pipeline Total
                             </span>
@@ -663,9 +639,9 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                 {formatCurrency(summary.pipelineTotal)}
                             </span>
                             <span className={`text-[10px] ${T.subtext}`}>Soma de oportunidades</span>
-                        </div>
+                        </button>
 
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
+                        <button type="button" onClick={() => setIndicador('ticket')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${T.subtext}`}>
                                 <TrendingUp className="w-3.5 h-3.5 text-blue-400" /> Ticket Médio
                             </span>
@@ -673,9 +649,9 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                 {formatCurrency(summary.ticketMedio)}
                             </span>
                             <span className={`text-[10px] ${T.subtext}`}>Valor médio / negócio</span>
-                        </div>
+                        </button>
 
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
+                        <button type="button" onClick={() => setIndicador('mes')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${T.subtext}`}>
                                 <Calendar className="w-3.5 h-3.5 text-violet-400" /> Mês Atual
                             </span>
@@ -683,9 +659,9 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                 {formatCurrency(summary.previsaoMesAtual)}
                             </span>
                             <span className={`text-[10px] ${T.subtext}`}>Previsão mês vigente</span>
-                        </div>
+                        </button>
 
-                        <div className={`flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
+                        <button type="button" onClick={() => setIndicador('prox90')} title="Ver os leads deste número" className={`text-left cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 flex flex-col gap-1 border rounded-2xl p-4 transition-colors duration-200 ${T.panelSoft}`}>
                             <span className={`text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 ${T.subtext}`}>
                                 <Clock className="w-3.5 h-3.5 text-amber-400" /> Próx. 90 Dias
                             </span>
@@ -693,7 +669,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                 {formatCurrency(summary.proximos90Dias)}
                             </span>
                             <span className={`text-[10px] ${T.subtext}`}>Fechamento em 3 meses</span>
-                        </div>
+                        </button>
                     </div>
 
                     {/* ── SEÇÃO EXCLUSIVA: PRÓXIMAS DATAS DE FECHAMENTO ─────────────────────── */}
@@ -729,9 +705,11 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                         const isPast = lead.dateObj ? lead.dateObj < startOfCurrentMonth : false;
 
                                         return (
-                                            <div
+                                            <button
+                                                type="button"
                                                 key={lead.id}
-                                                className={`border rounded-xl p-3.5 flex flex-col justify-between transition-all group ${
+                                                onClick={() => setLeadAbertoId(lead.id)}
+                                                className={`text-left cursor-pointer border rounded-xl p-3.5 flex flex-col justify-between transition-all group ${
                                                     isPast
                                                         ? (lightActive ? 'bg-zinc-50 border-zinc-200 opacity-80 hover:opacity-100' : 'bg-zinc-950/40 border-zinc-800/60 opacity-70 hover:opacity-100')
                                                         : (lightActive ? 'bg-white border-indigo-300 shadow-md ring-1 ring-indigo-100 hover:border-indigo-400' : 'bg-zinc-950/90 border-indigo-500/50 shadow-md ring-1 ring-indigo-500/20 hover:border-indigo-400')
@@ -767,11 +745,11 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                                     <span className={`text-[10px] uppercase tracking-wider font-semibold ${T.subtext}`}>
                                                         {lead.categoria}
                                                     </span>
-                                                    <span className={`text-sm font-bold font-mono ${lightActive ? 'text-emerald-600' : 'text-emerald-400'}`}>
-                                                        {formatCurrency(lead.valor)}
+                                                    <span className={`text-sm font-bold font-mono ${lead.valor ? (lightActive ? 'text-emerald-600' : 'text-emerald-400') : T.subtext}`}>
+                                                        {lead.valor ? formatCurrency(lead.valor) : 'Valor a definir'}
                                                     </span>
                                                 </div>
-                                            </div>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -811,7 +789,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                                         'Volume Total',
                                                     ]}
                                                 />
-                                                <Bar dataKey="valor" radius={[6, 6, 0, 0]}>
+                                                <Bar dataKey="valor" radius={[6, 6, 0, 0]} cursor="pointer" onClick={(d: any) => d?.payload?.key && setIndicador({ mes: d.payload.key })}>
                                                     {monthlyClosingChart.map((entry, index) => (
                                                         <Cell key={`cell-${index}`} fill={index === 0 ? '#818cf8' : '#4f46e5'} />
                                                     ))}
@@ -1067,9 +1045,11 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
 
                             <div className="flex flex-col gap-3 overflow-y-auto max-h-[300px] pr-1">
                                 {top10Deals.map((deal, idx) => (
-                                    <div
+                                    <button
+                                        type="button"
                                         key={deal.id}
-                                        className={`flex items-center justify-between border rounded-xl p-3 text-xs ${T.panelSoft}`}
+                                        onClick={() => setLeadAbertoId(deal.id)}
+                                        className={`w-full text-left cursor-pointer transition-colors hover:border-indigo-400 flex items-center justify-between border rounded-xl p-3 text-xs ${T.panelSoft}`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] shrink-0 ${T.pillMuted}`}>
@@ -1080,10 +1060,10 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                                                 <p className={`text-[10px] truncate ${T.subtext}`}>{deal.municipio} ({deal.uf || 'N/A'})</p>
                                             </div>
                                         </div>
-                                        <span className="font-mono font-bold text-emerald-500 shrink-0 ml-2">
-                                            {formatCurrency(deal.valor)}
+                                        <span className={`font-mono font-bold shrink-0 ml-2 ${deal.valor ? 'text-emerald-500' : T.subtext}`}>
+                                            {deal.valor ? formatCurrency(deal.valor) : 'Valor a definir'}
                                         </span>
-                                    </div>
+                                    </button>
                                 ))}
                             </div>
                         </div>
@@ -1356,7 +1336,14 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             </Dialog>
 
 
-            <LeadDetalheLeitura lead={leadAberto} onFechar={() => setLeadAbertoId(null)} claro={lightActive} />
+            <IndicadorModal
+                detalhe={detalheIndicador}
+                aberto={indicador !== null && !indicadorPorBaixo}
+                onFechar={() => setIndicador(null)}
+                onAbrirLead={abrirLeadDoIndicador}
+                claro={lightActive}
+            />
+            <LeadDetalheLeitura lead={leadAberto} onFechar={fecharLead} claro={lightActive} />
 
             {avisoAoVivo && (
                 <div role="status" className="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-indigo-500/40 text-indigo-200 text-sm px-4 py-2.5 rounded-xl shadow-xl">

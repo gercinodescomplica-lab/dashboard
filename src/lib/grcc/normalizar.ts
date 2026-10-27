@@ -4,7 +4,7 @@
  * importação de planilha e à aba Cidades.
  */
 
-import { CATEGORIAS_GRCC, type CategoriaGrcc } from './tipos';
+import { CATEGORIAS_GRCC, TEMPERATURAS_LEAD, type CategoriaGrcc, type TemperaturaLead } from './tipos';
 
 const UFS_VALIDAS = new Set([
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI',
@@ -30,9 +30,12 @@ export function chaveLead(cliente: string, solicitacao: string): string {
 export function textoOuNull(v: unknown): string | null {
     if (v === null || v === undefined) return null;
     const s = String(v).trim();
-    if (!s || s === '#VALUE!' || s === '#VALOR!' || s === '#N/A' || s === '#REF!') return null;
+    if (!s || ERRO_EXCEL.test(s)) return null;
     return s;
 }
+
+// read-excel-file entrega célula com erro de fórmula como "#ERROR_#VALUE!".
+const ERRO_EXCEL = /^(#ERROR_)?#(VALUE!|VALOR!|N\/A|REF!|DIV\/0!|NAME\?|NOME\?|NUM!|NULL!|NULO!|SPILL!|CALC!)$/i;
 
 /**
  * Valor em reais vindo do Excel: "R$ 9.099.830,44", "349,020,12", "1.047.060", "4239525,6", número.
@@ -43,6 +46,8 @@ export function parseValorBRL(valor: unknown): number | null {
     if (valor === null || valor === undefined) return 0;
     const s = String(valor).trim();
     if (!s) return 0;
+    // Formato contábil do Excel mostra zero como "R$ -".
+    if (/^(R\$)?\s*-\s*$/i.test(s)) return 0;
 
     const clean = s.replace(/[^0-9.,]/g, '');
     if (!clean) return null;
@@ -141,6 +146,12 @@ export function normalizarCategoria(valor: unknown): CategoriaGrcc {
     return CATEGORIA_POR_CHAVE.get(chave) ?? ALIASES_CATEGORIA[chave] ?? 'Novo';
 }
 
+/** Temperatura da planilha (Quente/Morno/Frio, com ou sem acento/maiúscula) → canônica. Outra coisa → null (automático). */
+export function normalizarTemperatura(valor: unknown): TemperaturaLead | null {
+    const chave = chaveTexto(String(valor ?? ''));
+    return (TEMPERATURAS_LEAD as readonly string[]).includes(chave) ? (chave as TemperaturaLead) : null;
+}
+
 export function normalizarUf(valor: unknown): string | null {
     const uf = String(valor ?? '').trim().toUpperCase();
     return UFS_VALIDAS.has(uf) ? uf : null;
@@ -148,7 +159,7 @@ export function normalizarUf(valor: unknown): string | null {
 
 /** Quando a coluna município vem quebrada (#VALUE!), deduz pelo nome do cliente. */
 export function municipioDoCliente(cliente: string): string {
-    const s = cliente.trim();
+    const s = cliente.trim().replace(/\s+-\s+[A-Z]{2}$/, '');
     const matchDe = s.match(/\bde\s+([A-Za-zÀ-ÿ\s-]+?)\s*(?:\([A-Z]{2}\))?\s*$/i);
     if (matchDe) return matchDe[1].trim();
     return s

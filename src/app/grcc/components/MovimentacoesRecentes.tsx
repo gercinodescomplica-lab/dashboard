@@ -9,6 +9,8 @@ const ORIGEM: Record<Movimentacao['origem'], string> = {
     edicao: 'editado',
     importacao: 'importado',
     exclusao: 'excluído',
+    correcao: 'andamento corrigido',
+    remocao: 'andamento removido',
 };
 
 function resumo(m: Movimentacao): string {

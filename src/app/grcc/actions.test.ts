@@ -63,13 +63,13 @@ describe('actions /grcc', () => {
         const r = await a.salvarLead('chave-certa', null, dados);
         expect(r.ok).toBe(true);
         if (!r.ok) return;
-        const painel = await svc.carregarPainelGrcc();
+        const painel = await svc.carregarPainelGrcc('chave-certa');
         expect(painel.leads).toHaveLength(1);
         expect(painel.versao).toBe(1);
         expect(await svc.versaoGrcc()).toBe(1);
 
         expect(await a.excluirLead('chave-certa', r.valor.id)).toEqual({ ok: true, valor: null });
-        expect((await svc.historicoDoLead(r.valor.id)).map((e) => e.origem)).toEqual(['exclusao', 'cadastro']);
+        expect((await svc.historicoDoLead('chave-certa', r.valor.id)).map((e) => e.origem)).toEqual(['exclusao', 'cadastro']);
     });
 
     it('confirmarImportacao valida cada linha no servidor (payload adulterado vira problema, não grava)', async () => {
@@ -83,7 +83,7 @@ describe('actions /grcc', () => {
         });
         expect(r).toMatchObject({ ok: true, valor: { novos: 0, alterados: 0 } });
         if (r.ok) expect(r.valor.problemas).toEqual([expect.objectContaining({ linha: 2, cliente: 'Outro' })]);
-        expect((await svc.carregarPainelGrcc()).leads.find((l) => l.cliente === 'Outro')).toBeUndefined();
+        expect((await svc.carregarPainelGrcc('chave-certa')).leads.find((l) => l.cliente === 'Outro')).toBeUndefined();
         const enviado = espiao.mock.calls[0][0];
         expect(enviado.linhas).toEqual([]);
         expect(enviado.problemas).toHaveLength(1);
@@ -120,7 +120,7 @@ describe('actions /grcc', () => {
         if (!r.ok) return;
         // Só as linhas que o SERVIDOR recusou (as do navegador o diálogo já mostrou).
         expect(r.valor.problemas).toEqual([expect.objectContaining({ linha: 5, cliente: 'Prefeitura de Jundiaí' })]);
-        const leads = (await svc.carregarPainelGrcc()).leads;
+        const leads = (await svc.carregarPainelGrcc('chave-certa')).leads;
         expect(leads.find((l) => l.cliente === 'Prefeitura de Sorocaba')?.contatoEmail).toBeNull();
         expect(leads.find((l) => l.cliente === 'Prefeitura de Jundiaí')).toBeUndefined();
     });

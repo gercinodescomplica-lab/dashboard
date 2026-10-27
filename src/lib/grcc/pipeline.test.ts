@@ -27,7 +27,7 @@ describe('trimestreDaPrevisao', () => {
 
 describe('projetoDoLead', () => {
     const lead: LeadGrcc = {
-        ...LEAD_VAZIO, id: 3, cliente: 'ALESP', solicitacao: 'Mensageria', status: 'Proposta no cliente',
+        ...LEAD_VAZIO, visivelDashboard: true, id: 3, cliente: 'ALESP', solicitacao: 'Mensageria', status: 'Proposta no cliente',
         categoria: 'No cliente', valor: 10542439.43, previsaoFechamento: '2026-11-20',
         criadoEm: 'x', atualizadoEm: 'x',
     };

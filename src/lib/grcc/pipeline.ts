@@ -1,5 +1,5 @@
 import type { OpportunityTemperature } from '@/types/manager';
-import type { CategoriaGrcc, LeadGrcc } from './tipos';
+import type { CategoriaGrcc, LeadGrcc, LeadGrccDados } from './tipos';
 
 type Trimestre = 'q1' | 'q2' | 'q3' | 'q4' | 'nao_mapeado';
 
@@ -15,6 +15,15 @@ const TEMPERATURA: Record<CategoriaGrcc, OpportunityTemperature> = {
 
 export function temperaturaDaCategoria(c: CategoriaGrcc): OpportunityTemperature {
     return TEMPERATURA[c] ?? 'frio';
+}
+
+/**
+ * Temperatura que o lead leva ao pipeline. Contratado/Perda mandam sempre; nos demais vale a
+ * temperatura escolhida no cadastro (quente/morno/frio) e, se vazia, a da categoria.
+ */
+export function temperaturaDoLead(lead: Pick<LeadGrccDados, 'categoria' | 'temperatura'>): OpportunityTemperature {
+    if (lead.categoria === 'Contratado' || lead.categoria === 'Perda') return temperaturaDaCategoria(lead.categoria);
+    return lead.temperatura ?? temperaturaDaCategoria(lead.categoria);
 }
 
 export function trimestreDaPrevisao(previsao: string | null, anoGerente: number): Trimestre {
@@ -45,7 +54,7 @@ export function projetoDoLead(lead: LeadGrcc, gerente: { id: string; year: numbe
         orgao: lead.cliente,
         name: lead.solicitacao || 'Lead GRCC',
         value: lead.valor,
-        temperature: temperaturaDaCategoria(lead.categoria),
+        temperature: temperaturaDoLead(lead),
         description: lead.status,
         durationMonths: lead.duracaoMeses,
         startDate: lead.categoria === 'Contratado' ? lead.inicioFaturamento : null,

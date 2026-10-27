@@ -6,18 +6,14 @@
  */
 
 import { revalidatePath } from 'next/cache';
-import { aplicarImportGrcc, ErroGrcc, excluirLeadGrcc, salvarLeadGrcc } from '@/db/queries';
+import { aplicarImportGrcc, corrigirAndamentoGrcc, ErroGrcc, excluirLeadGrcc, salvarLeadGrcc } from '@/db/queries';
 import { validarLead } from '@/lib/grcc/validacao';
-import type { LeadGrcc, LeadGrccDados, LinhaPlanilha, ProblemaLinha, ResultadoAcao } from '@/lib/grcc/tipos';
+import { chaveGrccValida } from '@/lib/grcc/chave';
+import type { EventoHistorico, LeadGrcc, LeadGrccDados, LinhaPlanilha, ProblemaLinha, ResultadoAcao } from '@/lib/grcc/tipos';
 
 const CHAVE_INVALIDA = { ok: false as const, erro: 'Chave GRCC inválida.' };
 
-function chaveValida(chave: string): boolean {
-    // Valor colado no painel da Vercel costuma vir com quebra de linha no fim; vazio após trim = fechado.
-    const correta = process.env.GRCC_KEY?.trim();
-    if (!correta || typeof chave !== 'string') return false;
-    return chave.trim() === correta;
-}
+const chaveValida = chaveGrccValida;
 
 function falha(err: unknown): { ok: false; erro: string } {
     if (err instanceof ErroGrcc) return { ok: false, erro: err.message };
@@ -34,14 +30,57 @@ export async function verificarChaveGrcc(chave: string): Promise<boolean> {
     return chaveValida(chave);
 }
 
-export async function salvarLead(chave: string, id: number | null, dados: LeadGrccDados): Promise<ResultadoAcao<LeadGrcc>> {
+export async function salvarLead(
+    chave: string,
+    id: number | null,
+    dados: LeadGrccDados,
+    opcoes: { visivelDashboard?: boolean } = {}
+): Promise<ResultadoAcao<LeadGrcc>> {
     if (!chaveValida(chave)) return CHAVE_INVALIDA;
     const v = validarLead(dados, { exigirLocal: true });
     if (!v.ok) return { ok: false, erro: 'Corrija os campos destacados.', erros: v.erros };
     try {
-        const { lead } = await salvarLeadGrcc(id, v.dados);
+        const visivel = typeof opcoes?.visivelDashboard === 'boolean' ? opcoes.visivelDashboard : undefined;
+        const { lead } = await salvarLeadGrcc(id, v.dados, { visivelDashboard: visivel });
         revalidar();
         return { ok: true, valor: lead };
+    } catch (err) {
+        return falha(err);
+    }
+}
+
+const LIMITE_ANDAMENTO = 2000;
+
+/** Corrige o texto de um andamento já gravado (o original continua no histórico completo). */
+export async function corrigirAndamento(
+    chave: string,
+    leadId: number,
+    eventoId: number,
+    texto: string
+): Promise<ResultadoAcao<{ lead: LeadGrcc; historico: EventoHistorico[] }>> {
+    if (!chaveValida(chave)) return CHAVE_INVALIDA;
+    if (typeof texto !== 'string' || !texto.trim()) return { ok: false, erro: 'Escreva o andamento corrigido.' };
+    if (texto.trim().length > LIMITE_ANDAMENTO) return { ok: false, erro: `Andamento muito longo (máx. ${LIMITE_ANDAMENTO} caracteres).` };
+    try {
+        const r = await corrigirAndamentoGrcc(leadId, eventoId, texto);
+        if (r.mudou) revalidar();
+        return { ok: true, valor: { lead: r.lead, historico: r.historico } };
+    } catch (err) {
+        return falha(err);
+    }
+}
+
+/** Tira um andamento da linha do tempo (lançado por engano). Fica registrado no histórico completo. */
+export async function removerAndamento(
+    chave: string,
+    leadId: number,
+    eventoId: number
+): Promise<ResultadoAcao<{ lead: LeadGrcc; historico: EventoHistorico[] }>> {
+    if (!chaveValida(chave)) return CHAVE_INVALIDA;
+    try {
+        const r = await corrigirAndamentoGrcc(leadId, eventoId, null);
+        revalidar();
+        return { ok: true, valor: { lead: r.lead, historico: r.historico } };
     } catch (err) {
         return falha(err);
     }

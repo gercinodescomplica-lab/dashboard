@@ -11,6 +11,7 @@ import type { LeadGrcc, Previa, ProblemaLinha, ProjetoManual, ResultadoPlanilha 
 import { confirmarImportacao } from '../actions';
 import { useChaveGrcc } from '../KeyGateGrcc';
 import { brl, rotuloMudanca } from './formato';
+import { useClaro } from '../tema';
 
 /** Aba da planilha com os leads (fechada no Step 1 da Task 4). Se não existir, usa a primeira. */
 const ABA_PADRAO = 'Leads';
@@ -31,6 +32,7 @@ export function ImportarExcelDialog({
     onGravado: (mensagem: string) => Promise<void>;
 }) {
     const { chave } = useChaveGrcc();
+    const claro = useClaro();
     const [arquivo, setArquivo] = useState<string | null>(null);
     const [lido, setLido] = useState<ResultadoPlanilha | null>(null);
     const [previa, setPrevia] = useState<Previa | null>(null);
@@ -125,7 +127,7 @@ export function ImportarExcelDialog({
             key={a}
             type="button"
             onClick={() => setAba(a)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${aba === a ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-zinc-900 text-zinc-400 border-zinc-800'}`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold border ${aba === a ? 'bg-indigo-600 text-white border-indigo-500' : `${claro ? 'bg-white' : 'bg-zinc-900'} ${claro ? 'text-zinc-600' : 'text-zinc-400'} ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}`}
         >
             {rotulo} {n}
         </button>
@@ -133,17 +135,17 @@ export function ImportarExcelDialog({
 
     return (
         <Dialog open={aberto} onOpenChange={(o) => !o && fechar()}>
-            <DialogContent className="sm:max-w-3xl bg-zinc-950 border-zinc-800 text-zinc-100 max-h-[90vh] overflow-y-auto">
+            <DialogContent className={`sm:max-w-3xl ${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'text-zinc-900' : 'text-zinc-100'} max-h-[90vh] overflow-y-auto`}>
                 <DialogHeader>
                     <DialogTitle>Importar Excel</DialogTitle>
-                    <DialogDescription className="text-zinc-400">
+                    <DialogDescription className={`${claro ? 'text-zinc-600' : 'text-zinc-400'}`}>
                         Nada é gravado até você confirmar. Leads que não estão na planilha são mantidos.
                     </DialogDescription>
                 </DialogHeader>
 
-                <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-zinc-800 rounded-xl p-6 cursor-pointer hover:border-indigo-500/60">
-                    {lendo ? <Loader2 className="w-6 h-6 animate-spin text-indigo-400" /> : <FileSpreadsheet className="w-6 h-6 text-indigo-400" />}
-                    <span className="text-sm text-zinc-300">{arquivo ?? 'Escolha ou arraste o arquivo .xlsx'}</span>
+                <label className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-xl p-6 cursor-pointer hover:border-indigo-500/60`}>
+                    {lendo ? <Loader2 className={`w-6 h-6 animate-spin ${claro ? 'text-indigo-600' : 'text-indigo-400'}`} /> : <FileSpreadsheet className={`w-6 h-6 ${claro ? 'text-indigo-600' : 'text-indigo-400'}`} />}
+                    <span className={`text-sm ${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>{arquivo ?? 'Escolha ou arraste o arquivo .xlsx'}</span>
                     <input
                         type="file"
                         aria-label="Arquivo .xlsx"
@@ -157,33 +159,33 @@ export function ImportarExcelDialog({
                     />
                 </label>
 
-                {erro && <p className="text-sm text-red-400">{erro}</p>}
+                {erro && <p className={`text-sm ${claro ? 'text-red-600' : 'text-red-400'}`}>{erro}</p>}
 
                 {recusadas && (
                     <div className="flex flex-col gap-3">
-                        <p className="text-sm text-emerald-300">Importação gravada: {recusadas.mensagem}</p>
+                        <p className={`text-sm ${claro ? 'text-emerald-700' : 'text-emerald-300'}`}>Importação gravada: {recusadas.mensagem}</p>
                         <div className="border border-amber-500/40 bg-amber-500/5 rounded-xl p-3 flex flex-col gap-2 max-h-72 overflow-y-auto text-sm">
-                            <p className="text-amber-200 font-semibold">
+                            <p className={`${claro ? 'text-amber-800' : 'text-amber-200'} font-semibold`}>
                                 {recusadas.problemas.length === 1
                                     ? '1 linha não foi gravada'
                                     : `${recusadas.problemas.length} linhas não foram gravadas`}{' '}
                                 — corrija na planilha e importe de novo:
                             </p>
                             {recusadas.problemas.map((p) => (
-                                <p key={`${p.linha}-${p.motivo}`} className="text-amber-300">
+                                <p key={`${p.linha}-${p.motivo}`} className={`${claro ? 'text-amber-700' : 'text-amber-300'}`}>
                                     Linha {p.linha}: {p.motivo} {p.cliente && <span className="text-zinc-500">({p.cliente})</span>}
                                 </p>
                             ))}
                         </div>
                         <div className="flex justify-end">
-                            <Button onClick={fechar}>Fechar</Button>
+                            <Button className={claro ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : undefined} onClick={fechar}>Fechar</Button>
                         </div>
                     </div>
                 )}
 
                 {previa && (
                     <div className="flex flex-col gap-3">
-                        <p className="text-sm text-zinc-300">
+                        <p className={`text-sm ${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
                             {arquivo} · {linhasLidas} linhas lidas
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -193,7 +195,7 @@ export function ImportarExcelDialog({
                             {chipAba('problemas', '⚠ Com problema', previa.problemas.length)}
                         </div>
 
-                        <div className="border border-zinc-800 rounded-xl p-3 max-h-72 overflow-y-auto text-sm flex flex-col gap-2">
+                        <div className={`border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-xl p-3 max-h-72 overflow-y-auto text-sm flex flex-col gap-2`}>
                             {aba === 'novos' &&
                                 previa.novos.map((n) => (
                                     <p key={n.linha}>
@@ -206,16 +208,16 @@ export function ImportarExcelDialog({
                                     <div key={a.linha}>
                                         <p className="font-semibold">{a.dados.cliente}</p>
                                         {a.mudancas.map((m) => (
-                                            <p key={m.campo} className="text-zinc-400 pl-3">
+                                            <p key={m.campo} className={`${claro ? 'text-zinc-600' : 'text-zinc-400'} pl-3`}>
                                                 {rotuloMudanca(m)}
                                             </p>
                                         ))}
                                     </div>
                                 ))}
-                            {aba === 'iguais' && <p className="text-zinc-400">{previa.iguais} linhas sem nenhuma mudança.</p>}
+                            {aba === 'iguais' && <p className={`${claro ? 'text-zinc-600' : 'text-zinc-400'}`}>{previa.iguais} linhas sem nenhuma mudança.</p>}
                             {aba === 'problemas' &&
                                 previa.problemas.map((p) => (
-                                    <p key={`${p.linha}-${p.motivo}`} className="text-amber-300">
+                                    <p key={`${p.linha}-${p.motivo}`} className={`${claro ? 'text-amber-700' : 'text-amber-300'}`}>
                                         Linha {p.linha}: {p.motivo} {p.cliente && <span className="text-zinc-500">({p.cliente})</span>} — será ignorada
                                     </p>
                                 ))}
@@ -223,12 +225,12 @@ export function ImportarExcelDialog({
 
                         {primeiraImportacao && (
                             <div className="border border-amber-500/40 bg-amber-500/5 rounded-xl p-3 flex flex-col gap-2">
-                                <p className="text-sm text-amber-200 font-semibold">Pipeline da Débora</p>
-                                <p className="text-sm text-zinc-300">
+                                <p className={`text-sm ${claro ? 'text-amber-800' : 'text-amber-200'} font-semibold`}>Pipeline da Débora</p>
+                                <p className={`text-sm ${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
                                     Esta é a primeira importação. Os {projetosManuais.length} projetos digitados à mão no pipeline da Débora serão
                                     substituídos pelos {previa.novos.length} projetos gerados a partir dos leads.
                                 </p>
-                                <ul className="text-xs text-zinc-400 max-h-32 overflow-y-auto">
+                                <ul className={`text-xs ${claro ? 'text-zinc-600' : 'text-zinc-400'} max-h-32 overflow-y-auto`}>
                                     {projetosManuais.map((p) => (
                                         <li key={p.id}>
                                             {p.orgao ?? '—'} · {p.name} · {brl(p.value)} · {p.quarter.toUpperCase()}
@@ -243,10 +245,10 @@ export function ImportarExcelDialog({
                         )}
 
                         <div className="flex justify-end gap-2">
-                            <Button variant="ghost" onClick={fechar}>
+                            <Button variant="ghost" className={`${claro ? 'hover:bg-zinc-100' : ''} ${claro ? 'hover:text-zinc-900' : ''}`} onClick={fechar}>
                                 Cancelar
                             </Button>
-                            <Button disabled={!podeGravar} onClick={gravar}>
+                            <Button className={claro ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : undefined} disabled={!podeGravar} onClick={gravar}>
                                 {gravando ? 'Gravando…' : `Gravar ${total} ${total === 1 ? 'lead' : 'leads'}`}
                             </Button>
                         </div>

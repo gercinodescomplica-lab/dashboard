@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CATEGORIAS_GRCC, type LeadGrccDados } from './tipos';
+import { CATEGORIAS_GRCC, TEMPERATURAS_LEAD, type LeadGrccDados } from './tipos';
 import { acharMunicipio } from './municipios';
 
 const textoOpcional = z.string().trim().transform((s) => (s === '' ? null : s)).nullable();
@@ -23,6 +23,10 @@ export const schemaLead = z.object({
     solicitacao: z.string().trim(),
     status: textoOpcional,
     categoria: z.enum(CATEGORIAS_GRCC, { message: 'Categoria inválida.' }),
+    // Vazio/ausente = automático pela categoria.
+    temperatura: z
+        .union([z.enum(TEMPERATURAS_LEAD, { message: 'Temperatura inválida.' }), z.literal(''), z.null(), z.undefined()])
+        .transform((v) => v || null),
     etapa: textoOpcional,
     situacao: textoOpcional,
     motivoPerda: textoOpcional,
@@ -91,14 +95,28 @@ export function validarLead(
     return { ok: true, dados: { ...d, municipio: d.uf && d.municipio ? acharMunicipio(d.uf, d.municipio) : d.municipio } };
 }
 
-/** O que falta para o lead "contar certo" nos números (filtro ⚠ Pendências). */
+const PENDENCIA: Partial<Record<keyof LeadGrccDados, string>> = {
+    uf: 'Sem UF',
+    municipio: 'Sem município',
+    valor: 'Sem valor',
+    previsaoFechamento: 'Sem previsão',
+    inicioFaturamento: 'Sem início do faturamento',
+    motivoPerda: 'Sem motivo da perda',
+};
+
+/** Campos que faltam para o lead "contar certo" nos números. */
+export function camposPendentes(l: LeadGrccDados): (keyof LeadGrccDados)[] {
+    const c: (keyof LeadGrccDados)[] = [];
+    if (!l.uf) c.push('uf');
+    if (!l.municipio) c.push('municipio');
+    if (!l.valor) c.push('valor');
+    if (l.categoria !== 'Perda' && !l.previsaoFechamento) c.push('previsaoFechamento');
+    if (l.categoria === 'Contratado' && !l.inicioFaturamento) c.push('inicioFaturamento');
+    if (l.categoria === 'Perda' && !l.motivoPerda) c.push('motivoPerda');
+    return c;
+}
+
+/** Rótulos do que falta (filtro ⚠ Pendências). */
 export function pendenciasDoLead(l: LeadGrccDados): string[] {
-    const p: string[] = [];
-    if (!l.uf) p.push('Sem UF');
-    if (!l.municipio) p.push('Sem município');
-    if (!l.valor) p.push('Sem valor');
-    if (l.categoria !== 'Perda' && !l.previsaoFechamento) p.push('Sem previsão');
-    if (l.categoria === 'Contratado' && !l.inicioFaturamento) p.push('Sem início do faturamento');
-    if (l.categoria === 'Perda' && !l.motivoPerda) p.push('Sem motivo da perda');
-    return p;
+    return camposPendentes(l).map((c) => PENDENCIA[c]!);
 }

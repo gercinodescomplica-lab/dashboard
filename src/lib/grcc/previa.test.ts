@@ -3,7 +3,7 @@ import { montarPrevia } from './previa';
 import { LEAD_VAZIO, type LeadGrcc } from './tipos';
 
 const existente: LeadGrcc = {
-    ...LEAD_VAZIO, id: 7, cliente: 'Prefeitura de Indaiatuba', solicitacao: 'Consultoria', valor: 100,
+    ...LEAD_VAZIO, visivelDashboard: true, id: 7, cliente: 'Prefeitura de Indaiatuba', solicitacao: 'Consultoria', valor: 100,
     criadoEm: '2026-10-01T00:00:00Z', atualizadoEm: '2026-10-01T00:00:00Z',
 };
 

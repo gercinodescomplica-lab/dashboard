@@ -1,4 +1,5 @@
-import { ROTULO_CAMPO, type CategoriaGrcc, type Mudanca } from '@/lib/grcc/tipos';
+import { ROTULO_CAMPO, ROTULO_TEMPERATURA, type CategoriaGrcc, type Mudanca, type TemperaturaLead } from '@/lib/grcc/tipos';
+import type { OpportunityTemperature } from '@/types/manager';
 import { formatCurrency } from '@/lib/format';
 
 export function brl(n: number): string {
@@ -27,7 +28,8 @@ export function haQuanto(iso: string, agora = Date.now()): string {
 }
 
 function valorLegivel(campo: Mudanca['campo'], v: Mudanca['de']): string {
-    if (v === null) return '—';
+    if (v === null) return campo === 'temperatura' ? 'Automática' : '—';
+    if (campo === 'temperatura') return ROTULO_TEMPERATURA[v as TemperaturaLead] ?? String(v);
     if (campo === 'valor') return brl(Number(v));
     if (campo === 'previsaoFechamento' || campo === 'inicioFaturamento') return dataBr(String(v));
     return String(v);
@@ -42,12 +44,23 @@ export function deParaMudanca(m: Mudanca): { rotulo: string; de: string; para: s
 }
 
 /** Cor do chip de categoria (alinhada à temperatura que gera no pipeline). */
-export const COR_CATEGORIA: Record<CategoriaGrcc, string> = {
-    Novo: 'bg-sky-500/10 text-sky-300 border-sky-500/30',
-    'Validação': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    Parceiro: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    'Em tratativas': 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-    'No cliente': 'bg-red-500/10 text-red-300 border-red-500/30',
-    Contratado: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-    Perda: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/30',
-};
+export const corCategoria = (claro: boolean): Record<CategoriaGrcc, string> => ({
+    Novo: `bg-sky-500/10 ${claro ? 'text-sky-700' : 'text-sky-300'} border-sky-500/30`,
+    'Validação': `bg-amber-500/10 ${claro ? 'text-amber-700' : 'text-amber-300'} border-amber-500/30`,
+    Parceiro: `bg-amber-500/10 ${claro ? 'text-amber-700' : 'text-amber-300'} border-amber-500/30`,
+    'Em tratativas': `bg-amber-500/10 ${claro ? 'text-amber-700' : 'text-amber-300'} border-amber-500/30`,
+    'No cliente': `bg-red-500/10 ${claro ? 'text-red-700' : 'text-red-300'} border-red-500/30`,
+    Contratado: `bg-emerald-500/10 ${claro ? 'text-emerald-700' : 'text-emerald-300'} border-emerald-500/30`,
+    Perda: `bg-zinc-500/10 ${claro ? 'text-zinc-600' : 'text-zinc-400'} border-zinc-500/30`,
+});
+
+/** Chip de temperatura no pipeline (quente/morno/frio/contratado/perdido). */
+export const corTemperatura = (claro: boolean): Partial<Record<OpportunityTemperature, string>> => ({
+    quente: `bg-red-500/10 ${claro ? 'text-red-700' : 'text-red-300'} border-red-500/30`,
+    morno: `bg-amber-500/10 ${claro ? 'text-amber-700' : 'text-amber-300'} border-amber-500/30`,
+    frio: `bg-sky-500/10 ${claro ? 'text-sky-700' : 'text-sky-300'} border-sky-500/30`,
+    contratado: `bg-emerald-500/10 ${claro ? 'text-emerald-700' : 'text-emerald-300'} border-emerald-500/30`,
+    perdido: `bg-zinc-500/10 ${claro ? 'text-zinc-600' : 'text-zinc-400'} border-zinc-500/30`,
+});
+
+export const ICONE_TEMPERATURA: Partial<Record<OpportunityTemperature, string>> = { quente: '🔥', morno: '🌤️', frio: '❄️' };

@@ -154,6 +154,7 @@ export const leadGrcc = sqliteTable('lead_grcc', {
     solicitacao: text('solicitacao').notNull().default(''),
     status: text('status'),
     categoria: text('categoria').notNull().default('Novo'),
+    temperatura: text('temperatura'), // 'quente' | 'morno' | 'frio' | null (null = automático pela categoria)
     etapa: text('etapa'),
     situacao: text('situacao'),
     motivoPerda: text('motivo_perda'),
@@ -168,6 +169,8 @@ export const leadGrcc = sqliteTable('lead_grcc', {
     previsaoFechamento: text('previsao_fechamento'), // "YYYY-MM-DD"
     inicioFaturamento: text('inicio_faturamento'), // "YYYY-MM-DD", só Contratado
     duracaoMeses: integer('duracao_meses').notNull().default(12),
+    // Aparece no dashboard (aba Cidades). Não faz parte dos dados da planilha: só o formulário da /grcc muda.
+    visivelDashboard: integer('visivel_dashboard', { mode: 'boolean' }).notNull().default(true),
     criadoEm: text('criado_em').notNull(),
     atualizadoEm: text('atualizado_em').notNull(),
     excluidoEm: text('excluido_em'), // soft delete
@@ -178,10 +181,12 @@ export const leadGrccHistorico = sqliteTable('lead_grcc_historico', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     leadId: integer('lead_id').notNull().references(() => leadGrcc.id),
     quando: text('quando').notNull(),
-    origem: text('origem', { enum: ['cadastro', 'edicao', 'importacao', 'exclusao'] }).notNull(),
+    origem: text('origem', { enum: ['cadastro', 'edicao', 'importacao', 'exclusao', 'correcao', 'remocao'] }).notNull(),
     arquivo: text('arquivo'),
     autor: text('autor').notNull(),
     mudancas: text('mudancas').notNull(), // JSON: [{ campo, de, para }]
+    // Só em correcao/remocao: o evento cujo andamento foi ajustado (ele mesmo nunca é alterado).
+    corrigeId: integer('corrige_id'),
 });
 
 

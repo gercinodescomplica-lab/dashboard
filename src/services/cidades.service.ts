@@ -14,7 +14,8 @@ export async function fetchCidadesLeads(): Promise<LeadCidade[]> {
     noStore();
     try {
         const leads = await listLeadsGrcc();
-        return leads.map(leadParaCidade);
+        // Lead marcado como oculto na /grcc não sai para o dashboard.
+        return leads.filter((l) => l.visivelDashboard).map(leadParaCidade);
     } catch (error) {
         console.error('Erro ao buscar leads da GRCC:', error);
         throw new Error('Não foi possível carregar os leads da GRCC.');

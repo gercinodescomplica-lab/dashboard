@@ -24,6 +24,9 @@ describe('parseValorBRL', () => {
         ['', 0],
         [null, 0],
         [undefined, 0],
+        ['R$ -', 0],
+        ['R$                                             -', 0],
+        ['-', 0],
     ])('%s → %s', (entrada, esperado) => {
         expect(parseValorBRL(entrada)).toBe(esperado);
     });
@@ -97,9 +100,18 @@ describe('municipioDoCliente', () => {
         ['Assembleia Legislativa de Parauapebas(PA)', 'Parauapebas'],
         ['Prefeitura Campos do Jordão', 'Campos do Jordão'],
         ['ALESP', 'ALESP'],
+        ['Prefeitura de Betim - MG', 'Betim'],
     ])('%s → %s', (cliente, esperado) => {
         expect(municipioDoCliente(cliente)).toBe(esperado);
     });
+});
+
+describe('textoOuNull', () => {
+    it.each(['#ERROR_#VALUE!', '#VALUE!', '#N/A', '#ERROR_#N/A', '#REF!', '#DIV/0!', '#NAME?', '#VALOR!'])(
+        'erro do Excel "%s" vira vazio',
+        (erro) => expect(textoOuNull(erro)).toBeNull()
+    );
+    it('texto com # no meio continua texto', () => expect(textoOuNull('Lote #2')).toBe('Lote #2'));
 });
 
 describe('municípios', () => {

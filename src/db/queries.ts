@@ -646,6 +646,7 @@ export async function savePlannerLastSyncedAt(epochMs: number): Promise<void> {
 import { diffLead } from '../lib/grcc/diff';
 import { dadosDoLead, montarPrevia } from '../lib/grcc/previa';
 import { projetoDoLead } from '../lib/grcc/pipeline';
+import { linhaDoTempoAndamento } from '../lib/grcc/organizar';
 import {
     CAMPOS_LISTA,
     FIELD_DA_LISTA,
@@ -654,6 +655,7 @@ import {
     type EventoHistorico,
     type LeadGrcc,
     type LeadGrccDados,
+    type TemperaturaLead,
     type LinhaPlanilha,
     type Movimentacao,
     type Mudanca,
@@ -676,6 +678,7 @@ function linhaParaLead(r: typeof leadGrcc.$inferSelect): LeadGrcc {
         solicitacao: r.solicitacao,
         status: r.status,
         categoria: r.categoria as CategoriaGrcc,
+        temperatura: (r.temperatura as TemperaturaLead | null) ?? null,
         etapa: r.etapa,
         situacao: r.situacao,
         motivoPerda: r.motivoPerda,
@@ -690,6 +693,7 @@ function linhaParaLead(r: typeof leadGrcc.$inferSelect): LeadGrcc {
         previsaoFechamento: r.previsaoFechamento,
         inicioFaturamento: r.inicioFaturamento,
         duracaoMeses: r.duracaoMeses,
+        visivelDashboard: r.visivelDashboard,
         criadoEm: r.criadoEm,
         atualizadoEm: r.atualizadoEm,
     };
@@ -702,7 +706,7 @@ function linhaParaEvento(r: typeof leadGrccHistorico.$inferSelect): EventoHistor
     } catch {
         mudancas = [];
     }
-    return { id: r.id, leadId: r.leadId, quando: r.quando, origem: r.origem, arquivo: r.arquivo, autor: r.autor, mudancas };
+    return { id: r.id, leadId: r.leadId, quando: r.quando, origem: r.origem, arquivo: r.arquivo, autor: r.autor, mudancas, corrige: r.corrigeId ?? null };
 }
 
 export async function listLeadsGrcc(): Promise<LeadGrcc[]> {
@@ -732,8 +736,16 @@ async function exigirGerente(tx: Tx) {
     return g;
 }
 
-async function registrarEvento(tx: Tx, leadId: number, origem: OrigemEvento, mudancas: Mudanca[], arquivo: string | null, quando: string) {
-    await tx.insert(leadGrccHistorico).values({ leadId, quando, origem, arquivo, autor: AUTOR_GRCC, mudancas: JSON.stringify(mudancas) });
+async function registrarEvento(
+    tx: Tx,
+    leadId: number,
+    origem: OrigemEvento,
+    mudancas: Mudanca[],
+    arquivo: string | null,
+    quando: string,
+    corrigeId: number | null = null
+) {
+    await tx.insert(leadGrccHistorico).values({ leadId, quando, origem, arquivo, autor: AUTOR_GRCC, mudancas: JSON.stringify(mudancas), corrigeId });
 }
 
 async function sincronizarProjeto(tx: Tx, lead: LeadGrcc, gerente: { id: string; year: number }) {
@@ -814,15 +826,71 @@ async function gravarLead(
     return { lead, mudou: true };
 }
 
-export async function salvarLeadGrcc(id: number | null, dados: LeadGrccDados): Promise<{ lead: LeadGrcc; mudou: boolean }> {
+export async function salvarLeadGrcc(
+    id: number | null,
+    dados: LeadGrccDados,
+    opcoes: { visivelDashboard?: boolean } = {}
+): Promise<{ lead: LeadGrcc; mudou: boolean }> {
     return db.transaction(async (tx) => {
         const gerente = await exigirGerente(tx);
         const r = await gravarLead(tx, id, dados, id === null ? 'cadastro' : 'edicao', null, gerente, new Date().toISOString());
-        if (r.mudou) {
-            await acrescentarAsListas(tx, [dados]);
-            await incrementarVersao(tx);
+        if (r.mudou) await acrescentarAsListas(tx, [dados]);
+        let visibilidadeMudou = false;
+        if (opcoes.visivelDashboard !== undefined && opcoes.visivelDashboard !== r.lead.visivelDashboard) {
+            await tx.update(leadGrcc).set({ visivelDashboard: opcoes.visivelDashboard }).where(eq(leadGrcc.id, r.lead.id));
+            r.lead = { ...r.lead, visivelDashboard: opcoes.visivelDashboard };
+            visibilidadeMudou = true;
         }
-        return r;
+        // A versão avisa o dashboard para recarregar — vale também quando só a visibilidade mudou.
+        if (r.mudou || visibilidadeMudou) await incrementarVersao(tx);
+        return { lead: r.lead, mudou: r.mudou || visibilidadeMudou };
+    });
+}
+
+/**
+ * Corrige (`texto`) ou remove (`texto = null`) um andamento já gravado. Nunca altera o evento original:
+ * grava um evento `correcao`/`remocao` que aponta para ele. Se o andamento ajustado era o ATUAL, o
+ * andamento do lead (e a descrição do projeto no pipeline) passa a refletir a linha do tempo corrigida.
+ */
+export async function corrigirAndamentoGrcc(
+    leadId: number,
+    eventoId: number,
+    texto: string | null
+): Promise<{ lead: LeadGrcc; historico: EventoHistorico[]; mudou: boolean }> {
+    return db.transaction(async (tx) => {
+        const gerente = await exigirGerente(tx);
+        const [row] = await tx.select().from(leadGrcc).where(and(eq(leadGrcc.id, leadId), isNull(leadGrcc.excluidoEm)));
+        if (!row) throw new ErroGrcc('Lead não encontrado (pode ter sido excluído).');
+        let lead = linhaParaLead(row);
+
+        const lerHistorico = async () =>
+            (
+                await tx
+                    .select()
+                    .from(leadGrccHistorico)
+                    .where(eq(leadGrccHistorico.leadId, leadId))
+                    .orderBy(desc(leadGrccHistorico.quando), desc(leadGrccHistorico.id))
+            ).map(linhaParaEvento);
+
+        const antes = await lerHistorico();
+        const alvo = linhaDoTempoAndamento(antes).find((a) => a.id === eventoId);
+        if (!alvo) throw new ErroGrcc('Andamento não encontrado (pode ter sido removido).');
+        const novo = texto === null ? null : texto.trim();
+        if (novo === '') throw new ErroGrcc('O andamento não pode ficar vazio. Para tirar da linha do tempo, use "Remover".');
+        if (novo === alvo.texto) return { lead, historico: antes, mudou: false };
+
+        const agora = new Date().toISOString();
+        await registrarEvento(tx, leadId, novo === null ? 'remocao' : 'correcao', [{ campo: 'status', de: alvo.texto, para: novo }], null, agora, eventoId);
+
+        const historico = await lerHistorico();
+        const atual = linhaDoTempoAndamento(historico)[0]?.texto ?? null;
+        if (atual !== lead.status) {
+            const [r] = await tx.update(leadGrcc).set({ status: atual, atualizadoEm: agora }).where(eq(leadGrcc.id, leadId)).returning();
+            lead = linhaParaLead(r);
+            await sincronizarProjeto(tx, lead, gerente);
+        }
+        await incrementarVersao(tx);
+        return { lead, historico, mudou: true };
     });
 }
 

@@ -6,6 +6,7 @@ import { Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { verificarChaveGrcc } from './actions';
+import { useClaro } from './tema';
 
 const STORAGE_KEY = 'GRCC_ACCESS';
 const ChaveContext = createContext<{ chave: string; sair: () => void } | null>(null);
@@ -21,6 +22,7 @@ export function KeyGateGrcc({ children }: { children: React.ReactNode }) {
     const [verificando, setVerificando] = useState(true);
     const [digitada, setDigitada] = useState('');
     const [erro, setErro] = useState(false);
+    const claro = useClaro();
 
     useEffect(() => {
         let salva: string | null = null;
@@ -69,21 +71,21 @@ export function KeyGateGrcc({ children }: { children: React.ReactNode }) {
 
     if (verificando) {
         return (
-            <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+            <div className={`min-h-screen ${claro ? 'bg-white' : 'bg-zinc-950'} flex items-center justify-center`}>
                 <div className="w-6 h-6 border-2 border-indigo-500 rounded-full animate-spin border-t-transparent" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-            <form onSubmit={entrar} className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col gap-4">
+        <div className={`min-h-screen ${claro ? 'bg-white' : 'bg-zinc-950'} flex items-center justify-center p-4`}>
+            <form onSubmit={entrar} className={`w-full max-w-sm ${claro ? 'bg-white' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-2xl p-6 flex flex-col gap-4`}>
                 <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                    <div className={`p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 ${claro ? 'text-indigo-600' : 'text-indigo-400'}`}>
                         <Lock className="w-5 h-5" />
                     </div>
                     <div>
-                        <h1 className="text-lg font-bold text-zinc-100">GRCC · Leads</h1>
+                        <h1 className={`text-lg font-bold ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>GRCC · Leads</h1>
                         <p className="text-xs text-zinc-500">Área de edição da GRCC. Informe a chave de acesso.</p>
                     </div>
                 </div>
@@ -93,11 +95,11 @@ export function KeyGateGrcc({ children }: { children: React.ReactNode }) {
                     onChange={(e) => setDigitada(e.target.value)}
                     placeholder="Chave GRCC"
                     autoFocus
-                    className="bg-zinc-950 border-zinc-800"
+                    className={`${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}
                 />
-                {erro && <p className="text-sm text-red-400">Chave incorreta.</p>}
-                <Button type="submit" disabled={!digitada.trim()}>Entrar</Button>
-                <Link href="/" className="text-xs text-center text-zinc-500 hover:text-zinc-300">Voltar ao dashboard</Link>
+                {erro && <p className={`text-sm ${claro ? 'text-red-600' : 'text-red-400'}`}>Chave incorreta.</p>}
+                <Button type="submit" className={claro ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : undefined} disabled={!digitada.trim()}>Entrar</Button>
+                <Link href="/" className={`text-xs text-center text-zinc-500 ${claro ? 'hover:text-zinc-700' : 'hover:text-zinc-300'}`}>Voltar ao dashboard</Link>
             </form>
         </div>
     );

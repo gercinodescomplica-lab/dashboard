@@ -15,12 +15,19 @@ export const CATEGORIAS_GRCC = [
 
 export type CategoriaGrcc = (typeof CATEGORIAS_GRCC)[number];
 
+/** Temperatura do lead escolhida pela GRCC. Vazio = segue a categoria (ver `temperaturaDoLead`). */
+export const TEMPERATURAS_LEAD = ['quente', 'morno', 'frio'] as const;
+export type TemperaturaLead = (typeof TEMPERATURAS_LEAD)[number];
+export const ROTULO_TEMPERATURA: Record<TemperaturaLead, string> = { quente: 'Quente', morno: 'Morno', frio: 'Frio' };
+
 /** Campos editáveis de um lead (tudo menos id e carimbos de data). */
 export interface LeadGrccDados {
     cliente: string;
     solicitacao: string;
     status: string | null;
     categoria: CategoriaGrcc;
+    /** quente/morno/frio escolhido à mão; null = automático pela categoria. Ignorado em Contratado/Perda. */
+    temperatura: TemperaturaLead | null;
     etapa: string | null;
     situacao: string | null;
     motivoPerda: string | null;
@@ -39,6 +46,8 @@ export interface LeadGrccDados {
 
 export interface LeadGrcc extends LeadGrccDados {
     id: number;
+    /** Aparece no dashboard (aba Cidades). Fica FORA de LeadGrccDados de propósito: a planilha não mexe nisso. */
+    visivelDashboard: boolean;
     criadoEm: string;
     atualizadoEm: string;
 }
@@ -49,6 +58,7 @@ export const CAMPOS_LEAD: (keyof LeadGrccDados)[] = [
     'solicitacao',
     'status',
     'categoria',
+    'temperatura',
     'etapa',
     'situacao',
     'motivoPerda',
@@ -70,6 +80,7 @@ export const ROTULO_CAMPO: Record<keyof LeadGrccDados, string> = {
     solicitacao: 'Solicitação',
     status: 'Andamento',
     categoria: 'Categoria',
+    temperatura: 'Temperatura',
     etapa: 'Etapa',
     situacao: 'Situação',
     motivoPerda: 'Motivo da perda',
@@ -98,7 +109,7 @@ export const FIELD_DA_LISTA: Record<CampoLista, string> = {
 };
 
 /** Campos com destaque (chip "de → para") no histórico. */
-export const CAMPOS_DESTAQUE: (keyof LeadGrccDados)[] = ['categoria', 'etapa', 'situacao', 'motivoPerda'];
+export const CAMPOS_DESTAQUE: (keyof LeadGrccDados)[] = ['categoria', 'temperatura', 'etapa', 'situacao', 'motivoPerda'];
 
 export interface Mudanca {
     campo: keyof LeadGrccDados;
@@ -106,7 +117,8 @@ export interface Mudanca {
     para: string | number | null;
 }
 
-export type OrigemEvento = 'cadastro' | 'edicao' | 'importacao' | 'exclusao';
+/** `correcao`/`remocao` = ajuste de um andamento já gravado (o evento original fica intacto; `corrige` aponta para ele). */
+export type OrigemEvento = 'cadastro' | 'edicao' | 'importacao' | 'exclusao' | 'correcao' | 'remocao';
 
 export interface EventoHistorico {
     id: number;
@@ -116,7 +128,23 @@ export interface EventoHistorico {
     arquivo: string | null;
     autor: string;
     mudancas: Mudanca[];
+    /** Só em `correcao`/`remocao`: id do evento cujo andamento foi corrigido/removido. */
+    corrige?: number | null;
 }
+
+/**
+ * Evento do histórico que pode sair da GRCC (dashboard): só mudanças comerciais, sem autor,
+ * arquivo de importação nem origem. `inicio` = entrada do lead no cadastro.
+ */
+export interface EventoComercial {
+    id: number;
+    quando: string;
+    inicio: boolean;
+    mudancas: Mudanca[];
+}
+
+/** Campos do histórico que contam a história comercial do lead (o resto é auditoria interna da GRCC). */
+export const CAMPOS_COMERCIAIS: (keyof LeadGrccDados)[] = ['status', 'categoria', 'temperatura', 'etapa', 'situacao', 'motivoPerda', 'valor', 'previsaoFechamento'];
 
 export interface Movimentacao extends EventoHistorico {
     cliente: string;
@@ -176,6 +204,7 @@ export const LEAD_VAZIO: LeadGrccDados = {
     solicitacao: '',
     status: null,
     categoria: 'Novo',
+    temperatura: null,
     etapa: null,
     situacao: null,
     motivoPerda: null,
