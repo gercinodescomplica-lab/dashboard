@@ -9,7 +9,7 @@ import { SingleManagerView } from './SingleManagerView';
 import { DRMOverview } from './DRMOverview';
 import StoreView from './StoreView';
 import { Users, Loader2, Building2 } from 'lucide-react';
-import OrganizationChartView from './OrganizationChartView';
+import { OrganogramaComAbas } from '@/components/organograma-clientes/abas';
 import PipelineStoreView from './PipelineStoreView';
 import { CidadesView } from '@/components/cidades/CidadesView';
 import {
@@ -290,7 +290,7 @@ export function DashboardShell() {
                 {currentView === 'cidades' ? (
                     <CidadesView lightActive={storeLightActive} />
                 ) : currentView === 'organograma' ? (
-                    <OrganizationChartView lightActive={storeLightActive} />
+                    <OrganogramaComAbas lightActive={storeLightActive} />
                 ) : currentView === 'pipeline' ? (
                     <PipelineStoreView PRODUCTS={storeProducts} EXTRA_OPTIONS={dropdownOpts} theme={storeTheme} onThemeChange={setStoreTheme} />
                 ) : currentView === 'store' ? (
