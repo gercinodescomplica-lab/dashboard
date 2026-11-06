@@ -119,12 +119,6 @@ export function LeadsGrccTable({
     }, [leads, filtro, temp, busca, pend, ordem]);
 
     const grupos = useMemo(() => (visao === 'cidade' ? agruparPorCidade(visiveis) : []), [visao, visiveis]);
-    // Lista: cidade com 2+ chamados vira pai; a ordem segue a do 1º chamado de cada cidade.
-    const gruposLista = useMemo(() => {
-        if (visao !== 'lista') return [];
-        const pos = new Map(visiveis.map((l, i) => [l.id, i]));
-        return agruparPorCidade(visiveis).sort((a, b) => pos.get(a.leads[0].id)! - pos.get(b.leads[0].id)!);
-    }, [visao, visiveis]);
     // Acordeão começa fechado: só guarda as cidades que a pessoa abriu.
     const [abertas, setAbertas] = useState<Set<string>>(new Set());
     const alternarCidade = (chave: string) =>
@@ -216,15 +210,18 @@ export function LeadsGrccTable({
         </button>
     );
 
-    const linha = (l: LeadGrcc) => {
+    // filho = lead dentro de uma cidade aberta: recuo + trilho à esquerda para ler como parte do grupo.
+    const linha = (l: LeadGrcc, filho = false) => {
         const p = pend.get(l.id) ?? [];
         return (
             <tr
                 key={l.id}
                 onClick={() => onAbrir(l.id)}
-                className={`block md:table-row px-4 py-3 md:p-0 cursor-pointer ${claro ? 'hover:bg-zinc-50' : 'hover:bg-zinc-900/60'} transition-colors duration-150 ${destacados.has(l.id) ? 'bg-indigo-500/10' : ''}`}
+                className={`block md:table-row px-4 py-3 md:p-0 cursor-pointer ${claro ? 'hover:bg-zinc-50' : 'hover:bg-zinc-900/60'} transition-colors duration-150 ${destacados.has(l.id) ? 'bg-indigo-500/10' : ''} ${
+                    filho ? `shadow-[inset_3px_0_0_var(--color-indigo-500)] ${claro ? 'bg-zinc-50/50' : 'bg-zinc-900/20'}` : ''
+                }`}
             >
-                <td className="block md:table-cell md:px-3 md:py-2.5 align-top md:overflow-hidden">
+                <td className={`block md:table-cell md:px-3 md:py-2.5 align-top md:overflow-hidden ${filho ? 'md:pl-9' : ''}`}>
                     <div className={`font-medium ${claro ? 'text-zinc-900' : 'text-zinc-100'} truncate`} title={l.cliente}>
                         {l.cliente}
                     </div>
@@ -439,22 +436,12 @@ export function LeadsGrccTable({
                         </tr>
                     </thead>
                     {visao === 'lista' ? (
-                        <tbody className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'}`}>
-                            {gruposLista.flatMap((c) => {
-                                if (c.leads.length === 1) return [linha(c.leads[0])];
-                                const k = `lista:${c.chave}`;
-                                const aberta = abertas.has(k);
-                                return [
-                                    cabecaGrupo(c, k, false),
-                                    ...(aberta ? c.leads.map(linha) : []),
-                                ];
-                            })}
-                        </tbody>
+                        <tbody className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'}`}>{visiveis.map((l) => linha(l))}</tbody>
                     ) : (
                         grupos.map((g) => (
                             <tbody key={g.chave} className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'} border-t ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
                                 {cabecaGrupo(g, g.chave, true)}
-                                {abertas.has(g.chave) && g.leads.map(linha)}
+                                {abertas.has(g.chave) && g.leads.map((l) => linha(l, true))}
                             </tbody>
                         ))
                     )}
