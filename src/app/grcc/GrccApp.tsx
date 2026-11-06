@@ -120,6 +120,11 @@ export function GrccApp() {
         };
     }, [painel]);
 
+    const clientesConhecidos = useMemo(
+        () => (painel ? Array.from(new Set(painel.leads.map((l) => l.cliente))).sort((a, b) => a.localeCompare(b, 'pt-BR')) : []),
+        [painel]
+    );
+
     if (!painel) {
         return (
             <div className={`min-h-screen ${claro ? 'bg-white' : 'bg-zinc-950'} flex flex-col`}>
@@ -206,6 +211,7 @@ export function GrccApp() {
                 onGravado={depoisDeGravar}
                 onProximo={completando ? abrirProximoPendente : undefined}
                 faixa={completando ? `Completando cadastro · ${restantes === 0 ? 'último da fila' : `faltam ${restantes}`}` : undefined}
+                clientesConhecidos={clientesConhecidos}
             />
 
             <ImportarExcelDialog

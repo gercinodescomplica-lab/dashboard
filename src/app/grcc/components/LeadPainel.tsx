@@ -29,6 +29,7 @@ function textoValor(d: LeadGrccDados): string {
 
 const ID_DO_CAMPO: Partial<Record<keyof LeadGrccDados, string>> = {
     previsaoFechamento: 'f-previsao',
+    propostaEnviadaEm: 'f-proposta-enviada',
     inicioFaturamento: 'f-inicio',
 };
 
@@ -95,6 +96,7 @@ export function LeadPainel({
     onGravado,
     onProximo,
     faixa,
+    clientesConhecidos = [],
 }: {
     aberto: boolean;
     lead: LeadGrcc | null;
@@ -104,6 +106,8 @@ export function LeadPainel({
     /** Modo fila ("Completar cadastro"): depois de salvar — ou ao pular — vai para o próximo lead. */
     onProximo?: () => void;
     faixa?: string;
+    /** Nomes de Cliente já usados em outros leads, para sugerir no autocomplete (evita variação/duplicata). */
+    clientesConhecidos?: string[];
 }) {
     const { chave } = useChaveGrcc();
     const claro = useClaro();
@@ -421,8 +425,13 @@ export function LeadPainel({
 
                             <Secao titulo="2 · Cliente e local">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <Campo id="f-cliente" rotulo="Cliente" erro={erros.cliente} obrigatorio dica="Órgão ou empresa (ex.: Prefeitura de Valinhos).">
-                                        <input id="f-cliente" value={dados.cliente} onChange={(e) => set('cliente', e.target.value)} className={cls()} />
+                                    <Campo id="f-cliente" rotulo="Cliente" erro={erros.cliente} obrigatorio dica="Órgão ou empresa (ex.: Prefeitura de Valinhos). Comece a digitar: se já existe, escolha na lista em vez de redigitar.">
+                                        <input id="f-cliente" value={dados.cliente} onChange={(e) => set('cliente', e.target.value)} list="lista-clientes-grcc" className={cls()} />
+                                        <datalist id="lista-clientes-grcc">
+                                            {clientesConhecidos.map((c) => (
+                                                <option key={c} value={c} />
+                                            ))}
+                                        </datalist>
                                     </Campo>
                                     <Campo id="f-solicitacao" rotulo="Solicitação" erro={erros.solicitacao} obrigatorio dica="O que o cliente pediu. Dois pedidos diferentes do mesmo cliente = dois leads.">
                                         <input id="f-solicitacao" value={dados.solicitacao} onChange={(e) => set('solicitacao', e.target.value)} className={cls()} />
@@ -517,6 +526,15 @@ export function LeadPainel({
                                             value={dados.previsaoFechamento ?? ''}
                                             onChange={(e) => set('previsaoFechamento', e.target.value || null)}
                                             className={cls(falta.has('previsaoFechamento'))}
+                                        />
+                                    </Campo>
+                                    <Campo id="f-proposta-enviada" rotulo="Data de envio da proposta" erro={erros.propostaEnviadaEm} dica="Depois de 2 meses sem mudar a etapa/situação, a temperatura automática vira morno.">
+                                        <input
+                                            id="f-proposta-enviada"
+                                            type="date"
+                                            value={dados.propostaEnviadaEm ?? ''}
+                                            onChange={(e) => set('propostaEnviadaEm', e.target.value || null)}
+                                            className={cls()}
                                         />
                                     </Campo>
                                     {dados.categoria === 'Contratado' && (

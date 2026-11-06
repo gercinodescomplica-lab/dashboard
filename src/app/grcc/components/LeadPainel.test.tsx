@@ -180,3 +180,28 @@ describe('LeadPainel', () => {
         expect(screen.getByRole('button', { name: 'Salvar' })).toBeEnabled();
     });
 });
+
+describe('data de envio da proposta', () => {
+    it('mostra o campo e salva a data escolhida', async () => {
+        const user = userEvent.setup();
+        salvarLead.mockResolvedValue({ ok: true, valor: lead });
+        render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
+        await user.type(screen.getByLabelText('Data de envio da proposta'), '2026-09-15');
+        await user.click(screen.getByRole('button', { name: /Salvar/ }));
+        await waitFor(() =>
+            expect(salvarLead).toHaveBeenCalledWith('k', 5, expect.objectContaining({ propostaEnviadaEm: '2026-09-15' }), { visivelDashboard: true })
+        );
+    });
+});
+
+describe('autocomplete de cliente', () => {
+    it('sugere nomes já usados sem impedir digitar um novo', () => {
+        render(
+            <LeadPainel aberto lead={null} listas={listas} onFechar={() => {}} onGravado={async () => {}} clientesConhecidos={['Prefeitura de Limeira', 'ALESP']} />
+        );
+        const campo = screen.getByLabelText(/^Cliente/) as HTMLInputElement;
+        expect(campo.getAttribute('list')).toBeTruthy();
+        const lista = document.getElementById(campo.getAttribute('list')!) as HTMLDataListElement;
+        expect(Array.from(lista.options).map((o) => o.value)).toEqual(['Prefeitura de Limeira', 'ALESP']);
+    });
+});
