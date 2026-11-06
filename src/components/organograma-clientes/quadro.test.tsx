@@ -34,6 +34,14 @@ describe('OrganogramaClientesView', () => {
         expect(screen.queryByRole('region', { name: /^Barone/ })).not.toBeInTheDocument();
         expect(screen.getByText('1 cliente(s) encontrado(s).')).toBeInTheDocument();
     });
+    it('dica do cliente mostra a data da última mudança de carteira', () => {
+        const comMovimento = montarOrganograma(
+            [{ ...gerencias[1], clientes: [{ ...cli('c-smt', 'SMT', 'Secretaria Municipal de Transportes'), ultimoMovimento: { em: '2026-11-06T12:00:00.000Z' } }] }],
+            [],
+        );
+        render(<OrganogramaClientesView dados={comMovimento} podeMover={false} />);
+        expect(screen.getByText('SMT').closest('li')).toHaveAttribute('title', expect.stringContaining('Última mudança de carteira em 06/11/2026'));
+    });
     it('só leitura: sem menu nem arraste', () => {
         render(<OrganogramaClientesView dados={dados} podeMover={false} />);
         expect(screen.queryByRole('button', { name: /^Mover / })).not.toBeInTheDocument();
