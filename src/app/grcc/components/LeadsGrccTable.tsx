@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRig
 import { CATEGORIAS_GRCC, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CategoriaGrcc, type LeadGrcc, type TemperaturaLead } from '@/lib/grcc/tipos';
 import { pendenciasDoLead } from '@/lib/grcc/validacao';
 import { origemTemperatura, temperaturaDoLead } from '@/lib/grcc/pipeline';
-import { agruparPorCidade, agruparPorCliente, alternarOrdem, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
+import { agruparPorCidade, alternarOrdem, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
 import { chaveTexto } from '@/lib/grcc/normalizar';
 import { LARGURAS_EXPORTACAO, nomeArquivoExportacao, planilhaDosLeads } from '@/lib/grcc/exportar';
 import { brl, corCategoria, dataBr, haQuanto, ICONE_TEMPERATURA } from './formato';
@@ -61,7 +61,7 @@ export function LeadsGrccTable({
     const [busca, setBusca] = useState('');
     // Soma com o filtro de categoria (ex.: Em tratativas + Quente). null = todas.
     const [temp, setTemp] = useState<TemperaturaLead | null>(null);
-    const [visao, setVisao] = useState<Visao>('lista');
+    const [visao, setVisao] = useState<Visao>('cidade');
     // Começa no padrão (igual no servidor e no cliente) e só depois lê a preferência salva — evita erro de hidratação.
     const [ordem, setOrdem] = useState<Ordem>(ORDEM_PADRAO);
     useEffect(() => setOrdem(lerOrdemSalva()), []);
@@ -113,14 +113,17 @@ export function LeadsGrccTable({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [leads, filtro, temp, busca, pend, ordem]);
 
-    // Cidade (pai) > cliente > chamados: chamados repetidos do mesmo cliente ficam juntos dentro da cidade.
-    const grupos = useMemo(
-        () => (visao === 'cidade' ? agruparPorCidade(visiveis).map((g) => ({ ...g, clientes: agruparPorCliente(g.leads) })) : []),
-        [visao, visiveis]
-    );
-    const [fechadas, setFechadas] = useState<Set<string>>(new Set());
+    const grupos = useMemo(() => (visao === 'cidade' ? agruparPorCidade(visiveis) : []), [visao, visiveis]);
+    // Lista: cidade com 2+ chamados vira pai; a ordem segue a do 1º chamado de cada cidade.
+    const gruposLista = useMemo(() => {
+        if (visao !== 'lista') return [];
+        const pos = new Map(visiveis.map((l, i) => [l.id, i]));
+        return agruparPorCidade(visiveis).sort((a, b) => pos.get(a.leads[0].id)! - pos.get(b.leads[0].id)!);
+    }, [visao, visiveis]);
+    // Acordeão começa fechado: só guarda as cidades que a pessoa abriu.
+    const [abertas, setAbertas] = useState<Set<string>>(new Set());
     const alternarCidade = (chave: string) =>
-        setFechadas((atual) => {
+        setAbertas((atual) => {
             const nova = new Set(atual);
             if (!nova.delete(chave)) nova.add(chave);
             return nova;
@@ -372,7 +375,34 @@ export function LeadsGrccTable({
                         </tr>
                     </thead>
                     {visao === 'lista' ? (
-                        <tbody className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'}`}>{visiveis.map(linha)}</tbody>
+                        <tbody className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'}`}>
+                            {gruposLista.flatMap((c) => {
+                                if (c.leads.length === 1) return [linha(c.leads[0])];
+                                const k = `lista:${c.chave}`;
+                                const aberta = abertas.has(k);
+                                return [
+                                    <tr key={k} className={`block md:table-row ${claro ? 'bg-zinc-100' : 'bg-zinc-900/70'}`}>
+                                        <td colSpan={COLUNAS} className="block md:table-cell px-4 py-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => alternarCidade(k)}
+                                                aria-expanded={aberta}
+                                                aria-label={`${aberta ? 'Fechar' : 'Abrir'} ${c.rotulo}`}
+                                                className="inline-flex align-middle mr-1 text-zinc-500 hover:text-zinc-300"
+                                            >
+                                                {aberta ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                            </button>
+                                            <span className={`font-semibold ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{c.rotulo}</span>
+                                            <span className="text-xs text-zinc-500 ml-2">
+                                                {c.leads.length} chamados
+                                                {c.valorAtivo > 0 && ` · ${brl(c.valorAtivo)} em aberto`}
+                                            </span>
+                                        </td>
+                                    </tr>,
+                                    ...(aberta ? c.leads.map(linha) : []),
+                                ];
+                            })}
+                        </tbody>
                     ) : (
                         grupos.map((g) => (
                             <tbody key={g.chave} className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'} border-t ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
@@ -381,11 +411,11 @@ export function LeadsGrccTable({
                                         <button
                                             type="button"
                                             onClick={() => alternarCidade(g.chave)}
-                                            aria-expanded={!fechadas.has(g.chave)}
-                                            aria-label={`${fechadas.has(g.chave) ? 'Abrir' : 'Fechar'} ${g.rotulo}`}
+                                            aria-expanded={abertas.has(g.chave)}
+                                            aria-label={`${abertas.has(g.chave) ? 'Fechar' : 'Abrir'} ${g.rotulo}`}
                                             className="inline-flex align-middle mr-1 text-zinc-500 hover:text-zinc-300"
                                         >
-                                            {fechadas.has(g.chave) ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                            {abertas.has(g.chave) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                                         </button>
                                         <span className={`font-semibold ${g.chave === 'Sem cidade' ? `${claro ? 'text-amber-700' : 'text-amber-300'}` : `${claro ? 'text-zinc-900' : 'text-zinc-100'}`}`}>{g.rotulo}</span>
                                         <span className="text-xs text-zinc-500 ml-2">
@@ -401,19 +431,7 @@ export function LeadsGrccTable({
                                         </span>
                                     </th>
                                 </tr>
-                                {!fechadas.has(g.chave) &&
-                                    g.clientes.flatMap((c) => [
-                                        <tr key={`cli-${c.chave}`} className={`block md:table-row ${claro ? 'bg-zinc-50' : 'bg-zinc-900/30'}`}>
-                                            <td colSpan={COLUNAS} className={`block md:table-cell pl-10 pr-4 py-1.5 text-xs ${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
-                                                <span className="font-medium">{c.rotulo}</span>
-                                                <span className="text-zinc-500 ml-2">
-                                                    {c.leads.length} {c.leads.length === 1 ? 'chamado' : 'chamados'}
-                                                    {c.valorAtivo > 0 && ` · ${brl(c.valorAtivo)} em aberto`}
-                                                </span>
-                                            </td>
-                                        </tr>,
-                                        ...c.leads.map(linha),
-                                    ])}
+                                {abertas.has(g.chave) && g.leads.map(linha)}
                             </tbody>
                         ))
                     )}

@@ -212,6 +212,7 @@ export function GrccApp() {
                 onProximo={completando ? abrirProximoPendente : undefined}
                 faixa={completando ? `Completando cadastro · ${restantes === 0 ? 'último da fila' : `faltam ${restantes}`}` : undefined}
                 clientesConhecidos={clientesConhecidos}
+                todosLeads={painel.leads}
             />
 
             <ImportarExcelDialog

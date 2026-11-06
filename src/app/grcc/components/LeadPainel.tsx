@@ -13,7 +13,8 @@ import { useChaveGrcc } from '../KeyGateGrcc';
 import { linhaDoTempoAndamento } from '@/lib/grcc/organizar';
 import { camposPendentes } from '@/lib/grcc/validacao';
 import { LeadHistorico } from './LeadHistorico';
-import { dataHoraBr } from './formato';
+import { brl, dataBr, dataHoraBr } from './formato';
+import { chaveTexto } from '@/lib/grcc/normalizar';
 import { useClaro } from '../tema';
 
 type Erros = Partial<Record<keyof LeadGrccDados, string>>;
@@ -97,6 +98,7 @@ export function LeadPainel({
     onProximo,
     faixa,
     clientesConhecidos = [],
+    todosLeads = [],
 }: {
     aberto: boolean;
     lead: LeadGrcc | null;
@@ -108,6 +110,8 @@ export function LeadPainel({
     faixa?: string;
     /** Nomes de Cliente já usados em outros leads, para sugerir no autocomplete (evita variação/duplicata). */
     clientesConhecidos?: string[];
+    /** Todos os leads: mostra os outros chamados do mesmo cliente e deixa puxar os dados dele num lead novo. */
+    todosLeads?: LeadGrcc[];
 }) {
     const { chave } = useChaveGrcc();
     const claro = useClaro();
@@ -194,6 +198,25 @@ export function LeadPainel({
 
     const set = <K extends keyof LeadGrccDados>(campo: K, valor: LeadGrccDados[K]) =>
         setDados((d) => ({ ...d, [campo]: valor }));
+
+    // Outros chamados do mesmo cliente, o mais recente primeiro.
+    const mesmoCliente = useMemo(() => {
+        const k = chaveTexto(dados.cliente);
+        if (!k) return [];
+        return todosLeads.filter((o) => o.id !== lead?.id && chaveTexto(o.cliente) === k).sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
+    }, [todosLeads, dados.cliente, lead?.id]);
+    const puxarDe = (o: LeadGrcc) =>
+        setDados((d) => ({
+            ...d,
+            cliente: o.cliente,
+            uf: o.uf,
+            municipio: o.municipio,
+            regiao: o.regiao,
+            contatoNome: o.contatoNome,
+            contatoEmail: o.contatoEmail,
+            contatoTelefone: o.contatoTelefone,
+            contatosExtras: o.contatosExtras,
+        }));
 
     const municipios = useMemo(() => (dados.uf ? municipiosDaUf(dados.uf) : []), [dados.uf]);
     const listaId = `municipios-${dados.uf ?? 'x'}`;
@@ -424,6 +447,15 @@ export function LeadPainel({
                             </Secao>
 
                             <Secao titulo="2 · Cliente e local">
+                                {lead === null && mesmoCliente.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => puxarDe(mesmoCliente[0])}
+                                        className={`mb-3 text-sm rounded-lg border px-3 py-1.5 ${claro ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50' : 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'}`}
+                                    >
+                                        Puxar local e contatos de {mesmoCliente[0].cliente}
+                                    </button>
+                                )}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <Campo id="f-cliente" rotulo="Cliente" erro={erros.cliente} obrigatorio dica="Órgão ou empresa (ex.: Prefeitura de Valinhos). Comece a digitar: se já existe, escolha na lista em vez de redigitar.">
                                         <input id="f-cliente" value={dados.cliente} onChange={(e) => set('cliente', e.target.value)} list="lista-clientes-grcc" className={cls()} />
@@ -469,6 +501,21 @@ export function LeadPainel({
                                     </Campo>
                                 </div>
                             </Secao>
+
+                            {mesmoCliente.length > 0 && (
+                                <Secao titulo={`Outros chamados de ${mesmoCliente[0].cliente} (${mesmoCliente.length})`}>
+                                    <ul className={`divide-y rounded-lg border text-sm ${claro ? 'divide-zinc-200 border-zinc-200' : 'divide-zinc-800 border-zinc-800'}`}>
+                                        {mesmoCliente.map((o) => (
+                                            <li key={o.id} className="px-3 py-2 grid grid-cols-2 sm:grid-cols-5 gap-x-3 gap-y-0.5">
+                                                <span className={`col-span-2 font-medium ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{o.solicitacao || '—'}</span>
+                                                <span className="text-zinc-500">{o.categoria}</span>
+                                                <span className="text-zinc-500">{brl(o.valor)}</span>
+                                                <span className="text-zinc-500">{o.municipio ? `${o.municipio}/${o.uf}` : '—'} · {dataBr(o.previsaoFechamento)}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </Secao>
+                            )}
 
                             <Secao titulo="3 · Classificação">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

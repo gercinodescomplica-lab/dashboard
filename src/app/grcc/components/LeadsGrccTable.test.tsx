@@ -1,9 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render as renderBase, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LeadsGrccTable } from './LeadsGrccTable';
 import { LEAD_VAZIO, type LeadGrcc } from '@/lib/grcc/tipos';
+
+// A tabela abre agrupada por cidade; estes testes olham a lista plana.
+const render = (ui: React.ReactElement) => {
+    const r = renderBase(ui);
+    fireEvent.click(screen.getByRole('button', { name: 'Lista' }));
+    return r;
+};
 
 const mk = (id: number, over: Partial<LeadGrcc>): LeadGrcc => ({
     ...LEAD_VAZIO, visivelDashboard: true, id, criadoEm: '2026-10-01T00:00:00Z', atualizadoEm: '2026-10-20T00:00:00Z', ...over,
@@ -65,36 +72,12 @@ describe('LeadsGrccTable', () => {
         expect(onAbrir).toHaveBeenCalledWith(1);
     });
 
-    it('"Por cidade" junta os chamados do mesmo cliente dentro da cidade e recolhe', async () => {
-        const user = userEvent.setup();
-        const repetidos = [
-            mk(10, { cliente: 'Prefeitura de Limeira', solicitacao: 'Consultoria', uf: 'SP', municipio: 'Limeira' }),
-            mk(11, { cliente: 'Câmara de Limeira', solicitacao: 'Nuvem', uf: 'SP', municipio: 'Limeira' }),
-            mk(12, { cliente: 'Prefeitura de Limeira', solicitacao: 'Chatbot', uf: 'SP', municipio: 'Limeira' }),
-        ];
-        render(<LeadsGrccTable leads={repetidos} onAbrir={() => {}} />);
-        expect(screen.queryByRole('button', { name: 'Por cliente' })).toBeNull();
-        await user.click(screen.getByRole('button', { name: 'Por cidade' }));
-        expect(screen.getAllByRole('rowheader').map((g) => g.textContent)).toEqual([expect.stringMatching(/Limeira · SP.*3 leads/)]);
-        const textos = screen.getAllByRole('row').map((r) => r.textContent ?? '');
-        const iPref = textos.findIndex((t) => /^Prefeitura de Limeira2 chamados/.test(t));
-        expect(iPref).toBeGreaterThan(-1);
-        expect(textos[iPref + 1]).toMatch(/Consultoria|Chatbot/);
-        expect(textos[iPref + 2]).toMatch(/Consultoria|Chatbot/);
-        expect(textos.some((t) => /^Câmara de Limeira1 chamado/.test(t))).toBe(true);
-
-        await user.click(screen.getByRole('button', { name: /Fechar Limeira/ }));
-        expect(screen.queryByText('Consultoria')).toBeNull();
-        await user.click(screen.getByRole('button', { name: /Abrir Limeira/ }));
-        expect(screen.getByText('Consultoria')).toBeTruthy();
-    });
-
     it('tooltip da temperatura distingue automática pela proposta da automática pela categoria', () => {
         render(
             <LeadsGrccTable
                 leads={[
-                    mk(20, { cliente: 'A', categoria: 'Novo' }),
-                    mk(21, { cliente: 'B', categoria: 'Novo', propostaEnviadaEm: '2026-01-01' }),
+                    mk(20, { cliente: 'A', categoria: 'Novo', uf: 'SP', municipio: 'Limeira' }),
+                    mk(21, { cliente: 'B', categoria: 'Novo', propostaEnviadaEm: '2026-01-01', uf: 'SP', municipio: 'Campinas' }),
                 ]}
                 onAbrir={() => {}}
             />
@@ -102,5 +85,13 @@ describe('LeadsGrccTable', () => {
         const tooltip = (cliente: string) => screen.getByText(cliente).closest('tr')!.querySelector('[title^="No pipeline"]')!.getAttribute('title');
         expect(tooltip('A')).toMatch(/automática pela categoria/);
         expect(tooltip('B')).toMatch(/automática pela data de envio da proposta/);
+    });
+});
+
+describe('LeadsGrccTable — visão inicial', () => {
+    it('abre agrupada por cidade', () => {
+        renderBase(<LeadsGrccTable leads={[mk(1, { cliente: 'X', uf: 'SP', municipio: 'Limeira' })]} onAbrir={() => {}} />);
+        expect(screen.getByRole('button', { name: 'Por cidade' })).toHaveAttribute('aria-pressed', 'true');
+        expect(screen.getAllByRole('rowheader')[0]).toHaveTextContent(/Limeira · SP/);
     });
 });
