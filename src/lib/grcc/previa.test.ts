@@ -35,4 +35,13 @@ describe('montarPrevia', () => {
         const p = montarPrevia([], [], [existente]);
         expect(p).toEqual({ novos: [], alterados: [], iguais: 0, problemas: [] });
     });
+
+    it('planilha sem data de envio não apaga a que foi registrada na tela', () => {
+        const comData: LeadGrcc = { ...existente, propostaEnviadaEm: '2026-09-01' };
+        const { propostaEnviadaEm: _p, ...semData } = existente;
+        void _p;
+        const p = montarPrevia([{ linha: 2, dados: { ...semData, propostaEnviadaEm: null, valor: 999 } }], [], [comData]);
+        expect(p.alterados).toHaveLength(1);
+        expect(p.alterados[0].dados.propostaEnviadaEm).toBe('2026-09-01');
+    });
 });

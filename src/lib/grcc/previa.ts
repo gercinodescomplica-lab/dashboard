@@ -20,8 +20,10 @@ export function montarPrevia(linhas: LinhaPlanilha[], problemas: ProblemaLinha[]
             previa.novos.push(l);
             continue;
         }
-        // Planilha sem temperatura não apaga a que foi escolhida na tela.
-        const dados = l.dados.temperatura === null && atual.temperatura ? { ...l.dados, temperatura: atual.temperatura } : l.dados;
+        // Planilha sem temperatura ou sem data de envio não apaga o que foi escolhido na tela.
+        let dados = l.dados;
+        if (dados.temperatura === null && atual.temperatura) dados = { ...dados, temperatura: atual.temperatura };
+        if (dados.propostaEnviadaEm === null && atual.propostaEnviadaEm) dados = { ...dados, propostaEnviadaEm: atual.propostaEnviadaEm };
         const mudancas = diffLead(dadosDoLead(atual), dados);
         if (mudancas.length === 0) previa.iguais++;
         else previa.alterados.push({ linha: l.linha, leadId: atual.id, dados, mudancas });
