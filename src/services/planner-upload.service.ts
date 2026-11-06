@@ -1,24 +1,26 @@
 'use server';
 
 import { syncPlannerTasks, BodySchema, PlannerSyncSummary } from '@/lib/planner-sync';
+import { chaveSettingsValida } from '@/lib/settings/chave';
 
 export type UploadPlannerTasksResult =
     | { success: true; summary: PlannerSyncSummary }
     | { success: false; error: string };
 
 /**
- * Server Action behind the manual "Upload Planner (.json)" button in
- * CXTab.tsx. Takes whatever JSON the admin selected on their machine
- * (already merged/parsed client-side into a single { tasks: [...] } shape —
- * see CXTab's extractTasksArray), validates it with the same zod schema as
+ * Server Action behind the manual "Upload Planner (.json)" panel in
+ * PlannerUploadEditor.tsx (/settings). Takes whatever JSON the admin selected
+ * on their machine (already merged/parsed client-side into a single
+ * { tasks: [...] } shape — see extractTasksArray there), validates it with the same zod schema as
  * the HTTP endpoints, and runs it through the same matching/upsert logic
  * (src/lib/planner-sync.ts) used by POST /planner-sync and the F5 pull.
  *
- * This is a manual, ad hoc trigger — no auth beyond already being inside the
- * dashboard (FRONTEND_KEY), same trust level as the rest of the internal
- * tooling here (see CLAUDE.md "Access control").
+ * Grava em cx, então confere a SETTINGS_KEY aqui, como as outras actions do
+ * /settings (D14): o KeyGate só esconde a tela.
  */
-export async function uploadPlannerTasks(rawBody: unknown): Promise<UploadPlannerTasksResult> {
+export async function uploadPlannerTasks(chave: string, rawBody: unknown): Promise<UploadPlannerTasksResult> {
+    if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
+
     const parsed = BodySchema.safeParse(rawBody);
     if (!parsed.success) {
         const details = parsed.error.issues

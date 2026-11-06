@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { uploadPlannerTasks } from '@/services/planner-upload.service';
+import { lerChaveSettings } from './chaveLocal';
 
 type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
@@ -21,7 +22,7 @@ function extractTasksArray(parsed: unknown, filename: string): unknown[] {
  * manual do JSON exportado do Planner. Antes vivia como botão solto em
  * CXTab.tsx, acessível a qualquer um com a FRONTEND_KEY (todo o dashboard);
  * mudou de lugar por ser uma ação de escrita em massa — sincroniza o CX de
- * TODOS os gerentes de uma vez (casando cada tarefa pelo servedClients),
+ * TODOS os gerentes de uma vez (casando cada tarefa pela carteira de clientes),
  * não só de quem está selecionado no Settings.
  *
  * A lógica de leitura/parse/validação/sincronização é a mesma de antes —
@@ -57,7 +58,7 @@ export function PlannerUploadEditor() {
                 throw new Error('Nenhuma tarefa encontrada no(s) arquivo(s) selecionado(s).');
             }
 
-            const result = await uploadPlannerTasks({ tasks: allTasks });
+            const result = await uploadPlannerTasks(lerChaveSettings(), { tasks: allTasks });
             if (!result.success) {
                 setUploadState('error');
                 setUploadMessage(result.error);

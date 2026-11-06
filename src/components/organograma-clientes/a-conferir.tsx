@@ -34,7 +34,7 @@ export function AConferir({ painel, rodar, ocupado }: { painel: PainelCarteira; 
                 <p className="text-xs text-zinc-500">Para mudar a carteira em vez dos dados, use a aba Organograma.</p>
             </section>
             <JuntarClientes clientes={painel.todosClientes} rodar={rodar} ocupado={ocupado} />
-            <section aria-label="Sem cliente"className="space-y-2">
+            <section aria-label="Sem cliente" className="space-y-2">
                 <h2 className="text-lg font-semibold text-zinc-50">Sem cliente</h2>
                 <p className="text-sm text-zinc-400">Linhas cujo texto não casou com nenhum cliente. Ligue a um cliente para que acompanhem a carteira.</p>
                 {painel.semCliente.length === 0 ? <p className="text-sm text-zinc-500">Todas as linhas têm cliente.</p> : (
@@ -74,7 +74,7 @@ function LinhaParaLigar({ linha, clientes, rodar, ocupado }: { linha: LinhaSemCl
                 desabilitado={ocupado}
                 vazio="Nenhum cliente com esse texto. Use o botão de criar abaixo."
             />
-            <Button size="sm" variant="outline" className="md:col-start-2" disabled={ocupado} onClick={() => void rodar((k) => acoes.criarELigarClienteAction(k, linha.tabela, linha.id, { nome: linha.texto, sigla: null }), `Cliente ${linha.texto} criado e ligado.`)}>Criar cliente "{linha.texto}" e ligar</Button>
+            <Button size="sm" variant="outline" className="md:col-start-2" disabled={ocupado} onClick={() => void rodar((k) => acoes.criarELigarClienteAction(k, linha.tabela, linha.id, { nome: linha.texto, sigla: null }), `Cliente ${linha.texto} criado e ligado.`)}>Criar cliente &quot;{linha.texto}&quot; e ligar</Button>
         </li>
     );
 }
@@ -105,7 +105,7 @@ function JuntarClientes({ clientes, rodar, ocupado }: { clientes: ClienteDoPaine
             <ConfirmDialog
                 aberto={confirmando && pronto}
                 titulo="Juntar clientes"
-                descricao={pronto ? `Tudo de ${nomeCurto(origem)} passa para ${nomeCurto(destino)} e ${nomeCurto(origem)} é apagado. Não dá para desfazer. Carteira de ${nomeCurto(destino)} depois: ${destino.gerencia ?? origem.gerencia ?? 'sem carteira'}.` : ''}
+                descricao={pronto ? `Tudo de ${rotuloCliente(origem)} passa para ${rotuloCliente(destino)} e ${rotuloCliente(origem)} é apagado. Não dá para desfazer. Carteira de ${rotuloCliente(destino)} depois: ${destino.gerencia ?? origem.gerencia ?? 'sem carteira'}.` : ''}
                 rotuloConfirmar="Juntar clientes"
                 tom="perigo"
                 aoCancelar={() => setConfirmando(false)}

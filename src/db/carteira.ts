@@ -135,7 +135,8 @@ export async function levarDadosDoCliente(tx: Tx, clienteIds: string[], paraGere
         if (p.managerId === card.id) continue;
         let historico: ProjectHistoryItem[] = [];
         try {
-            historico = p.history ? JSON.parse(p.history) : [];
+            const h = p.history ? JSON.parse(p.history) : [];
+            historico = Array.isArray(h) ? h : [];
         } catch {
             historico = [];
         }
@@ -253,10 +254,16 @@ export async function editarGerencia(chave: string, d: { sigla: string; nome: st
     const daGerencia = cards.filter((c) => chaveDaCarteira(c) === chave);
     const card = cardDaGerencia(cards, chave);
     if (!card) throw new ErroCarteira('Gerência não encontrada.');
-    if (nova !== chave && cards.some((c) => chaveDaCarteira(c) === nova)) throw new ErroCarteira(`Já existe uma gerência com a sigla ${nova}.`);
+    if (nova !== chave) {
+        if (chave === 'GRCC') throw new ErroCarteira('A sigla da GRCC não pode mudar: a página /grcc depende dela.');
+        if (cards.some((c) => chaveDaCarteira(c) === nova)) throw new ErroCarteira(`Já existe uma gerência com a sigla ${nova}.`);
+        // O id do card ganha do role fora de GRC/KAM: a carteira ficaria numa chave sem card.
+        if (daGerencia.some((c) => chaveDaCarteira({ id: c.id, role: nova }) !== nova)) throw new ErroCarteira('Essa sigla não pode ser usada nesta gerência: o id do card já indica outra.');
+    }
     const ids = daGerencia.map((c) => c.id);
     await db.transaction(async (tx) => {
         await tx.update(managers).set({ name: nome }).where(eq(managers.id, card.id));
+        if (nome !== card.name) await tx.update(contrato).set({ nomeGerente: nome }).where(inArray(contrato.managerId, ids));
         if (nova === chave) return;
         await tx.update(managers).set({ role: nova }).where(inArray(managers.id, ids));
         await tx.update(carteiraCliente).set({ gerencia: nova }).where(eq(carteiraCliente.gerencia, chave));
@@ -268,13 +275,25 @@ export async function editarGerencia(chave: string, d: { sigla: string; nome: st
     return { chave: nova };
 }
 
+async function exigirCarteiraVazia(chave: string): Promise<void> {
+    const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(carteiraCliente).where(eq(carteiraCliente.gerencia, chave));
+    if (Number(n) > 0) throw new ErroCarteira(`Tire os ${Number(n)} clientes da carteira antes de desativar.`);
+}
+
+/** Editor de gerente (D5, D10): card existente não muda de chave nem oculta gerência com clientes. Card novo passa. */
+export async function conferirEdicaoDoCard(m: { id: string; role: string; showInDashboard?: boolean }): Promise<void> {
+    const cards = await listarCards();
+    const atual = cards.find((c) => c.id === m.id);
+    if (!atual) return;
+    const chave = chaveDaCarteira(atual);
+    if (chaveDaCarteira(m) !== chave) throw new ErroCarteira('Para mudar a sigla, use Organograma de clientes.');
+    if (atual.showInDashboard && m.showInDashboard === false && cardDaGerencia(cards, chave)?.id === m.id) await exigirCarteiraVazia(chave);
+}
+
 export async function definirGerenciaVisivel(chave: string, visivel: boolean): Promise<void> {
     const card = cardDaGerencia(await listarCards(), chave);
     if (!card) throw new ErroCarteira('Gerência não encontrada.');
-    if (!visivel) {
-        const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(carteiraCliente).where(eq(carteiraCliente.gerencia, chave));
-        if (Number(n) > 0) throw new ErroCarteira(`Tire os ${Number(n)} clientes da carteira antes de desativar.`);
-    }
+    if (!visivel) await exigirCarteiraVazia(chave);
     await db.update(managers).set({ showInDashboard: visivel }).where(eq(managers.id, card.id));
 }
 

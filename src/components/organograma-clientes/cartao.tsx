@@ -131,7 +131,7 @@ export function CartaoDaGerencia({ cartao, mover, alvo, ocultarCargo, claro = fa
                 <span className={cn('inline-block size-1.5 shrink-0 rounded-full', cor.faixa)} aria-hidden="true" />
                 <h3 className={cn('min-w-0 flex-1 truncate text-xs font-semibold uppercase', claro ? 'text-zinc-900' : 'text-zinc-100')}>{nome}</h3>
                 {!cartao.ativa && (
-                    <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[11px] text-amber-400">Desativada</span>
+                    <span className={cn('rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[11px]', claro ? 'text-amber-700' : 'text-amber-400')}>Desativada</span>
                 )}
                 <span className={cn('text-xs font-semibold tabular-nums', cor.texto)} aria-label={`${cartao.clientes.length} clientes`}>
                     {cartao.clientes.length}

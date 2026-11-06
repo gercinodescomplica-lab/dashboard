@@ -23,6 +23,7 @@ export function SettingsDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [saveError, setSaveError] = useState('');
     const [isCloning, setIsCloning] = useState(false);
     const [cloneStatus, setCloneStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [cloneError, setCloneError] = useState<string>('');
@@ -41,10 +42,19 @@ export function SettingsDashboard() {
         loadData();
     }, []);
 
-    // Ao sair do organograma de clientes a carteira pode ter mudado: recarrega os gerentes.
+    // Ao sair do organograma de clientes a carteira pode ter mudado: atualiza só servedClients, sem perder edição não salva.
+    const atualizarClientesAtendidos = async () => {
+        try {
+            const atendidos = new Map((await fetchManagers()).map((m) => [m.id, m.servedClients]));
+            setManagers(prev => prev.map(m => atendidos.has(m.id) ? { ...m, servedClients: atendidos.get(m.id) } : m));
+        } catch (e) {
+            console.error('Falha ao atualizar os clientes atendidos:', e);
+        }
+    };
+
     const secaoAnterior = useRef(section);
     useEffect(() => {
-        if (secaoAnterior.current === 'organograma-clientes' && section !== 'organograma-clientes') void loadData();
+        if (secaoAnterior.current === 'organograma-clientes' && section !== 'organograma-clientes') void atualizarClientesAtendidos();
         secaoAnterior.current = section;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section]);
@@ -79,9 +89,16 @@ export function SettingsDashboard() {
         if (!selectedManager) return;
         setIsSaving(true);
         setSaveStatus('idle');
+        setSaveError('');
         try {
+            // Primeiro o gerente: recusado, nada mais é gravado.
+            const gerente = await saveManagerData(lerChaveSettings(), selectedManager);
+            if (!gerente.success) {
+                setSaveError(gerente.erro);
+                setSaveStatus('error');
+                return;
+            }
             await Promise.all([
-                saveManagerData(lerChaveSettings(), selectedManager),
                 saveCXData(lerChaveSettings(), selectedManager.id, selectedManager.cx || []),
                 saveVisitsData(lerChaveSettings(), selectedManager.id, selectedManager.visits || []),
                 saveChurnData(lerChaveSettings(), selectedManager.id, selectedManager.churn || []),
@@ -232,7 +249,7 @@ export function SettingsDashboard() {
                 {saveStatus === 'error' && (
                     <Alert variant="destructive" className="mb-6 bg-red-500/10 border-red-500/50 text-red-500">
                         <AlertTitle>Erro</AlertTitle>
-                        <AlertDescription>Ocorreu um erro ao salvar os dados no banco. Tente novamente.</AlertDescription>
+                        <AlertDescription>{saveError || 'Ocorreu um erro ao salvar os dados no banco. Tente novamente.'}</AlertDescription>
                     </Alert>
                 )}
                 {cloneStatus === 'success' && (

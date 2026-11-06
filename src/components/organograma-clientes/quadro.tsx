@@ -163,8 +163,8 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                         <h2 className={cn('mb-1 text-2xl font-bold tracking-[0.2em]', claro ? 'text-zinc-900' : 'text-zinc-100')}>C L I E N T E S</h2>
                         <p className={cn('mb-4 text-center text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')}>Quem atende cada órgão.</p>
                         <dl className="flex min-w-[200px] flex-col-reverse rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-10 py-2 text-center shadow-xs">
-                            <dt className="text-xs font-medium uppercase tracking-[0.12em] text-indigo-400">órgãos atendidos</dt>
-                            <dd className="text-xl font-semibold tracking-[0.08em] text-zinc-100">{totais.orgaosAtendidos}</dd>
+                            <dt className={cn('text-xs font-medium uppercase tracking-[0.12em]', claro ? 'text-indigo-700' : 'text-indigo-400')}>órgãos atendidos</dt>
+                            <dd className={cn('text-xl font-semibold tracking-[0.08em]', claro ? 'text-zinc-900' : 'text-zinc-100')}>{totais.orgaosAtendidos}</dd>
                         </dl>
                         <div className={cn('h-6 w-[1.5px]', linha)} />
                     </div>

@@ -7,7 +7,10 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 import { chaveSettingsValida } from '@/lib/settings/chave';
-import { roteadorDaCarteira } from '@/db/carteira';
+import { conferirEdicaoDoCard, listarCards, listarClientesComCarteira, roteadorDaCarteira } from '@/db/carteira';
+import { casarCliente } from '@/lib/carteira/casar-cliente';
+import { chaveDaCarteira } from '@/lib/carteira/gerencia';
+import { ErroCarteira } from '@/lib/carteira/tipos';
 
 function exigirChave(chave: string) {
     if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
@@ -34,9 +37,13 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
 
         // Item de cliente que está na carteira de OUTRA gerência vai para o card dela.
         // Se lá já existe o mesmo item, é a cópia velha de um editor aberto: descarta.
-        const rotear = await roteadorDaCarteira();
+        const [rotear, clientes, cards] = await Promise.all([roteadorDaCarteira(), listarClientesComCarteira(), listarCards()]);
+        const card = cards.find((c) => c.id === managerId);
+        const chaveDoCard = card ? chaveDaCarteira(card) : null;
         const linhas: { item: CXItem; destino: string }[] = [];
-        for (const item of items) {
+        for (const original of items) {
+            // Linha criada no editor não traz cliente: casa pelo texto, como o sync da API.
+            const item = { ...original, clienteId: original.clienteId ?? casarCliente(original.cliente, clientes, chaveDoCard) };
             const destino = rotear(item.clienteId, managerId);
             if (destino !== managerId) {
                 const jaLa = await db.select({ id: cx.id }).from(cx).where(and(eq(cx.managerId, destino),
@@ -141,9 +148,11 @@ export async function saveChurnData(chave: string, managerId: string, items: Chu
     }
 }
 
-export async function saveManagerData(chave: string, m: Manager) {
+// A recusa volta como valor: em produção o Next esconde a mensagem de erro lançado por action.
+export async function saveManagerData(chave: string, m: Manager): Promise<{ success: true } | { success: false; erro: string }> {
     exigirChave(chave);
     try {
+        await conferirEdicaoDoCard(m);
         const fv = calculateForecastFinal(m.contratado, m.pipeline);
 
         // Upsert Manager details
@@ -203,8 +212,11 @@ export async function saveManagerData(chave: string, m: Manager) {
         // Projeto de cliente que está na carteira de OUTRA gerência vai para o card dela (= gerenciaDoComercialPelaCarteira).
         // Se lá já existe o mesmo projeto (mesmo nome e cliente), é a cópia velha de um editor aberto: descarta.
         // Roda depois do upsert (card novo já está na lista de cards) e antes do delete.
-        const rotear = await roteadorDaCarteira();
+        const [rotear, clientes] = await Promise.all([roteadorDaCarteira(), listarClientesComCarteira()]);
+        const chaveDoCard = chaveDaCarteira(m);
         for (const p of allProjectsToInsert) {
+            // Linha criada no editor não traz cliente: casa pelo texto, como o sync da API.
+            p.clienteId ??= casarCliente(p.orgao, clientes, chaveDoCard);
             const destino = rotear(p.clienteId, m.id);
             if (destino === m.id) continue;
             const [igual] = await db.select({ id: projects.id }).from(projects)
@@ -222,6 +234,7 @@ export async function saveManagerData(chave: string, m: Manager) {
 
         return { success: true };
     } catch (err) {
+        if (err instanceof ErroCarteira) return { success: false, erro: err.message };
         console.error("Failed to save manager:", err);
         throw new Error("Erro ao salvar gerente no Turso.");
     }

@@ -6,6 +6,7 @@ const { db, applyMigrations } = await createTransactionSafeTestDb();
 const s = await import('@/db/schema');
 const { eq } = await import('drizzle-orm');
 const { semearCarteira } = await import('./carteira-seed');
+const { moverClientes } = await import('./carteira');
 
 beforeAll(applyMigrations);
 beforeEach(async () => {
@@ -66,6 +67,13 @@ describe('semearCarteira', () => {
         expect(segunda.clientesCriados).toBe(0);
         expect(segunda.ligados).toEqual({ contrato: 0, proposta: 0, cx: 0, projects: 0 });
         expect(await db.select().from(s.cliente)).toHaveLength(7);
+    });
+    it('rodar de novo não repõe cliente que o admin tirou da carteira', async () => {
+        await semearCarteira();
+        const [pgm] = await db.select().from(s.cliente).where(eq(s.cliente.sigla, 'PGM'));
+        await moverClientes([pgm.id], null, 'Admin');
+        await semearCarteira();
+        expect(await db.select().from(s.carteiraCliente).where(eq(s.carteiraCliente.clienteId, pgm.id))).toHaveLength(0);
     });
     it('texto lixo ("-") não vira cliente nem é ligado', async () => {
         await db.insert(s.contrato).values({ id: 'c4', numeroContrato: '4', cliente: '-', managerId: 'grc1-bruno', gerencia: 'GRC-1' });

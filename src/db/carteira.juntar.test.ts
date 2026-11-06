@@ -15,7 +15,7 @@ const clientes = async () => (await db.select().from(s.cliente)).map((x) => x.id
 const carteiraDe = async (id: string) => (await db.select().from(s.carteiraCliente).where(eq(s.carteiraCliente.clienteId, id)))[0]?.gerencia;
 
 describe('juntarClientes', () => {
-    it('move contrato, proposta, cx e projeto sem mudar o manager_id; apaga a origem; projeto de lead fica intacto', async () => {
+    it('move contrato, proposta, cx e projeto sem mudar o manager_id; apaga a origem; projeto de lead fica na GRCC', async () => {
         await c.juntarClientes('c-smt', 'c-sme', 'Admin');
         expect(await clientes()).not.toContain('c-smt');
         expect((await db.select().from(s.contrato))[0]).toMatchObject({ clienteId: 'c-sme', managerId: 'grc3-barone' });
@@ -23,7 +23,7 @@ describe('juntarClientes', () => {
         expect((await db.select().from(s.cx))[0]).toMatchObject({ clienteId: 'c-sme', managerId: 'grc3-barone' });
         const projs = await db.select().from(s.projects);
         expect(projs.find((p) => p.leadGrccId === null)).toMatchObject({ clienteId: 'c-sme', managerId: 'grc3-barone' });
-        expect(projs.find((p) => p.leadGrccId === 1)).toMatchObject({ clienteId: null, managerId: 'grcc-debora' });
+        expect(projs.find((p) => p.leadGrccId === 1)).toMatchObject({ clienteId: 'c-sme', managerId: 'grcc-debora' }); // o cliente segue o destino; o card continua na GRCC
     });
 
     it('destino com carteira mantém a dele; sigla do destino também', async () => {

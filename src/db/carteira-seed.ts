@@ -2,7 +2,7 @@
 // Carga inicial da carteira (spec 2026-11-06 §4). Idempotente. NÃO move dado nenhum (D12).
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from '@/db/index';
-import { carteiraCliente, cliente, contrato, cx, managers, projects, proposta } from '@/db/schema';
+import { carteiraCliente, cliente, contrato, cx, managers, movimentoCarteira, projects, proposta } from '@/db/schema';
 import { siglaComparavel } from '@/lib/integracao/chaves';
 import { casarCliente, clienteDoServedClient } from '@/lib/carteira/casar-cliente';
 import { chaveDaCarteira } from '@/lib/carteira/gerencia';
@@ -25,6 +25,7 @@ export async function semearCarteira(): Promise<RelatorioCarga> {
     const cards = (await db.select().from(managers)).sort((a, b) => Number(b.showInDashboard) - Number(a.showInDashboard) || b.year - a.year || a.id.localeCompare(b.id));
     const existentes = new Map((await db.select().from(cliente)).map((c) => [chaveDoCliente(c), c.id]));
     const naCarteira = new Map((await db.select().from(carteiraCliente)).map((c) => [c.clienteId, c.gerencia]));
+    const jaMovidos = new Set((await db.select({ clienteId: movimentoCarteira.clienteId }).from(movimentoCarteira)).map((m) => m.clienteId));
 
     async function garantirCliente(nome: string, sigla: string | null): Promise<string> {
         const k = chaveDoCliente({ nome, sigla });
@@ -50,7 +51,8 @@ export async function semearCarteira(): Promise<RelatorioCarga> {
                 if (!r.duplicados.some((d) => d.sigla === (sigla ?? nome))) r.duplicados.push({ sigla: sigla ?? nome, ficou: atual, perdeu: chave });
                 continue;
             }
-            if (!atual) {
+            // Com movimento, a carteira já é decisão do admin: não repõe quem ele tirou.
+            if (!atual && !jaMovidos.has(id)) {
                 await db.insert(carteiraCliente).values({ clienteId: id, gerencia: chave, movidoEm: agora(), movidoPor: 'Carga inicial' });
                 naCarteira.set(id, chave);
             }

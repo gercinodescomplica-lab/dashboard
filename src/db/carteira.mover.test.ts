@@ -30,6 +30,14 @@ describe('moverClientes leva tudo', () => {
         expect(trilha.map((m) => [m.clienteId, m.deGerencia, m.paraGerencia, m.por])).toEqual([['c-smt', 'GRC3', 'GRC4', 'Admin']]);
     });
 
+    it('history JSON válido mas não-array não reverte o movimento', async () => {
+        await db.update(s.projects).set({ history: '{"a":1}' }).where(eq(s.projects.name, 'Projeto SMT'));
+        expect(await c.moverClientes(['c-smt'], 'GRC4', 'Admin')).toEqual({ movidos: 1 });
+        const [p] = await db.select().from(s.projects).where(eq(s.projects.name, 'Projeto SMT'));
+        expect(p.managerId).toBe('grc4-beatriz');
+        expect(JSON.parse(p.history!)).toHaveLength(1);
+    });
+
     it('desfazer é o movimento de volta', async () => {
         await c.moverClientes(['c-smt'], 'GRC4', 'Admin', { 'c-smt': 'GRC3' });
         await c.moverClientes(['c-smt'], 'GRC3', 'Admin', { 'c-smt': 'GRC4' });

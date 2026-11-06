@@ -64,6 +64,8 @@ describe('OrganogramaClientesAdmin', () => {
         await user.clear(within(secao).getByRole('combobox', { name: 'Cliente que fica' }));
         await user.click(await within(secao).findByRole('option', { name: 'Secretaria de Educação' }));
         await user.click(juntar);
+        // Duas siglas iguais não confundem: o diálogo mostra o rótulo completo de quem some e de quem fica.
+        expect(screen.getByText(/^Tudo de SME · Educação \(GRC3\) passa para Secretaria de Educação e SME · Educação \(GRC3\) é apagado\./)).toBeInTheDocument();
         await user.click(screen.getByRole('button', { name: 'Juntar clientes' }));
         expect(a.juntarClientesAction).toHaveBeenCalledWith('adm', 'c-a', 'c-b');
     });

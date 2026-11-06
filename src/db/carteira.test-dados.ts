@@ -44,6 +44,6 @@ export async function cenario(db: typeof Db) {
     await db.insert(s.leadGrcc).values({ id: 1, cliente: 'SMT', criadoEm: AGORA, atualizadoEm: AGORA }); // FK de projects.lead_grcc_id
     await db.insert(s.projects).values([
         { managerId: 'grc3-barone', quarter: 'q1', orgao: 'SMT', clienteId: 'c-smt', name: 'Projeto SMT', value: 100 },
-        { managerId: 'grcc-debora', quarter: 'q2', orgao: 'SMT', clienteId: null, name: 'Lead SMT', value: 50, leadGrccId: 1 },
+        { managerId: 'grcc-debora', quarter: 'q2', orgao: 'SMT', clienteId: 'c-smt', name: 'Lead SMT', value: 50, leadGrccId: 1 },
     ]);
 }

@@ -36,6 +36,69 @@ describe('editor aberto com dado velho não desfaz a troca', () => {
     });
 });
 
+describe('linha criada no editor ganha cliente pelo texto', () => {
+    it('projeto novo SEM clienteId casa pelo órgão e vai para o card da carteira', async () => {
+        const bruno = (await fetchAllManagersFromDB()).find((m) => m.id === 'grc1-bruno')!;
+        bruno.pipeline.q2.projects.push({ name: 'Novo SME', value: 10, orgao: 'SME' });
+        await saveManagerData('adm', bruno);
+        expect((await db.select().from(s.projects).where(eq(s.projects.name, 'Novo SME')))[0]).toMatchObject({ managerId: 'kam1-malde', clienteId: 'c-sme' });
+    });
+    it('projeto com texto que não casa fica sem cliente no próprio card', async () => {
+        const bruno = (await fetchAllManagersFromDB()).find((m) => m.id === 'grc1-bruno')!;
+        bruno.pipeline.q2.projects.push({ name: 'Solto', value: 10, orgao: 'Câmara X' });
+        await saveManagerData('adm', bruno);
+        expect((await db.select().from(s.projects).where(eq(s.projects.name, 'Solto')))[0]).toMatchObject({ managerId: 'grc1-bruno', clienteId: null });
+    });
+    it('projeto de lead que vem do editor continua de fora', async () => {
+        const debora = (await fetchAllManagersFromDB()).find((m) => m.id === 'grcc-debora')!;
+        await saveManagerData('adm', debora);
+        expect((await db.select().from(s.projects).where(eq(s.projects.name, 'Lead SMT')))).toHaveLength(1);
+        expect((await db.select().from(s.projects).where(eq(s.projects.name, 'Lead SMT')))[0].managerId).toBe('grcc-debora');
+    });
+    it('CX novo SEM clienteId casa pelo cliente e vai para o card da carteira', async () => {
+        await saveCXData('adm', 'grc1-bruno', [{ cliente: 'SME', titulo: 'Novo', problema: 'p', solucaoProposta: 's', status: 'pendente' }]);
+        expect((await db.select().from(s.cx).where(eq(s.cx.titulo, 'Novo')))[0]).toMatchObject({ managerId: 'kam1-malde', clienteId: 'c-sme' });
+    });
+    it('e acompanha o movimento da carteira depois', async () => {
+        const bruno = (await fetchAllManagersFromDB()).find((m) => m.id === 'grc1-bruno')!;
+        bruno.pipeline.q2.projects.push({ name: 'Novo SME', value: 10, orgao: 'SME' });
+        await saveManagerData('adm', bruno);
+        await moverClientes(['c-sme'], 'GRC4', 'Admin');
+        expect((await db.select().from(s.projects).where(eq(s.projects.name, 'Novo SME')))[0].managerId).toBe('grc4-beatriz');
+    });
+});
+
+describe('editor de gerente não fura D5/D10', () => {
+    const card = async (id: string) => (await fetchAllManagersFromDB()).find((m) => m.id === id)!;
+    const linha = async (id: string) => (await db.select().from(s.managers).where(eq(s.managers.id, id)))[0];
+
+    it('recusa mudar a sigla do card existente e não grava nada', async () => {
+        const barone = await card('grc3-barone');
+        expect(await saveManagerData('adm', { ...barone, role: 'GRC9', name: 'Outro' })).toEqual({ success: false, erro: 'Para mudar a sigla, use Organograma de clientes.' });
+        expect(await linha('grc3-barone')).toMatchObject({ role: 'GRC3', name: 'Barone' });
+    });
+    it('aceita outra grafia da mesma chave', async () => {
+        const barone = await card('grc3-barone');
+        expect(await saveManagerData('adm', { ...barone, role: 'GRC-3' })).toEqual({ success: true });
+    });
+    it('recusa ocultar o card da gerência com clientes', async () => {
+        const barone = await card('grc3-barone');
+        expect(await saveManagerData('adm', { ...barone, showInDashboard: false })).toEqual({ success: false, erro: 'Tire os 2 clientes da carteira antes de desativar.' });
+        expect((await linha('grc3-barone')).showInDashboard).toBe(true);
+    });
+    it('oculta gerência sem clientes e card antigo que não é o da gerência', async () => {
+        await db.insert(s.carteiraCliente).values({ clienteId: 'c-smc', gerencia: 'GRC4', movidoEm: 'x' });
+        expect(await saveManagerData('adm', { ...(await card('grc1-bruno')), showInDashboard: false })).toEqual({ success: true });
+        expect(await saveManagerData('adm', { ...(await card('grc4-velha')), showInDashboard: false })).toEqual({ success: true });
+    });
+    it('card novo não é afetado', async () => {
+        const barone = await card('grc3-barone');
+        const novo = { ...barone, id: 'grc9-nova', role: 'GRC9', showInDashboard: false, pipeline: { q1: { total: 0, projects: [] }, q2: { total: 0, projects: [] }, q3: { total: 0, projects: [] }, q4: { total: 0, projects: [] }, nao_mapeado: { total: 0, projects: [] } } };
+        expect(await saveManagerData('adm', novo)).toEqual({ success: true });
+        expect((await linha('grc9-nova')).role).toBe('GRC9');
+    });
+});
+
 describe('servedClients vem da carteira', () => {
     it('fetchAllManagersFromDB monta servedClients pela gerência; saveManagerData não grava served_clients', async () => {
         const barone = (await fetchAllManagersFromDB()).find((m) => m.id === 'grc3-barone')!;

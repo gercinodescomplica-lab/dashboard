@@ -166,7 +166,7 @@ export async function PATCH(request: Request) {
                         .update(cx)
                         .set(strip({
                             cliente: item.cliente,
-                            clienteId,
+                            clienteId: clienteId ?? undefined, // texto que não casa não apaga vínculo manual
                             titulo: item.titulo,
                             problema: item.problema,
                             solucaoProposta: item.solucaoProposta,
@@ -250,7 +250,7 @@ export async function PATCH(request: Request) {
                         .set(strip({
                             quarter: item.quarter,
                             orgao: item.orgao,
-                            clienteId,
+                            clienteId: clienteId ?? undefined, // texto que não casa não apaga vínculo manual
                             name: item.name,
                             value: item.value,
                             temperature: item.temperature,
