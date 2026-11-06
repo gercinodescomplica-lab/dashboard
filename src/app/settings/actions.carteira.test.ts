@@ -5,7 +5,7 @@ const { db, applyMigrations } = await createTransactionSafeTestDb();
 const s = await import('@/db/schema');
 const { eq } = await import('drizzle-orm');
 const { cenario } = await import('@/db/carteira.test-dados');
-const { moverClientes } = await import('@/db/carteira');
+const { moverClientes, roteadorDaCarteira } = await import('@/db/carteira');
 const { saveManagerData, saveCXData, cloneManager } = await import('./actions');
 const { fetchAllManagersFromDB, fetchCXByManager } = await import('@/db/queries');
 
@@ -48,5 +48,16 @@ describe('servedClients vem da carteira', () => {
         const [card] = await db.select().from(s.managers).where(eq(s.managers.id, newId));
         expect(card.servedClients).toBeNull();
         expect((await db.select().from(s.projects).where(eq(s.projects.managerId, newId)))[0].clienteId).toBe('c-smt');
+    });
+});
+
+describe('roteadorDaCarteira (lote de managerDaLinha)', () => {
+    it('troca só quando a carteira é de outra gerência', async () => {
+        const rotear = await roteadorDaCarteira();
+        expect(rotear('c-smt', 'grc1-bruno')).toBe('grc3-barone');
+        expect(rotear('c-smt', 'grc3-barone')).toBe('grc3-barone');
+        expect(rotear('c-smc', 'grc1-bruno')).toBe('grc1-bruno');
+        expect(rotear(null, 'grc1-bruno')).toBe('grc1-bruno');
+        expect(rotear('c-smt', 'card-inexistente')).toBe('grc3-barone');
     });
 });

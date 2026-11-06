@@ -7,7 +7,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 import { chaveSettingsValida } from '@/lib/settings/chave';
-import { managerDaLinha } from '@/db/carteira';
+import { roteadorDaCarteira } from '@/db/carteira';
 
 function exigirChave(chave: string) {
     if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
@@ -34,9 +34,10 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
 
         // Item de cliente que está na carteira de OUTRA gerência vai para o card dela.
         // Se lá já existe o mesmo item, é a cópia velha de um editor aberto: descarta.
+        const rotear = await roteadorDaCarteira();
         const linhas: { item: CXItem; destino: string }[] = [];
         for (const item of items) {
-            const destino = await managerDaLinha(item.clienteId, managerId);
+            const destino = rotear(item.clienteId, managerId);
             if (destino !== managerId) {
                 const jaLa = await db.select({ id: cx.id }).from(cx).where(and(eq(cx.managerId, destino),
                     item.externalId ? eq(cx.externalId, item.externalId) : and(eq(cx.titulo, item.titulo), eq(cx.clienteId, item.clienteId!))));
@@ -173,11 +174,7 @@ export async function saveManagerData(chave: string, m: Manager) {
             }
         });
 
-        // 2. Delete existing MANUAL projects to replace them. Projetos com leadGrccId são
-        //    gerados pela /grcc (dono = cadastro de leads) e nunca são apagados/regravados aqui.
-        await db.delete(projects).where(and(eq(projects.managerId, m.id), isNull(projects.leadGrccId)));
-
-        // 3. Assemble and inserts new projects if any
+        // 2. Assemble new projects (antes do delete: nada de consulta entre apagar e regravar)
         const allProjectsToInsert: any[] = [];
 
         ['q1', 'q2', 'q3', 'q4', 'nao_mapeado'].forEach((qKey) => {
@@ -205,14 +202,20 @@ export async function saveManagerData(chave: string, m: Manager) {
 
         // Projeto de cliente que está na carteira de OUTRA gerência vai para o card dela (= gerenciaDoComercialPelaCarteira).
         // Se lá já existe o mesmo projeto (mesmo nome e cliente), é a cópia velha de um editor aberto: descarta.
+        // Roda depois do upsert (card novo já está na lista de cards) e antes do delete.
+        const rotear = await roteadorDaCarteira();
         for (const p of allProjectsToInsert) {
-            const destino = await managerDaLinha(p.clienteId, m.id);
+            const destino = rotear(p.clienteId, m.id);
             if (destino === m.id) continue;
             const [igual] = await db.select({ id: projects.id }).from(projects)
                 .where(and(eq(projects.managerId, destino), eq(projects.name, p.name), eq(projects.clienteId, p.clienteId)));
             p.managerId = igual ? null : destino;
         }
         const aGravar = allProjectsToInsert.filter((p) => p.managerId !== null);
+
+        // 3. Delete existing MANUAL projects to replace them. Projetos com leadGrccId são
+        //    gerados pela /grcc (dono = cadastro de leads) e nunca são apagados/regravados aqui.
+        await db.delete(projects).where(and(eq(projects.managerId, m.id), isNull(projects.leadGrccId)));
         if (aGravar.length > 0) {
             await db.insert(projects).values(aGravar);
         }

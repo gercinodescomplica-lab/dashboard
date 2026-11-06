@@ -61,6 +61,22 @@ export async function managerDaLinha(clienteId: string | null | undefined, manag
     return atual && chaveDaCarteira(atual) === g.chave ? managerIdAtual : g.managerId;
 }
 
+/** Versão em lote de `managerDaLinha`: lê cards e carteira uma vez e devolve a regra como função pura (gravações com muitas linhas). */
+export async function roteadorDaCarteira(ex: Executor = db): Promise<(clienteId: string | null | undefined, managerIdAtual: string) => string> {
+    const [cards, carteira] = await Promise.all([
+        listarCards(ex),
+        ex.select({ clienteId: carteiraCliente.clienteId, gerencia: carteiraCliente.gerencia }).from(carteiraCliente),
+    ]);
+    const gerenciaDe = new Map(carteira.map((c) => [c.clienteId, c.gerencia]));
+    return (clienteId, managerIdAtual) => {
+        const chave = clienteId ? gerenciaDe.get(clienteId) : undefined;
+        const card = chave ? cardDaGerencia(cards, chave) : null;
+        if (!card) return managerIdAtual;
+        const atual = cards.find((c) => c.id === managerIdAtual);
+        return atual && chaveDaCarteira(atual) === chave ? managerIdAtual : card.id;
+    };
+}
+
 async function ultimosMovimentos(ex: Executor): Promise<Map<string, { em: string }>> {
     const movs = await ex.select({ clienteId: movimentoCarteira.clienteId, em: movimentoCarteira.em }).from(movimentoCarteira).orderBy(desc(movimentoCarteira.em));
     const m = new Map<string, { em: string }>();
