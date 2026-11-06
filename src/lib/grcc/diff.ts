@@ -1,6 +1,7 @@
-import { CAMPOS_LEAD, type LeadGrccDados, type Mudanca } from './tipos';
+import { CAMPOS_LEAD, textoContatos, type LeadGrccDados, type Mudanca } from './tipos';
 
 function valorDiff(v: unknown): string | number | null {
+    if (Array.isArray(v)) return textoContatos(v) || null;
     if (v === undefined || v === null || v === '') return null;
     return typeof v === 'number' ? v : String(v);
 }

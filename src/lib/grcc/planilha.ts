@@ -41,6 +41,7 @@ export const ALIASES_COLUNA: Record<keyof LeadGrccDados, string[]> = {
     inicioFaturamento: ['inicio faturamento', 'inicio do faturamento'],
     propostaEnviadaEm: ['data envio proposta', 'data de envio da proposta', 'envio da proposta'],
     duracaoMeses: ['duracao meses', 'duracao', 'prazo meses'],
+    contatosExtras: [], // não vem da planilha
 };
 
 export const COLUNAS_OBRIGATORIAS: { campo: keyof LeadGrccDados; rotulo: string }[] = [
@@ -141,6 +142,7 @@ export function lerLinhasPlanilha(matriz: unknown[][]): ResultadoPlanilha {
             contatoNome: textoOuNull(cel(row, 'contatoNome')),
             contatoEmail: textoOuNull(cel(row, 'contatoEmail')),
             contatoTelefone: textoOuNull(cel(row, 'contatoTelefone')),
+            contatosExtras: [], // a planilha só tem o contato principal
             previsaoFechamento: parseDataIso(cel(row, 'previsaoFechamento')),
             inicioFaturamento: parseDataIso(cel(row, 'inicioFaturamento')),
             propostaEnviadaEm: parseDataIso(cel(row, 'propostaEnviadaEm')),

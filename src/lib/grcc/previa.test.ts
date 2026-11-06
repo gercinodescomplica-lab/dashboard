@@ -45,3 +45,12 @@ describe('montarPrevia', () => {
         expect(p.alterados[0].dados.propostaEnviadaEm).toBe('2026-09-01');
     });
 });
+
+describe('montarPrevia — contatos extras', () => {
+    it('planilha (sem contatos extras) não apaga os já cadastrados', () => {
+        const comExtras: LeadGrcc = { ...existente, contatosExtras: [{ nome: 'Ana', email: null, telefone: null }] };
+        const { id: _i, criadoEm: _c, atualizadoEm: _a, visivelDashboard: _v, ...dados } = existente;
+        const p = montarPrevia([{ linha: 2, dados: { ...dados, contatosExtras: [] } }], [], [comExtras]);
+        expect(p.iguais).toBe(1);
+    });
+});

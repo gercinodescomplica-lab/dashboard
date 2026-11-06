@@ -707,6 +707,7 @@ function linhaParaLead(r: typeof leadGrcc.$inferSelect): LeadGrcc {
         inicioFaturamento: r.inicioFaturamento,
         propostaEnviadaEm: r.propostaEnviadaEm,
         duracaoMeses: r.duracaoMeses,
+        contatosExtras: r.contatosExtras ?? [],
         visivelDashboard: r.visivelDashboard,
         criadoEm: r.criadoEm,
         atualizadoEm: r.atualizadoEm,

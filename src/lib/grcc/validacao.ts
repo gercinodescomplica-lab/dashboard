@@ -18,6 +18,16 @@ const dataOpcional = z
     .nullable()
     .or(z.literal('').transform(() => null));
 
+const emailOpcional = z.string().trim().email('E-mail inválido.').nullable().or(z.literal('').transform(() => null));
+
+// Linha toda vazia (botão "adicionar" sem preencher) some; ausente = nenhum.
+const contatosExtras = z
+    .array(z.object({ nome: textoOpcional.optional(), email: emailOpcional.optional(), telefone: textoOpcional.optional() }))
+    .optional()
+    .transform((cs) =>
+        (cs ?? []).map((c) => ({ nome: c.nome ?? null, email: c.email ?? null, telefone: c.telefone ?? null })).filter((c) => c.nome || c.email || c.telefone)
+    );
+
 export const schemaLead = z.object({
     cliente: z.string().trim().min(1, 'Informe o cliente.'),
     solicitacao: z.string().trim(),
@@ -36,12 +46,13 @@ export const schemaLead = z.object({
     municipio: textoOpcional,
     regiao: textoOpcional,
     contatoNome: textoOpcional,
-    contatoEmail: z.string().trim().email('E-mail inválido.').nullable().or(z.literal('').transform(() => null)),
+    contatoEmail: emailOpcional,
     contatoTelefone: textoOpcional,
     previsaoFechamento: dataOpcional,
     inicioFaturamento: dataOpcional,
     propostaEnviadaEm: dataOpcional,
     duracaoMeses: z.number().int().min(1, 'Duração mínima de 1 mês.').max(120),
+    contatosExtras,
 });
 
 type Erros = Partial<Record<keyof LeadGrccDados, string>>;

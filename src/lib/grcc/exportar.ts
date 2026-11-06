@@ -5,7 +5,7 @@
  */
 
 import type { Row, SheetData } from 'write-excel-file/browser';
-import { ROTULO_TEMPERATURA, type LeadGrcc, type LeadGrccDados } from './tipos';
+import { ROTULO_TEMPERATURA, textoContatos, type LeadGrcc, type LeadGrccDados } from './tipos';
 import { chaveTexto } from './normalizar';
 
 type Coluna = {
@@ -55,6 +55,7 @@ export const COLUNAS_EXPORTACAO: Coluna[] = [
     { cabecalho: 'Data de envio da proposta', largura: 16, celula: (l) => data(l.propostaEnviadaEm) },
     { cabecalho: 'Duração (meses)', largura: 10, celula: (l) => ({ value: l.duracaoMeses, type: Number }) },
     // Só informativas: a importação ignora (visibilidade não vem da planilha; data é carimbo do sistema).
+    { cabecalho: 'Outros contatos', largura: 40, celula: (l) => texto(textoContatos(l.contatosExtras) || null) },
     { cabecalho: 'Visível no dashboard', largura: 12, celula: (l) => texto(l.visivelDashboard ? 'Sim' : 'Não') },
     { cabecalho: 'Atualizado em', largura: 14, celula: (l) => data(l.atualizadoEm) },
 ];

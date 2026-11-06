@@ -146,6 +146,27 @@ describe('LeadPainel', () => {
         expect(salvarLead).toHaveBeenCalledWith('k', 5, expect.objectContaining({ categoria: 'Perda' }), { visivelDashboard: true });
     });
 
+    it('adiciona quantos contatos quiser, remove e envia a lista ao salvar', async () => {
+        const user = userEvent.setup();
+        salvarLead.mockResolvedValue({ ok: true });
+        render(<LeadPainel aberto lead={lead} listas={listas} onFechar={() => {}} onGravado={async () => {}} />);
+        await user.click(screen.getByRole('button', { name: /Adicionar contato/ }));
+        await user.click(screen.getByRole('button', { name: /Adicionar contato/ }));
+        await user.click(screen.getByRole('button', { name: /Adicionar contato/ }));
+        const nomes = screen.getAllByLabelText(/^Nome do contato \d/);
+        expect(nomes).toHaveLength(3);
+        await user.type(nomes[0], 'Ana');
+        await user.type(screen.getAllByLabelText(/^E-mail do contato \d/)[0], 'ana@x.gov.br');
+        await user.type(nomes[2], 'Bruno');
+        await user.click(screen.getByRole('button', { name: 'Remover contato 3' }));
+        await user.click(screen.getByRole('button', { name: 'Salvar' }));
+        await waitFor(() => expect(salvarLead).toHaveBeenCalled());
+        expect(salvarLead.mock.calls[0][2].contatosExtras).toEqual([
+            { nome: 'Ana', email: 'ana@x.gov.br', telefone: null },
+            { nome: 'Bruno', email: null, telefone: null },
+        ]);
+    });
+
     it('excluir pede confirmação inline antes de chamar a action', async () => {
         const user = userEvent.setup();
         excluirLead.mockResolvedValue({ ok: true, valor: null });

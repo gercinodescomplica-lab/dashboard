@@ -201,6 +201,8 @@ export const leadGrcc = sqliteTable('lead_grcc', {
     inicioFaturamento: text('inicio_faturamento'), // "YYYY-MM-DD", só Contratado
     propostaEnviadaEm: text('proposta_enviada_em'), // "YYYY-MM-DD". Alimenta a temperatura automática — ver src/lib/grcc/pipeline.ts
     duracaoMeses: integer('duracao_meses').notNull().default(12),
+    // JSON [{ nome, email, telefone }]. NULL = nenhum. Contatos além do principal; a planilha não mexe.
+    contatosExtras: text('contatos_extras', { mode: 'json' }).$type<{ nome: string | null; email: string | null; telefone: string | null }[]>(),
     // Aparece no dashboard (aba Cidades). Não faz parte dos dados da planilha: só o formulário da /grcc muda.
     visivelDashboard: integer('visivel_dashboard', { mode: 'boolean' }).notNull().default(true),
     criadoEm: text('criado_em').notNull(),

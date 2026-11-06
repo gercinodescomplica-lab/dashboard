@@ -24,6 +24,7 @@ export function montarPrevia(linhas: LinhaPlanilha[], problemas: ProblemaLinha[]
         let dados = l.dados;
         if (dados.temperatura === null && atual.temperatura) dados = { ...dados, temperatura: atual.temperatura };
         if (dados.propostaEnviadaEm === null && atual.propostaEnviadaEm) dados = { ...dados, propostaEnviadaEm: atual.propostaEnviadaEm };
+        if (dados.contatosExtras.length === 0 && atual.contatosExtras.length > 0) dados = { ...dados, contatosExtras: atual.contatosExtras };
         const mudancas = diffLead(dadosDoLead(atual), dados);
         if (mudancas.length === 0) previa.iguais++;
         else previa.alterados.push({ linha: l.linha, leadId: atual.id, dados, mudancas });

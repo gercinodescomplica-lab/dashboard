@@ -102,6 +102,7 @@ describe('lerLinhasPlanilha', () => {
             inicioFaturamento: null,
             propostaEnviadaEm: null,
             duracaoMeses: 12,
+            contatosExtras: [],
         });
     });
 

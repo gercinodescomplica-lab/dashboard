@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Eye, EyeOff, Pencil, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, Eye, EyeOff, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CAMPOS_LEAD, LEAD_VAZIO, ROTULO_CAMPO, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CampoLista, type EventoHistorico, type LeadGrcc, type LeadGrccDados } from '@/lib/grcc/tipos';
+import { CAMPOS_LEAD, LEAD_VAZIO, ROTULO_CAMPO, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CampoLista, type ContatoLead, type EventoHistorico, type LeadGrcc, type LeadGrccDados } from '@/lib/grcc/tipos';
 import { UFS, municipiosDaUf } from '@/lib/grcc/municipios';
 import { temperaturaDaCategoria, temperaturaDoLead, trimestreDaPrevisao } from '@/lib/grcc/pipeline';
 import { historicoDoLead } from '@/services/grcc.service';
@@ -572,6 +572,34 @@ export function LeadPainel({
                                     </div>
                                     <input aria-label="Telefone do contato" placeholder="Telefone" value={dados.contatoTelefone ?? ''} onChange={(e) => set('contatoTelefone', e.target.value || null)} className={cls()} />
                                 </div>
+                                {dados.contatosExtras.map((c, i) => {
+                                    const n = i + 2;
+                                    const mudar = (campo: keyof ContatoLead, valor: string) =>
+                                        set('contatosExtras', dados.contatosExtras.map((x, j) => (j === i ? { ...x, [campo]: valor || null } : x)));
+                                    return (
+                                        <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 mt-3">
+                                            <input aria-label={`Nome do contato ${n}`} placeholder="Nome" value={c.nome ?? ''} onChange={(e) => mudar('nome', e.target.value)} className={cls()} />
+                                            <input aria-label={`E-mail do contato ${n}`} placeholder="E-mail" value={c.email ?? ''} onChange={(e) => mudar('email', e.target.value)} className={cls()} />
+                                            <input aria-label={`Telefone do contato ${n}`} placeholder="Telefone" value={c.telefone ?? ''} onChange={(e) => mudar('telefone', e.target.value)} className={cls()} />
+                                            <button
+                                                type="button"
+                                                aria-label={`Remover contato ${n}`}
+                                                onClick={() => set('contatosExtras', dados.contatosExtras.filter((_, j) => j !== i))}
+                                                className={`self-center p-2 rounded-lg ${claro ? 'text-zinc-500 hover:text-red-600' : 'text-zinc-500 hover:text-red-400'}`}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                                {erros.contatosExtras && <p className={`text-xs mt-1 ${claro ? 'text-red-600' : 'text-red-400'}`}>{erros.contatosExtras}</p>}
+                                <button
+                                    type="button"
+                                    onClick={() => set('contatosExtras', [...dados.contatosExtras, { nome: null, email: null, telefone: null }])}
+                                    className={`mt-3 inline-flex items-center gap-1 text-sm ${claro ? 'text-indigo-600 hover:text-indigo-800' : 'text-indigo-400 hover:text-indigo-300'}`}
+                                >
+                                    <Plus className="w-4 h-4" /> Adicionar contato
+                                </button>
                             </Secao>
 
                             <Secao titulo="6 · Dashboard">

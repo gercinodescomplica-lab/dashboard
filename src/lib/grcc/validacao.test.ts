@@ -86,3 +86,29 @@ describe('pendenciasDoLead', () => {
         expect(pendenciasDoLead({ ...ok, categoria: 'Perda' })).toEqual(['Sem motivo da perda']);
     });
 });
+
+describe('validarLead — contatos extras', () => {
+    it('aceita vários contatos, descarta linha toda vazia e recusa e-mail inválido', () => {
+        const r = validarLead({
+            ...ok,
+            contatosExtras: [
+                { nome: ' Ana ', email: 'ana@x.gov.br', telefone: null },
+                { nome: '', email: '', telefone: '' },
+                { nome: null, email: null, telefone: '(19) 9999-0000' },
+            ],
+        });
+        expect(r.ok).toBe(true);
+        if (r.ok) expect(r.dados.contatosExtras).toEqual([
+            { nome: 'Ana', email: 'ana@x.gov.br', telefone: null },
+            { nome: null, email: null, telefone: '(19) 9999-0000' },
+        ]);
+        const ruim = validarLead({ ...ok, contatosExtras: [{ nome: 'B', email: 'nao-e-email', telefone: null }] });
+        expect(ruim.ok).toBe(false);
+        if (!ruim.ok) expect(ruim.erros.contatosExtras).toBe('E-mail inválido.');
+    });
+    it('ausente vira lista vazia', () => {
+        const { contatosExtras: _contatos, ...semExtras } = ok; // eslint-disable-line @typescript-eslint/no-unused-vars
+        const r = validarLead(semExtras);
+        expect(r.ok && r.dados.contatosExtras).toEqual([]);
+    });
+});

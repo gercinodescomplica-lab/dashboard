@@ -44,6 +44,19 @@ export interface LeadGrccDados {
     /** Data (YYYY-MM-DD) em que a proposta foi enviada ao cliente. Alimenta a temperatura automática (ver `temperaturaDoLead`). */
     propostaEnviadaEm: string | null;
     duracaoMeses: number;
+    /** Contatos além do principal (contatoNome/Email/Telefone). A planilha não traz: só o formulário mexe. */
+    contatosExtras: ContatoLead[];
+}
+
+export interface ContatoLead {
+    nome: string | null;
+    email: string | null;
+    telefone: string | null;
+}
+
+/** "Ana · ana@x.gov.br; Bruno · (19) 9999-0000" — histórico e exportação. */
+export function textoContatos(cs: ContatoLead[]): string {
+    return cs.map((c) => [c.nome, c.email, c.telefone].filter(Boolean).join(' · ')).join('; ');
 }
 
 export interface LeadGrcc extends LeadGrccDados {
@@ -76,6 +89,7 @@ export const CAMPOS_LEAD: (keyof LeadGrccDados)[] = [
     'inicioFaturamento',
     'propostaEnviadaEm',
     'duracaoMeses',
+    'contatosExtras',
 ];
 
 export const ROTULO_CAMPO: Record<keyof LeadGrccDados, string> = {
@@ -99,6 +113,7 @@ export const ROTULO_CAMPO: Record<keyof LeadGrccDados, string> = {
     inicioFaturamento: 'Início do faturamento',
     propostaEnviadaEm: 'Data de envio da proposta',
     duracaoMeses: 'Duração (meses)',
+    contatosExtras: 'Outros contatos',
 };
 
 /** Campos que têm lista suspensa em `dropdown_options` (field = `grcc_<campo>`). */
@@ -224,6 +239,7 @@ export const LEAD_VAZIO: LeadGrccDados = {
     inicioFaturamento: null,
     propostaEnviadaEm: null,
     duracaoMeses: 12,
+    contatosExtras: [],
 };
 
 export type ResultadoAcao<T> =

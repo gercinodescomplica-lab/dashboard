@@ -27,3 +27,12 @@ describe('diffLead', () => {
         expect(diffLead({ ...base, regiao: null }, { ...base, regiao: '' as unknown as null })).toEqual([]);
     });
 });
+
+describe('diffLead — contatos extras', () => {
+    it('registra a lista como texto legível e ignora lista igual', () => {
+        const a = { ...LEAD_VAZIO, cliente: 'X' };
+        const b = { ...a, contatosExtras: [{ nome: 'Ana', email: 'ana@x.gov.br', telefone: null }] };
+        expect(diffLead(a, b)).toEqual([{ campo: 'contatosExtras', de: null, para: 'Ana · ana@x.gov.br' }]);
+        expect(diffLead(b, { ...b, contatosExtras: [{ nome: 'Ana', email: 'ana@x.gov.br', telefone: null }] })).toEqual([]);
+    });
+});
