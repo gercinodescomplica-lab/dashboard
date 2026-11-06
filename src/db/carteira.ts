@@ -379,3 +379,28 @@ export async function gerenciasParaEditar(): Promise<GerenciaParaEditar[]> {
 export async function clientesParaEscolha(): Promise<Array<{ id: string; nome: string; sigla: string | null }>> {
     return db.select({ id: cliente.id, nome: cliente.nome, sigla: cliente.sigla }).from(cliente).where(eq(cliente.ativo, true)).orderBy(cliente.nome);
 }
+
+/** = `mesclarClientes` do AIBertinho: leva contrato, proposta, cx, projeto e histórico da origem para o destino e apaga a origem.
+ *  Não mexe no manager_id das linhas: as que ficarem em outra gerência aparecem em "Fora da carteira". */
+export async function juntarClientes(origemId: string, destinoId: string, por: string): Promise<void> {
+    if (origemId === destinoId) throw new ErroCarteira('Escolha dois clientes diferentes.');
+    const [origem] = await db.select().from(cliente).where(eq(cliente.id, origemId));
+    const [alvo] = await db.select().from(cliente).where(eq(cliente.id, destinoId));
+    if (!origem || !alvo) throw new ErroCarteira('Cliente não encontrado.');
+    await db.transaction(async (tx) => {
+        const doDestino = { clienteId: destinoId };
+        await tx.update(contrato).set(doDestino).where(eq(contrato.clienteId, origemId));
+        await tx.update(proposta).set(doDestino).where(eq(proposta.clienteId, origemId));
+        await tx.update(cx).set(doDestino).where(eq(cx.clienteId, origemId));
+        await tx.update(projects).set(doDestino).where(eq(projects.clienteId, origemId));
+        await tx.update(movimentoCarteira).set(doDestino).where(eq(movimentoCarteira.clienteId, origemId));
+        const carteiras = await carteiraAtual([origemId, destinoId], tx);
+        const herdada = carteiras.get(origemId);
+        if (herdada && !carteiras.has(destinoId)) {
+            await tx.insert(carteiraCliente).values({ clienteId: destinoId, gerencia: herdada, movidoEm: agora(), movidoPor: por });
+            await tx.insert(movimentoCarteira).values({ clienteId: destinoId, deGerencia: null, paraGerencia: herdada, por, em: agora() });
+        }
+        await tx.delete(cliente).where(eq(cliente.id, origemId)); // a carteira da origem some no cascade
+        if (origem.sigla && !alvo.sigla) await tx.update(cliente).set({ sigla: origem.sigla }).where(eq(cliente.id, destinoId));
+    });
+}

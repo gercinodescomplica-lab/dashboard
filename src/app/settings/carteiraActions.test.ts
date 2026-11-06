@@ -26,6 +26,13 @@ describe('carteiraActions', () => {
         const falha = await a.criarELigarClienteAction('adm', 'contrato', 'nao-existe', { nome: 'Outro', sigla: null });
         expect(falha).toEqual({ ok: false, erro: expect.stringContaining('Cliente criado, mas não foi possível ligar') });
     });
+    it('juntarClientes: chave errada recusa e não grava; chave certa junta', async () => {
+        const { cliente } = await import('@/db/schema');
+        expect(await a.juntarClientesAction('errada', 'c-smt', 'c-sme')).toMatchObject({ ok: false });
+        expect(await db.select().from(cliente)).toHaveLength(4);
+        expect(await a.juntarClientesAction('adm', 'c-smt', 'c-sme')).toEqual({ ok: true, valor: undefined });
+        expect(await db.select().from(cliente)).toHaveLength(3);
+    });
     it('entrada inválida', async () => {
         expect(await a.moverClienteNoOrganogramaAction('adm', '', 'GRC3', 'GRC4')).toEqual({ ok: false, erro: 'Dados inválidos.' });
     });

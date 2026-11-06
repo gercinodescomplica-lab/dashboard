@@ -110,3 +110,10 @@ export async function criarELigarClienteAction(chave: string, tabela: carteira.T
         return novo;
     });
 }
+
+export async function juntarClientesAction(chave: string, origemId: string, destinoId: string) {
+    return rodar(chave, async () => {
+        const d = z.object({ origemId: id, destinoId: id }).parse({ origemId, destinoId });
+        return carteira.juntarClientes(d.origemId, d.destinoId, POR);
+    });
+}

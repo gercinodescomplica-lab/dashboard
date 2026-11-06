@@ -7,7 +7,7 @@ import { montarOrganograma } from '@/lib/carteira/organograma-clientes';
 const a = vi.hoisted(() => ({
     carregarPainelCarteiraAction: vi.fn(), moverClienteNoOrganogramaAction: vi.fn(), alterarCarteiraAction: vi.fn(), criarGerenciaAction: vi.fn(),
     editarGerenciaAction: vi.fn(), definirGerenciaVisivelAction: vi.fn(), definirClienteAtivoAction: vi.fn(), alinharClienteAction: vi.fn(),
-    ligarClienteAction: vi.fn(), criarClienteAction: vi.fn(), criarELigarClienteAction: vi.fn(),
+    ligarClienteAction: vi.fn(), criarClienteAction: vi.fn(), criarELigarClienteAction: vi.fn(), juntarClientesAction: vi.fn(),
 }));
 vi.mock('@/app/settings/carteiraActions', () => a);
 vi.mock('@/app/settings/chaveLocal', () => ({ lerChaveSettings: () => 'adm' }));
@@ -46,6 +46,26 @@ describe('OrganogramaClientesAdmin', () => {
         await user.click(screen.getByRole('button', { name: 'Trazer' }));
         expect(a.alinharClienteAction).toHaveBeenCalledWith('adm', 'c-seme');
         expect(screen.getByText('ALESP')).toBeInTheDocument();
+    });
+    it('A conferir: juntar clientes pede confirmação e chama a action; mesmo cliente nos dois desabilita', async () => {
+        a.carregarPainelCarteiraAction.mockResolvedValue({ ok: true, valor: { ...painel, todosClientes: [
+            { id: 'c-a', nome: 'Educação', sigla: 'SME', gerencia: 'GRC3', ativo: true }, { id: 'c-b', nome: 'Secretaria de Educação', sigla: null, gerencia: null, ativo: true },
+        ] } });
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        await user.click(await screen.findByRole('tab', { name: 'A conferir' }));
+        const secao = screen.getByRole('region', { name: 'Juntar clientes' });
+        const juntar = within(secao).getByRole('button', { name: 'Juntar' });
+        await user.click(within(secao).getByRole('combobox', { name: 'Cliente que some' }));
+        await user.click(await within(secao).findByRole('option', { name: 'SME · Educação (GRC3)' }));
+        await user.click(within(secao).getByRole('combobox', { name: 'Cliente que fica' }));
+        await user.click(await within(secao).findByRole('option', { name: 'SME · Educação (GRC3)' }));
+        expect(juntar).toBeDisabled();
+        await user.clear(within(secao).getByRole('combobox', { name: 'Cliente que fica' }));
+        await user.click(await within(secao).findByRole('option', { name: 'Secretaria de Educação' }));
+        await user.click(juntar);
+        await user.click(screen.getByRole('button', { name: 'Juntar clientes' }));
+        expect(a.juntarClientesAction).toHaveBeenCalledWith('adm', 'c-a', 'c-b');
     });
     it('Ocultar gerência com erro mostra a mensagem', async () => {
         a.definirGerenciaVisivelAction.mockResolvedValue({ ok: false, erro: 'Tire os 1 clientes da carteira antes de desativar.' });

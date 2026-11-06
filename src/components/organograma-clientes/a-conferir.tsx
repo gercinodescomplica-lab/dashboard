@@ -33,7 +33,8 @@ export function AConferir({ painel, rodar, ocupado }: { painel: PainelCarteira; 
                 )}
                 <p className="text-xs text-zinc-500">Para mudar a carteira em vez dos dados, use a aba Organograma.</p>
             </section>
-            <section aria-label="Sem cliente" className="space-y-2">
+            <JuntarClientes clientes={painel.todosClientes} rodar={rodar} ocupado={ocupado} />
+            <section aria-label="Sem cliente"className="space-y-2">
                 <h2 className="text-lg font-semibold text-zinc-50">Sem cliente</h2>
                 <p className="text-sm text-zinc-400">Linhas cujo texto não casou com nenhum cliente. Ligue a um cliente para que acompanhem a carteira.</p>
                 {painel.semCliente.length === 0 ? <p className="text-sm text-zinc-500">Todas as linhas têm cliente.</p> : (
@@ -75,5 +76,46 @@ function LinhaParaLigar({ linha, clientes, rodar, ocupado }: { linha: LinhaSemCl
             />
             <Button size="sm" variant="outline" className="md:col-start-2" disabled={ocupado} onClick={() => void rodar((k) => acoes.criarELigarClienteAction(k, linha.tabela, linha.id, { nome: linha.texto, sigla: null }), `Cliente ${linha.texto} criado e ligado.`)}>Criar cliente "{linha.texto}" e ligar</Button>
         </li>
+    );
+}
+
+type ClienteDoPainel = PainelCarteira['todosClientes'][number];
+const rotuloCliente = (c: ClienteDoPainel) => `${c.sigla ? `${c.sigla} · ${c.nome}` : c.nome}${c.gerencia ? ` (${c.gerencia})` : ''}`;
+const nomeCurto = (c: ClienteDoPainel) => c.sigla ?? c.nome;
+
+function JuntarClientes({ clientes, rodar, ocupado }: { clientes: ClienteDoPainel[]; rodar: Rodar; ocupado: boolean }) {
+    const [origem, setOrigem] = useState<ClienteDoPainel | null>(null);
+    const [destino, setDestino] = useState<ClienteDoPainel | null>(null);
+    const [textoOrigem, setTextoOrigem] = useState('');
+    const [textoDestino, setTextoDestino] = useState('');
+    const [confirmando, setConfirmando] = useState(false);
+    const filtrar = (texto: string) => clientes.filter((c) => !texto || semAcento(rotuloCliente(c)).includes(semAcento(texto))).slice(0, 30);
+    const pronto = !!origem && !!destino && origem.id !== destino.id;
+    return (
+        <section aria-label="Juntar clientes" className="space-y-2">
+            <h2 className="text-lg font-semibold text-zinc-50">Juntar clientes</h2>
+            <p className="text-sm text-zinc-400">O mesmo órgão com outra grafia? Tudo do cliente que some (contratos, propostas, CX, projetos e histórico) passa para o que fica.</p>
+            <div className="grid gap-2 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                <Combobox rotulo="Cliente que some" placeholder="Buscar cliente" valor={textoOrigem} aoMudarTexto={(t) => { setTextoOrigem(t); setOrigem(null); }} opcoes={filtrar(textoOrigem)} chave={(c) => c.id} rotuloDe={rotuloCliente}
+                    aoEscolher={(c) => { setOrigem(c); setTextoOrigem(rotuloCliente(c)); }} desabilitado={ocupado} vazio="Nenhum cliente com esse texto." />
+                <Combobox rotulo="Cliente que fica" placeholder="Buscar cliente" valor={textoDestino} aoMudarTexto={(t) => { setTextoDestino(t); setDestino(null); }} opcoes={filtrar(textoDestino)} chave={(c) => c.id} rotuloDe={rotuloCliente}
+                    aoEscolher={(c) => { setDestino(c); setTextoDestino(rotuloCliente(c)); }} desabilitado={ocupado} vazio="Nenhum cliente com esse texto." />
+                <Button size="sm" disabled={!pronto || ocupado} onClick={() => setConfirmando(true)}>Juntar</Button>
+            </div>
+            <ConfirmDialog
+                aberto={confirmando && pronto}
+                titulo="Juntar clientes"
+                descricao={pronto ? `Tudo de ${nomeCurto(origem)} passa para ${nomeCurto(destino)} e ${nomeCurto(origem)} é apagado. Não dá para desfazer. Carteira de ${nomeCurto(destino)} depois: ${destino.gerencia ?? origem.gerencia ?? 'sem carteira'}.` : ''}
+                rotuloConfirmar="Juntar clientes"
+                tom="perigo"
+                aoCancelar={() => setConfirmando(false)}
+                aoConfirmar={async () => {
+                    const [o, d] = [origem!, destino!];
+                    setConfirmando(false);
+                    const ok = await rodar((k) => acoes.juntarClientesAction(k, o.id, d.id), `${nomeCurto(o)} foi juntado a ${nomeCurto(d)}.`);
+                    if (ok) { setOrigem(null); setDestino(null); setTextoOrigem(''); setTextoDestino(''); }
+                }}
+            />
+        </section>
     );
 }
