@@ -5,7 +5,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CXItem, Manager, PipelineData, Project } from '@/types/manager';
 import { fetchManagers } from '@/services/managers.service';
-import { saveCXData, saveManagerData } from './actions';
+import { saveCXData, saveManagerData, saveVisitsData } from './actions';
 import { getCXByManager } from './fetchActions';
 
 vi.mock('@/services/managers.service', () => ({ fetchManagers: vi.fn() }));
@@ -25,7 +25,7 @@ vi.mock('./FaturamentoEditor', () => ({ FaturamentoEditor: () => null }));
 vi.mock('./PlannerUploadEditor', () => ({ PlannerUploadEditor: () => null }));
 vi.mock('@/components/organograma-clientes/admin', () => ({ OrganogramaClientesAdmin: () => <div>admin da carteira</div> }));
 vi.mock('./ManagerEditor', () => ({
-    ManagerEditor: ({ manager, onChange, onExtrasCarregados, onSave }: { manager: Manager; onChange: (m: Manager) => void; onExtrasCarregados: (e: Pick<Manager, 'cx' | 'visits' | 'churn'>) => void; onSave: () => void }) => {
+    ManagerEditor: ({ manager, onChange, onExtrasCarregados, onSave, isSaving }: { manager: Manager; onChange: (m: Manager) => void; onExtrasCarregados: (e: Pick<Manager, 'cx' | 'visits' | 'churn'>) => void; onSave: () => void; isSaving: boolean }) => {
         // Como o editor real: carrega os extras ao montar, sem isso ser edição do admin.
         useEffect(() => {
             if (manager.cx === undefined) onExtrasCarregados({ cx: [cxDe(1, 'Antigo')], visits: [{ titulo: 'Visita', local: 'l', motivo: 'm', data: '2026-01-01' }], churn: [] });
@@ -39,6 +39,7 @@ vi.mock('./ManagerEditor', () => ({
                 <p>CX: {(manager.cx ?? []).map((c) => c.titulo).join(', ')}</p>
                 <p>Visitas: {manager.visits?.length ?? 'nao carregadas'}</p>
                 <button onClick={onSave}>Salvar</button>
+                <p>{isSaving ? 'gravando' : 'parado'}</p>
             </div>
         );
     },
@@ -126,6 +127,41 @@ describe('SettingsDashboard: salvar', () => {
         await user.click(await screen.findByRole('button', { name: 'Salvar' }));
         expect(await screen.findByText('Para mudar a sigla, use Organograma de clientes.')).toBeInTheDocument();
         expect(saveCXData).not.toHaveBeenCalled();
+    });
+
+    it('o editor recebe o bloqueio durante o salvamento e a atualização', async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchManagers).mockResolvedValueOnce([gerente()]);
+        render(<SettingsDashboard />);
+        await screen.findByText('Visitas: 1');
+        let liberarRecarga!: (m: Manager[]) => void;
+        vi.mocked(fetchManagers).mockReturnValueOnce(new Promise((r) => { liberarRecarga = r; }));
+        await user.click(screen.getByRole('button', { name: 'Salvar' }));
+        expect(await screen.findByText('gravando')).toBeInTheDocument();
+        liberarRecarga([gerente()]);
+        expect(await screen.findByText('parado')).toBeInTheDocument();
+    });
+
+    it('CX gravado e visitas com falha: atualiza os ids e sair do organograma não dobra a lista', async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchManagers).mockResolvedValueOnce([gerente()]);
+        render(<SettingsDashboard />);
+        await screen.findByText('Visitas: 1');
+        const meta = screen.getByLabelText('Meta');
+        await user.clear(meta);
+        await user.type(meta, '99');
+
+        // Regravar troca o id da mesma linha de CX.
+        vi.mocked(getCXByManager).mockResolvedValue([cxDe(10, 'Antigo')]);
+        vi.mocked(saveVisitsData).mockRejectedValueOnce(new Error('falha'));
+        vi.mocked(fetchManagers).mockResolvedValueOnce([gerente()]);
+        await user.click(screen.getByRole('button', { name: 'Salvar' }));
+        expect(await screen.findByText('Ocorreu um erro ao salvar os dados no banco. Tente novamente.')).toBeInTheDocument();
+
+        await irEVoltarDoOrganograma(user, [gerente()]);
+        await waitFor(() => expect(screen.getByText('parado')).toBeInTheDocument());
+        expect(screen.getByText('CX: Antigo')).toBeInTheDocument();
+        expect(screen.getByLabelText('Meta')).toHaveValue('99');
     });
 
     it('depois de salvar recarrega do banco: linha roteada para outro card entra no estado dele', async () => {

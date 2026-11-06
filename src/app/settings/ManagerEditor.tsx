@@ -91,6 +91,8 @@ export function ManagerEditor({ manager, onChange, onExtrasCarregados, onSave, i
             </div>
 
             {/* Tabs: Info + Pipeline + Visitas + CX */}
+            {/* Salvando ou atualizando: edição agora seria mesclada com os ids novos de CX e duplicaria linhas. */}
+            <fieldset disabled={isSaving} className="contents">
             <Tabs defaultValue="info" className="w-full">
                 <TabsList className="grid w-full grid-cols-5 bg-zinc-950 border border-zinc-800 mb-6">
                     <TabsTrigger value="info" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white text-zinc-400">
@@ -338,6 +340,7 @@ export function ManagerEditor({ manager, onChange, onExtrasCarregados, onSave, i
                     </div>
                 </TabsContent>
             </Tabs>
+            </fieldset>
         </div>
     );
 }

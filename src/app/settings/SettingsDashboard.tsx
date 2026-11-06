@@ -50,7 +50,8 @@ export function SettingsDashboard() {
 
     // Salvar apaga e regrava o card: o estado precisa ter o que a carteira trouxe, ou a linha se perde.
     // Card limpo pega o banco; card com edição não salva mescla. fetchManagers não traz cx, visitas nem churn.
-    const atualizarGerentes = async (): Promise<boolean> => {
+    // cxRegravadoDe: card sujo cujo CX acabou de ser regravado; os ids mudaram, então o CX vem do banco, sem mesclar.
+    const atualizarGerentes = async (cxRegravadoDe?: string): Promise<boolean> => {
         setAtualizando(true);
         try {
             const [frescos, cxs] = await Promise.all([
@@ -63,7 +64,7 @@ export function SettingsDashboard() {
                 if (!a) return f;
                 const cx = cxDe.get(f.id);
                 if (!sujos.current.has(f.id)) return { ...f, cx: cx ?? a.cx, visits: a.visits, churn: a.churn };
-                return { ...a, role: f.role, name: f.name, showInDashboard: f.showInDashboard, servedClients: f.servedClients, pipeline: mesclarPipeline(a.pipeline, f.pipeline), cx: mesclarCX(a.cx, cx) };
+                return { ...a, role: f.role, name: f.name, showInDashboard: f.showInDashboard, servedClients: f.servedClients, pipeline: mesclarPipeline(a.pipeline, f.pipeline), cx: f.id === cxRegravadoDe ? cx ?? a.cx : mesclarCX(a.cx, cx) };
             }));
             return true;
         } catch (e) {
@@ -126,11 +127,18 @@ export function SettingsDashboard() {
                 setSaveStatus('error');
                 return;
             }
-            await Promise.all([
+            // allSettled: esperar todos, para saber se o CX foi regravado mesmo quando outro falha.
+            const [cxSalvo, ...resto] = await Promise.allSettled([
                 saveCXData(lerChaveSettings(), selectedManager.id, selectedManager.cx || []),
                 saveVisitsData(lerChaveSettings(), selectedManager.id, selectedManager.visits || []),
                 saveChurnData(lerChaveSettings(), selectedManager.id, selectedManager.churn || []),
             ]);
+            if ([cxSalvo, ...resto].some(r => r.status === 'rejected')) {
+                sujos.current.add(selectedManager.id);
+                if (cxSalvo.status === 'fulfilled') await atualizarGerentes(selectedManager.id);
+                setSaveStatus('error');
+                return;
+            }
             // Regravar troca os ids de CX e pode rotear linha para outro card: o estado volta a refletir o banco.
             if (!(await atualizarGerentes())) return;
             setSaveStatus('success');
