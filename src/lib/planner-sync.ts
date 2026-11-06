@@ -2,7 +2,9 @@ import { z } from 'zod';
 import { db } from '@/db/index';
 import { cx } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { fetchManagersForClientMatch, fetchCXByExternalIds } from '@/db/queries';
+import { fetchCXByExternalIds } from '@/db/queries';
+import { listarCards, listarClientesComCarteira } from '@/db/carteira';
+import { cardDaGerencia } from '@/lib/carteira/gerencia';
 
 // ── Schema ───────────────────────────────────────────────────────────────
 // Mirrors the raw shape that "Listar minhas tarefas" + "Obter uma tarefa"
@@ -96,7 +98,7 @@ function todayBR(): string {
 }
 
 // ── Core sync ────────────────────────────────────────────────────────────
-// Matches each Planner task to a manager (via servedClients acronym) and
+// Matches each Planner task to a manager (via carteira de clientes) and
 // upserts it into `cx`, keyed by external_id = Planner task id. Existing
 // rows are UPDATED (not duplicated) so status/description changes made
 // later in Planner keep syncing on the next run.
@@ -115,13 +117,14 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
 
     if (tasks.length === 0) return summary;
 
-    const managersList = await fetchManagersForClientMatch();
-    const clientToManager = new Map<string, { id: string; name: string }>();
-    for (const m of managersList) {
-        for (const c of m.servedClients) {
-            const key = normalizeAcronym(c);
-            if (!clientToManager.has(key)) clientToManager.set(key, { id: m.id, name: m.name });
-        }
+    // A carteira de clientes é a fonte (spec 2026-11-06 §6): sigla do título → cliente → gerência → card do ano.
+    const [clientes, cards] = await Promise.all([listarClientesComCarteira(), listarCards()]);
+    const clientToManager = new Map<string, { id: string; name: string; clienteId: string }>();
+    for (const c of clientes) {
+        if (!c.sigla || !c.gerencia) continue;
+        const card = cardDaGerencia(cards, c.gerencia);
+        const key = normalizeAcronym(c.sigla);
+        if (card && !clientToManager.has(key)) clientToManager.set(key, { id: card.id, name: card.name, clienteId: c.id });
     }
 
     const existing = await fetchCXByExternalIds(tasks.map((t) => t.id));
@@ -174,6 +177,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
                 // um item ou apagar uma solução que já foi digitada.
                 await tx.update(cx).set({
                     managerId: match.id,
+                    clienteId: match.clienteId,
                     cliente: acronym,
                     titulo: assunto || t.title,
                     problema,
@@ -189,6 +193,7 @@ export async function syncPlannerTasks(tasks: PlannerTask[]): Promise<PlannerSyn
             } else {
                 await tx.insert(cx).values({
                     managerId: match.id,
+                    clienteId: match.clienteId,
                     cliente: acronym,
                     titulo: assunto || t.title,
                     problema: newProblema,

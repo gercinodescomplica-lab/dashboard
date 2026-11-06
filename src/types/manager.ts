@@ -26,6 +26,8 @@ export interface Project {
   history?: ProjectHistoryItem[];
   /** Preenchido quando o projeto é gerado por um lead da GRCC (/grcc) — não editável no Settings. */
   leadGrccId?: number;
+  /** Cliente da carteira (cliente.id). A gerência que grava é a da carteira dele. */
+  clienteId?: string | null;
 }
 
 export interface QuarterData {
@@ -59,6 +61,8 @@ export interface CXItem {
   // no Settings desde o último sync; limpo pelo próprio sync ao rodar de
   // novo. Só usado para exibir um aviso pro admin — não editável na UI.
   manualEditAt?: string | null;
+  /** Cliente da carteira (cliente.id). A gerência que grava é a da carteira dele. */
+  clienteId?: string | null;
 }
 
 export interface Visit {

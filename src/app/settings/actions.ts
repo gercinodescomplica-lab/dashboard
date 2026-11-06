@@ -7,6 +7,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 import { chaveSettingsValida } from '@/lib/settings/chave';
+import { managerDaLinha } from '@/db/carteira';
 
 function exigirChave(chave: string) {
     if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
@@ -31,12 +32,25 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
             currentRows.filter((r) => r.externalId).map((r) => [r.externalId as string, r])
         );
 
+        // Item de cliente que está na carteira de OUTRA gerência vai para o card dela.
+        // Se lá já existe o mesmo item, é a cópia velha de um editor aberto: descarta.
+        const linhas: { item: CXItem; destino: string }[] = [];
+        for (const item of items) {
+            const destino = await managerDaLinha(item.clienteId, managerId);
+            if (destino !== managerId) {
+                const jaLa = await db.select({ id: cx.id }).from(cx).where(and(eq(cx.managerId, destino),
+                    item.externalId ? eq(cx.externalId, item.externalId) : and(eq(cx.titulo, item.titulo), eq(cx.clienteId, item.clienteId!))));
+                if (jaLa.length) continue; // cópia velha de editor aberto
+            }
+            linhas.push({ item, destino });
+        }
+
         // Delete all existing CX for this manager, then reinsert
         await db.delete(cx).where(eq(cx.managerId, managerId));
 
-        if (items.length > 0) {
+        if (linhas.length > 0) {
             await db.insert(cx).values(
-                items.map((item) => {
+                linhas.map(({ item, destino }) => {
                     // Preserva o externalId como veio (nunca editável na UI) —
                     // é o que faz o próximo sync do Planner reconhecer esta
                     // linha em vez de duplicá-la.
@@ -54,7 +68,8 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
                         }
                     }
                     return {
-                        managerId,
+                        managerId: destino,
+                        clienteId: item.clienteId ?? null,
                         cliente: item.cliente,
                         titulo: item.titulo,
                         problema: item.problema,
@@ -130,8 +145,6 @@ export async function saveManagerData(chave: string, m: Manager) {
     try {
         const fv = calculateForecastFinal(m.contratado, m.pipeline);
 
-        const servedClientsJson = JSON.stringify(m.servedClients ?? []);
-
         // Upsert Manager details
         await db.insert(managers).values({
             id: m.id,
@@ -144,7 +157,6 @@ export async function saveManagerData(chave: string, m: Manager) {
             contratado: m.contratado,
             forecastFinal: fv,
             notes: null,
-            servedClients: servedClientsJson,
             showInDashboard: m.showInDashboard ?? true,
         }).onConflictDoUpdate({
             target: managers.id,
@@ -157,7 +169,6 @@ export async function saveManagerData(chave: string, m: Manager) {
                 metaNovosNegocios: m.metaNovosNegocios ?? null,
                 contratado: m.contratado,
                 forecastFinal: fv,
-                servedClients: servedClientsJson,
                 showInDashboard: m.showInDashboard ?? true,
             }
         });
@@ -186,13 +197,24 @@ export async function saveManagerData(chave: string, m: Manager) {
                         startDate: proj.startDate || null,
                         billingStartMonth: proj.billingStartMonth || null,
                         history: proj.history ? JSON.stringify(proj.history) : null,
+                        clienteId: proj.clienteId ?? null,
                     });
                 });
             }
         });
 
-        if (allProjectsToInsert.length > 0) {
-            await db.insert(projects).values(allProjectsToInsert);
+        // Projeto de cliente que está na carteira de OUTRA gerência vai para o card dela (= gerenciaDoComercialPelaCarteira).
+        // Se lá já existe o mesmo projeto (mesmo nome e cliente), é a cópia velha de um editor aberto: descarta.
+        for (const p of allProjectsToInsert) {
+            const destino = await managerDaLinha(p.clienteId, m.id);
+            if (destino === m.id) continue;
+            const [igual] = await db.select({ id: projects.id }).from(projects)
+                .where(and(eq(projects.managerId, destino), eq(projects.name, p.name), eq(projects.clienteId, p.clienteId)));
+            p.managerId = igual ? null : destino;
+        }
+        const aGravar = allProjectsToInsert.filter((p) => p.managerId !== null);
+        if (aGravar.length > 0) {
+            await db.insert(projects).values(aGravar);
         }
 
         return { success: true };
@@ -234,7 +256,7 @@ export async function cloneManager(chave: string, sourceId: string, newName: str
             contratado: source.contratado,
             forecastFinal: source.forecastFinal,
             notes: source.notes,
-            servedClients: source.servedClients,
+            servedClients: null, // congelado: clientes atendidos vêm da carteira
             showInDashboard: true,
         });
 
@@ -251,6 +273,7 @@ export async function cloneManager(chave: string, sourceId: string, newName: str
             await db.insert(cx).values(
                 sourceCX.map(({ id: _id, ...rest }) => ({
                     managerId: newId,
+                    clienteId: rest.clienteId ?? null,
                     cliente: rest.cliente,
                     titulo: rest.titulo,
                     problema: rest.problema,

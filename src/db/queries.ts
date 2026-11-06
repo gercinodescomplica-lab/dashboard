@@ -2,6 +2,8 @@ import { db } from './index';
 import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn, leadGrcc, leadGrccHistorico, dropdownOptions } from './schema';
 import { eq, like, desc, or, inArray, and, isNull, sql } from 'drizzle-orm';
 import { Manager, CXItem, Visit, ChurnItem } from '../types/manager';
+import { clientesAtendidosPorGerencia } from '@/db/carteira';
+import { chaveDaCarteira } from '@/lib/carteira/gerencia';
 
 /**
  * Fetches all managers from the database and constructs them exactly
@@ -12,6 +14,7 @@ import { calcEffectiveContratado, sumNovosNegocios, sumPipelineAberto, sumPipeli
 export async function fetchAllManagersFromDB(): Promise<Manager[]> {
     const allManagers = await db.select().from(managers);
     const allProjects = await db.select().from(projects);
+    const atendidos = await clientesAtendidosPorGerencia();
 
     return allManagers.map((m) => {
         const mgrProjects = allProjects.filter((p) => p.managerId === m.id);
@@ -36,6 +39,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
                     startDate: p.startDate ?? undefined,
                     billingStartMonth: p.billingStartMonth ?? undefined,
                     leadGrccId: p.leadGrccId ?? undefined,
+                    clienteId: p.clienteId ?? null,
                     history: (() => {
                         if (!p.history) return undefined;
                         try {
@@ -84,16 +88,7 @@ export async function fetchAllManagersFromDB(): Promise<Manager[]> {
             notes: m.notes ?? undefined,
             pipeline,
             showInDashboard: m.showInDashboard ?? true,
-            servedClients: (() => {
-                const raw = (m as any).servedClients || (m as any).served_clients;
-                if (!raw) return [];
-                try {
-                    return typeof raw === 'string' ? JSON.parse(raw) : raw;
-                } catch (e) {
-                    console.error('Error parsing servedClients JSON:', e);
-                    return [];
-                }
-            })(),
+            servedClients: atendidos.get(chaveDaCarteira(m)) ?? [],
         };
     });
 }
@@ -125,6 +120,7 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         createdAt: r.createdAt,
         externalId: r.externalId,
         manualEditAt: r.manualEditAt,
+        clienteId: r.clienteId ?? null,
     }));
 }
 
@@ -371,26 +367,6 @@ export async function fetchManagersList() {
 export async function fetchManagerById(id: string) {
     const rows = await db.select().from(managers).where(eq(managers.id, id));
     return rows[0] ?? null;
-}
-
-// Used to match Planner task titles ("SEGES - ...") to a manager via servedClients.
-// Kept separate from fetchManagerById since it needs the parsed servedClients list,
-// not the full Manager shape.
-export async function fetchManagersForClientMatch() {
-    const rows = await db
-        .select({ id: managers.id, name: managers.name, servedClients: managers.servedClients })
-        .from(managers);
-    return rows.map((m) => {
-        let servedClients: string[] = [];
-        if (m.servedClients) {
-            try {
-                servedClients = JSON.parse(m.servedClients);
-            } catch {
-                servedClients = [];
-            }
-        }
-        return { id: m.id, name: m.name, servedClients };
-    });
 }
 
 // ─── CX Queries ────────────────────────────────────────────────────────────────
