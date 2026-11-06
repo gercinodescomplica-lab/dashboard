@@ -38,7 +38,7 @@ function dicaDoCliente(c: ClienteDoOrganograma): string {
     return `${base}\nÚltima mudança de carteira em ${new Date(c.ultimoMovimento.em).toLocaleDateString('pt-BR')}`;
 }
 
-export function ItemDoCliente({ cliente, de, mover }: { cliente: ClienteDoOrganograma; de: string | null; mover?: Mover }) {
+export function ItemDoCliente({ cliente, de, mover, claro = false }: { cliente: ClienteDoOrganograma; de: string | null; mover?: Mover; claro?: boolean }) {
     const rotulo = cliente.sigla ?? cliente.nome;
     return (
         <li
@@ -51,10 +51,10 @@ export function ItemDoCliente({ cliente, de, mover }: { cliente: ClienteDoOrgano
             }}
             onDragEnd={() => mover?.terminarArraste()}
             title={dicaDoCliente(cliente)}
-            className={cn('group flex items-start gap-1.5 rounded-md px-2 py-0.5 hover:bg-zinc-800/60', mover && 'cursor-grab active:cursor-grabbing')}
+            className={cn('group flex items-start gap-1.5 rounded-md px-2 py-0.5', claro ? 'hover:bg-zinc-100' : 'hover:bg-zinc-800/60', mover && 'cursor-grab active:cursor-grabbing')}
         >
-            <span className="w-16 shrink-0 truncate text-xs font-semibold leading-snug text-zinc-100">{rotulo}</span>
-            <span className="min-w-0 flex-1 text-xs leading-snug text-zinc-400">{cliente.sigla ? cliente.nome : ''}</span>
+            <span className={cn('w-16 shrink-0 truncate text-xs font-semibold leading-snug', claro ? 'text-zinc-900' : 'text-zinc-100')}>{rotulo}</span>
+            <span className={cn('min-w-0 flex-1 text-xs leading-snug', claro ? 'text-zinc-600' : 'text-zinc-400')}>{cliente.sigla ? cliente.nome : ''}</span>
             {mover && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -117,7 +117,7 @@ export function propsDoAlvo(alvo: Alvo | undefined) {
 }
 
 /** Bloco de uma gerência dentro da coluna. `ocultarCargo` quando o cabeçalho da coluna já diz o cargo (ex.: GRC1). */
-export function CartaoDaGerencia({ cartao, mover, alvo, ocultarCargo }: { cartao: CartaoDoOrganograma; mover?: Mover; alvo?: Alvo; ocultarCargo?: boolean }) {
+export function CartaoDaGerencia({ cartao, mover, alvo, ocultarCargo, claro = false }: { cartao: CartaoDoOrganograma; mover?: Mover; alvo?: Alvo; ocultarCargo?: boolean; claro?: boolean }) {
     const cor = COR_DO_GRUPO[cartao.grupo];
     const nome = nomeDoCartao(cartao);
     const detalhe = ocultarCargo ? null : cartao.rotuloCargo;
@@ -127,9 +127,9 @@ export function CartaoDaGerencia({ cartao, mover, alvo, ocultarCargo }: { cartao
             {...propsDoAlvo(alvo)}
             className={cn('rounded-md transition-shadow', alvo?.destacado && 'bg-indigo-500/10 ring-2 ring-indigo-500')}
         >
-            <header className="mb-1 flex items-center gap-1.5 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-0.5">
+            <header className={cn('mb-1 flex items-center gap-1.5 rounded-md border px-2 py-0.5', claro ? 'border-zinc-200 bg-zinc-100' : 'border-zinc-700 bg-zinc-800')}>
                 <span className={cn('inline-block size-1.5 shrink-0 rounded-full', cor.faixa)} aria-hidden="true" />
-                <h3 className="min-w-0 flex-1 truncate text-xs font-semibold uppercase text-zinc-100">{nome}</h3>
+                <h3 className={cn('min-w-0 flex-1 truncate text-xs font-semibold uppercase', claro ? 'text-zinc-900' : 'text-zinc-100')}>{nome}</h3>
                 {!cartao.ativa && (
                     <span className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 text-[11px] text-amber-400">Desativada</span>
                 )}
@@ -137,17 +137,17 @@ export function CartaoDaGerencia({ cartao, mover, alvo, ocultarCargo }: { cartao
                     {cartao.clientes.length}
                 </span>
             </header>
-            {detalhe && <p className="px-2 pb-0.5 text-xs text-zinc-400/80">{detalhe}</p>}
-            <ListaDeClientes vazia="Nenhum cliente nesta carteira.">
+            {detalhe && <p className={cn('px-2 pb-0.5 text-xs', claro ? 'text-zinc-600' : 'text-zinc-400/80')}>{detalhe}</p>}
+            <ListaDeClientes vazia="Nenhum cliente nesta carteira." claro={claro}>
                 {cartao.clientes.map((c) => (
-                    <ItemDoCliente key={c.id} cliente={c} de={cartao.id} mover={mover} />
+                    <ItemDoCliente key={c.id} cliente={c} de={cartao.id} mover={mover} claro={claro} />
                 ))}
             </ListaDeClientes>
         </section>
     );
 }
 
-export function ListaDeClientes({ vazia, children }: { vazia: string; children: ReactNode[] }) {
-    if (children.length === 0) return <p className="px-2 text-xs italic text-zinc-400">{vazia}</p>;
+export function ListaDeClientes({ vazia, children, claro = false }: { vazia: string; children: ReactNode[]; claro?: boolean }) {
+    if (children.length === 0) return <p className={cn('px-2 text-xs italic', claro ? 'text-zinc-600' : 'text-zinc-400')}>{vazia}</p>;
     return <ul className="space-y-px">{children}</ul>;
 }

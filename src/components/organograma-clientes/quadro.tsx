@@ -37,9 +37,12 @@ interface Props {
     podeMover: boolean;
     moverAction?: (clienteId: string, de: string | null, para: string | null) => Promise<Resultado<{ movidos: number }>>;
     aoMudar?: () => void;
+    /** Tema claro do dashboard (spec §8). Padrão escuro. */
+    lightActive?: boolean;
 }
 
-export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar }: Props) {
+export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar, lightActive = false }: Props) {
+    const claro = lightActive;
     const [ocupado, setOcupado] = useState(false);
     const [pedido, setPedido] = useState<Movimento | null>(null);
     const [feito, setFeito] = useState<Movimento | null>(null);
@@ -111,7 +114,7 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
     const encontrados = achados.length + colunas.flat().reduce((s, c) => s + c.clientes.length, 0);
     const alvoSem = alvoPara(null);
     const grupos = ORDEM_DOS_GRUPOS.filter((g) => dados.cartoes.some((c) => c.grupo === g));
-    const linha = 'bg-zinc-700';
+    const linha = claro ? 'bg-zinc-300' : 'bg-zinc-700';
 
     return (
         <div className="flex h-full min-h-0 flex-col gap-4">
@@ -125,7 +128,7 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                         onChange={(e) => setBusca(e.target.value)}
                     />
                 </div>
-                <p className="text-sm text-zinc-400" aria-live="polite">
+                <p className={cn('text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')} aria-live="polite">
                     {termo
                         ? `${encontrados} cliente(s) encontrado(s).`
                         : mover
@@ -154,11 +157,11 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                 </Notice>
             )}
 
-            <div className={cn('min-h-0 w-full flex-1 overflow-auto rounded-xl border border-zinc-800 bg-zinc-900', ocupado && 'opacity-70')}>
+            <div className={cn('min-h-0 w-full flex-1 overflow-auto rounded-xl border', claro ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900', ocupado && 'opacity-70')}>
                 <div className="flex min-w-max flex-col px-6 pt-4 pb-6 lg:min-w-0">
                     <div className="flex flex-col items-center">
-                        <h2 className="mb-1 text-2xl font-bold tracking-[0.2em] text-zinc-100">C L I E N T E S</h2>
-                        <p className="mb-4 text-center text-sm text-zinc-400">Quem atende cada órgão.</p>
+                        <h2 className={cn('mb-1 text-2xl font-bold tracking-[0.2em]', claro ? 'text-zinc-900' : 'text-zinc-100')}>C L I E N T E S</h2>
+                        <p className={cn('mb-4 text-center text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')}>Quem atende cada órgão.</p>
                         <dl className="flex min-w-[200px] flex-col-reverse rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-10 py-2 text-center shadow-xs">
                             <dt className="text-xs font-medium uppercase tracking-[0.12em] text-indigo-400">órgãos atendidos</dt>
                             <dd className="text-xl font-semibold tracking-[0.08em] text-zinc-100">{totais.orgaosAtendidos}</dd>
@@ -168,13 +171,13 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
 
                     <div className={cn('mb-6 h-[1.5px] w-full', linha)} />
 
-                    {colunas.length === 0 && <p className="py-6 text-center text-sm text-zinc-400">Nenhuma carteira tem cliente com essa busca.</p>}
+                    {colunas.length === 0 && <p className={cn('py-6 text-center text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')}>Nenhuma carteira tem cliente com essa busca.</p>}
                     <div className="flex flex-1 flex-row flex-nowrap items-start gap-4">
                         {colunas.map((coluna) => (
-                            <ColunaDoGrupo key={coluna[0].id} coluna={coluna}>
+                            <ColunaDoGrupo key={coluna[0].id} coluna={coluna} claro={claro}>
                                 {(ocultarCargo) =>
                                     coluna.map((c) => (
-                                        <CartaoDaGerencia key={c.id} cartao={c} mover={mover} alvo={alvoPara(c.id, c.ativa)} ocultarCargo={ocultarCargo} />
+                                        <CartaoDaGerencia key={c.id} cartao={c} mover={mover} alvo={alvoPara(c.id, c.ativa)} ocultarCargo={ocultarCargo} claro={claro} />
                                     ))
                                 }
                             </ColunaDoGrupo>
@@ -184,24 +187,24 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                     <section
                         aria-label="Sem carteira"
                         {...propsDoAlvo(alvoSem)}
-                        className={cn('mt-6 rounded-xl border border-zinc-700 bg-zinc-800/40 p-3', alvoSem?.destacado && 'bg-indigo-500/10 ring-2 ring-indigo-500')}
+                        className={cn('mt-6 rounded-xl border p-3', claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-700 bg-zinc-800/40', alvoSem?.destacado && 'bg-indigo-500/10 ring-2 ring-indigo-500')}
                     >
                         <header className="mb-2 flex flex-wrap items-center gap-2">
-                            <h3 className="text-sm font-semibold text-zinc-100">Sem carteira</h3>
-                            <span className="text-xs font-semibold tabular-nums text-zinc-400">{achados.length}</span>
+                            <h3 className={cn('text-sm font-semibold', claro ? 'text-zinc-900' : 'text-zinc-100')}>Sem carteira</h3>
+                            <span className={cn('text-xs font-semibold tabular-nums', claro ? 'text-zinc-600' : 'text-zinc-400')}>{achados.length}</span>
                         </header>
-                        <ListaDeClientes vazia={termo ? 'Nenhum cliente sem carteira com essa busca.' : 'Todo cliente ativo tem carteira.'}>
+                        <ListaDeClientes vazia={termo ? 'Nenhum cliente sem carteira com essa busca.' : 'Todo cliente ativo tem carteira.'} claro={claro}>
                             {achados.map((c) => (
-                                <ItemDoCliente key={c.id} cliente={c} de={null} mover={mover} />
+                                <ItemDoCliente key={c.id} cliente={c} de={null} mover={mover} claro={claro} />
                             ))}
                         </ListaDeClientes>
                     </section>
 
-                    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-md border border-zinc-700 bg-zinc-800/40 p-3">
+                    <div className={cn('mt-8 flex flex-wrap items-center justify-between gap-4 rounded-md border p-3', claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-700 bg-zinc-800/40')}>
                         <ul className="flex flex-wrap items-center gap-4" aria-label="Legenda">
-                            <li className="text-xs font-medium text-zinc-400">Legenda:</li>
+                            <li className={cn('text-xs font-medium', claro ? 'text-zinc-600' : 'text-zinc-400')}>Legenda:</li>
                             {grupos.map((g) => (
-                                <li key={g} className="flex items-center gap-1.5 text-xs text-zinc-400">
+                                <li key={g} className={cn('flex items-center gap-1.5 text-xs', claro ? 'text-zinc-600' : 'text-zinc-400')}>
                                     <span className={cn('inline-block size-2 rounded-full', COR_DO_GRUPO[g].faixa)} aria-hidden="true" />
                                     {ROTULO_DO_GRUPO[g]}
                                 </li>
@@ -247,20 +250,20 @@ function cabecalhoDaColuna(coluna: CartaoDoOrganograma[]): { titulo: string; sub
     return { ...CABECALHO_DO_GRUPO[grupo], ocultarCargo: false };
 }
 
-function ColunaDoGrupo({ coluna, children }: { coluna: CartaoDoOrganograma[]; children: (ocultarCargo: boolean) => ReactNode }) {
+function ColunaDoGrupo({ coluna, children, claro = false }: { coluna: CartaoDoOrganograma[]; children: (ocultarCargo: boolean) => ReactNode; claro?: boolean }) {
     const cor = COR_DO_GRUPO[coluna[0].grupo];
     const { titulo, subtitulo, ocultarCargo } = cabecalhoDaColuna(coluna);
     const total = coluna.reduce((s, c) => s + c.clientes.length, 0);
     return (
         <div className="flex min-w-[190px] flex-1 flex-col">
-            <div className="mx-auto -mt-6 h-3 w-[1.5px] bg-zinc-700" />
+            <div className={cn('mx-auto -mt-6 h-3 w-[1.5px]', claro ? 'bg-zinc-300' : 'bg-zinc-700')} />
             <div className={cn('rounded-t-md border p-2 text-center shadow-xs', cor.cabecalho)}>
                 <span className="block text-sm font-semibold leading-tight text-white">
                     {titulo} <span className="tabular-nums text-white/80">· {total}</span>
                 </span>
                 <span className="mt-0.5 block text-xs text-white/90">{subtitulo}</span>
             </div>
-            <div className={cn('flex-1 space-y-3 rounded-b-md border border-t-0 border-zinc-700 bg-zinc-900 p-2', cor.corpo)}>{children(ocultarCargo)}</div>
+            <div className={cn('flex-1 space-y-3 rounded-b-md border border-t-0 p-2', claro ? 'border-zinc-200 bg-white' : 'border-zinc-700 bg-zinc-900', cor.corpo)}>{children(ocultarCargo)}</div>
         </div>
     );
 }
