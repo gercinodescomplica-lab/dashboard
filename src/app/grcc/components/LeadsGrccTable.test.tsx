@@ -65,19 +65,28 @@ describe('LeadsGrccTable', () => {
         expect(onAbrir).toHaveBeenCalledWith(1);
     });
 
-    it('"Por cliente" agrupa chamados repetidos do mesmo cliente', async () => {
+    it('"Por cidade" junta os chamados do mesmo cliente dentro da cidade e recolhe', async () => {
         const user = userEvent.setup();
         const repetidos = [
-            mk(10, { cliente: 'Prefeitura de Limeira', solicitacao: 'Consultoria' }),
-            mk(11, { cliente: 'Prefeitura de Limeira', solicitacao: 'Nuvem' }),
-            mk(12, { cliente: 'ALESP', solicitacao: 'Chatbot' }),
+            mk(10, { cliente: 'Prefeitura de Limeira', solicitacao: 'Consultoria', uf: 'SP', municipio: 'Limeira' }),
+            mk(11, { cliente: 'Câmara de Limeira', solicitacao: 'Nuvem', uf: 'SP', municipio: 'Limeira' }),
+            mk(12, { cliente: 'Prefeitura de Limeira', solicitacao: 'Chatbot', uf: 'SP', municipio: 'Limeira' }),
         ];
         render(<LeadsGrccTable leads={repetidos} onAbrir={() => {}} />);
-        await user.click(screen.getByRole('button', { name: 'Por cliente' }));
-        expect(screen.getAllByRole('rowheader').map((g) => g.textContent)).toEqual([
-            expect.stringMatching(/^ALESP.*1 lead/),
-            expect.stringMatching(/^Prefeitura de Limeira.*2 leads/),
-        ]);
+        expect(screen.queryByRole('button', { name: 'Por cliente' })).toBeNull();
+        await user.click(screen.getByRole('button', { name: 'Por cidade' }));
+        expect(screen.getAllByRole('rowheader').map((g) => g.textContent)).toEqual([expect.stringMatching(/Limeira · SP.*3 leads/)]);
+        const textos = screen.getAllByRole('row').map((r) => r.textContent ?? '');
+        const iPref = textos.findIndex((t) => /^Prefeitura de Limeira2 chamados/.test(t));
+        expect(iPref).toBeGreaterThan(-1);
+        expect(textos[iPref + 1]).toMatch(/Consultoria|Chatbot/);
+        expect(textos[iPref + 2]).toMatch(/Consultoria|Chatbot/);
+        expect(textos.some((t) => /^Câmara de Limeira1 chamado/.test(t))).toBe(true);
+
+        await user.click(screen.getByRole('button', { name: /Fechar Limeira/ }));
+        expect(screen.queryByText('Consultoria')).toBeNull();
+        await user.click(screen.getByRole('button', { name: /Abrir Limeira/ }));
+        expect(screen.getByText('Consultoria')).toBeTruthy();
     });
 
     it('tooltip da temperatura distingue automática pela proposta da automática pela categoria', () => {

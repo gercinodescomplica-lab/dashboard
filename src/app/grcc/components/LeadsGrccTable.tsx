@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Building2, Download, EyeOff, List, Loader2, MapPin, Search } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRight, Download, EyeOff, List, Loader2, MapPin, Search } from 'lucide-react';
 import { CATEGORIAS_GRCC, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CategoriaGrcc, type LeadGrcc, type TemperaturaLead } from '@/lib/grcc/tipos';
 import { pendenciasDoLead } from '@/lib/grcc/validacao';
 import { origemTemperatura, temperaturaDoLead } from '@/lib/grcc/pipeline';
@@ -12,7 +12,7 @@ import { brl, corCategoria, dataBr, haQuanto, ICONE_TEMPERATURA } from './format
 import { useClaro } from '../tema';
 
 type Filtro = 'todos' | 'pendencias' | CategoriaGrcc;
-type Visao = 'lista' | 'cidade' | 'cliente';
+type Visao = 'lista' | 'cidade';
 
 const ROTULO_ORIGEM_TEMPERATURA: Record<ReturnType<typeof origemTemperatura>, string> = {
     fixa: 'fixa pela categoria',
@@ -113,10 +113,18 @@ export function LeadsGrccTable({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [leads, filtro, temp, busca, pend, ordem]);
 
+    // Cidade (pai) > cliente > chamados: chamados repetidos do mesmo cliente ficam juntos dentro da cidade.
     const grupos = useMemo(
-        () => (visao === 'cidade' ? agruparPorCidade(visiveis) : visao === 'cliente' ? agruparPorCliente(visiveis) : []),
+        () => (visao === 'cidade' ? agruparPorCidade(visiveis).map((g) => ({ ...g, clientes: agruparPorCliente(g.leads) })) : []),
         [visao, visiveis]
     );
+    const [fechadas, setFechadas] = useState<Set<string>>(new Set());
+    const alternarCidade = (chave: string) =>
+        setFechadas((atual) => {
+            const nova = new Set(atual);
+            if (!nova.delete(chave)) nova.add(chave);
+            return nova;
+        });
 
     // Baixa exatamente o que a tabela mostra (filtros, busca e ordem). Lib carregada só no clique.
     const [baixando, setBaixando] = useState(false);
@@ -290,7 +298,6 @@ export function LeadsGrccTable({
                 <div className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-lg p-0.5`}>
                     {botaoVisao('lista', 'Lista', List)}
                     {botaoVisao('cidade', 'Por cidade', MapPin)}
-                    {botaoVisao('cliente', 'Por cliente', Building2)}
                 </div>
                 <div
                     role="group"
@@ -371,6 +378,15 @@ export function LeadsGrccTable({
                             <tbody key={g.chave} className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'} border-t ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
                                 <tr className={`block md:table-row ${g.chave === 'Sem cidade' ? 'bg-amber-500/5' : `${claro ? 'bg-zinc-100' : 'bg-zinc-900/70'}`}`}>
                                     <th scope="rowgroup" role="rowheader" colSpan={COLUNAS} className="block md:table-cell text-left px-4 py-2 font-normal">
+                                        <button
+                                            type="button"
+                                            onClick={() => alternarCidade(g.chave)}
+                                            aria-expanded={!fechadas.has(g.chave)}
+                                            aria-label={`${fechadas.has(g.chave) ? 'Abrir' : 'Fechar'} ${g.rotulo}`}
+                                            className="inline-flex align-middle mr-1 text-zinc-500 hover:text-zinc-300"
+                                        >
+                                            {fechadas.has(g.chave) ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                        </button>
                                         <span className={`font-semibold ${g.chave === 'Sem cidade' ? `${claro ? 'text-amber-700' : 'text-amber-300'}` : `${claro ? 'text-zinc-900' : 'text-zinc-100'}`}`}>{g.rotulo}</span>
                                         <span className="text-xs text-zinc-500 ml-2">
                                             {g.leads.length} {g.leads.length === 1 ? 'lead' : 'leads'}
@@ -385,7 +401,19 @@ export function LeadsGrccTable({
                                         </span>
                                     </th>
                                 </tr>
-                                {g.leads.map(linha)}
+                                {!fechadas.has(g.chave) &&
+                                    g.clientes.flatMap((c) => [
+                                        <tr key={`cli-${c.chave}`} className={`block md:table-row ${claro ? 'bg-zinc-50' : 'bg-zinc-900/30'}`}>
+                                            <td colSpan={COLUNAS} className={`block md:table-cell pl-10 pr-4 py-1.5 text-xs ${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                                                <span className="font-medium">{c.rotulo}</span>
+                                                <span className="text-zinc-500 ml-2">
+                                                    {c.leads.length} {c.leads.length === 1 ? 'chamado' : 'chamados'}
+                                                    {c.valorAtivo > 0 && ` · ${brl(c.valorAtivo)} em aberto`}
+                                                </span>
+                                            </td>
+                                        </tr>,
+                                        ...c.leads.map(linha),
+                                    ])}
                             </tbody>
                         ))
                     )}
