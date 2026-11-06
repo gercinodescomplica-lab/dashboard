@@ -187,4 +187,11 @@ describe('lerLinhasPlanilha', () => {
         expect(r.problemas).toEqual([]);
         expect(r.linhas[0].dados.previsaoFechamento).toBeNull();
     });
+
+    it('lê a data de envio da proposta pelo cabeçalho', () => {
+        const cab = [...CAB, 'Data de envio da proposta'];
+        const l = [...linha(), '2026-09-15T00:00:00.000Z'];
+        const r = lerLinhasPlanilha([cab, l]);
+        expect(r.linhas[0].dados.propostaEnviadaEm).toBe('2026-09-15');
+    });
 });

@@ -24,6 +24,7 @@ const LEAD: LeadGrcc = {
     contatoTelefone: '(19) 0000-0000',
     previsaoFechamento: '2026-11-30',
     inicioFaturamento: '2027-01-01',
+    propostaEnviadaEm: '2026-09-15',
     duracaoMeses: 24,
     visivelDashboard: false,
     criadoEm: '2026-10-01T10:00:00.000Z',

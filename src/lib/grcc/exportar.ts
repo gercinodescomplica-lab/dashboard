@@ -52,6 +52,7 @@ export const COLUNAS_EXPORTACAO: Coluna[] = [
     campo('Contato Telefone', 18, 'contatoTelefone'),
     { cabecalho: 'Previsão de fechamento', largura: 14, celula: (l) => data(l.previsaoFechamento) },
     { cabecalho: 'Início do faturamento', largura: 14, celula: (l) => data(l.inicioFaturamento) },
+    { cabecalho: 'Data de envio da proposta', largura: 16, celula: (l) => data(l.propostaEnviadaEm) },
     { cabecalho: 'Duração (meses)', largura: 10, celula: (l) => ({ value: l.duracaoMeses, type: Number }) },
     // Só informativas: a importação ignora (visibilidade não vem da planilha; data é carimbo do sistema).
     { cabecalho: 'Visível no dashboard', largura: 12, celula: (l) => texto(l.visivelDashboard ? 'Sim' : 'Não') },

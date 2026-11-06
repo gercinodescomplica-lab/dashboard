@@ -143,6 +143,7 @@ export function lerLinhasPlanilha(matriz: unknown[][]): ResultadoPlanilha {
             contatoTelefone: textoOuNull(cel(row, 'contatoTelefone')),
             previsaoFechamento: parseDataIso(cel(row, 'previsaoFechamento')),
             inicioFaturamento: parseDataIso(cel(row, 'inicioFaturamento')),
+            propostaEnviadaEm: parseDataIso(cel(row, 'propostaEnviadaEm')),
             duracaoMeses: Number.isInteger(duracao) && duracao > 0 ? duracao : 12,
         };
         // Mesma regra que o servidor aplica em confirmarImportacao: o que ele recusaria aparece já aqui.
