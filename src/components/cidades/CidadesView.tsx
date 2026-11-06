@@ -434,7 +434,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             prox90: ['Próximos 90 dias', 'Leads ativos com fechamento previsto do início deste mês até daqui a 90 dias.'],
         };
         const [titulo, descricao] = textos[indicador];
-        return { titulo, descricao, leads: lista, porCidade: indicador === 'cidades' };
+        return { titulo, descricao, leads: lista, porCidade: indicador === 'cidades', porCliente: indicador !== 'cidades' };
     }, [indicador, leads, monthlyClosingChart, summary.ticketMedio]);
 
     const abrirLeadDoIndicador = (id: number) => {
