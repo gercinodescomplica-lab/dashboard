@@ -16,7 +16,7 @@ const semAcento = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLo
 
 type Pedido = { tipo: 'visivel' } | { tipo: 'tirar'; cliente: Cliente } | { tipo: 'ativo'; cliente: Cliente & { ativo: boolean } };
 
-export function EditorGerencia({ g, semCarteira, rodar }: { g: GerenciaParaEditar; semCarteira: Cliente[]; rodar: Rodar }) {
+export function EditorGerencia({ g, semCarteira, rodar, ocupado }: { g: GerenciaParaEditar; semCarteira: Cliente[]; rodar: Rodar; ocupado: boolean }) {
     const [editando, setEditando] = useState(false);
     const [sigla, setSigla] = useState(g.chave);
     const [nome, setNome] = useState(g.nome);
@@ -52,7 +52,7 @@ export function EditorGerencia({ g, semCarteira, rodar }: { g: GerenciaParaEdita
                     <form className="flex flex-1 flex-wrap items-end gap-3" onSubmit={async (e) => { e.preventDefault(); if (await rodar((k) => acoes.editarGerenciaAction(k, g.chave, { sigla, nome }), 'Gerência atualizada.')) setEditando(false); }}>
                         <label className="w-32 text-sm">Sigla<Input value={sigla} onChange={(e) => setSigla(e.target.value)} autoFocus /></label>
                         <label className="min-w-48 flex-1 text-sm">Gerente<Input value={nome} onChange={(e) => setNome(e.target.value)} /></label>
-                        <Button type="submit">Gravar</Button>
+                        <Button type="submit" disabled={ocupado}>Gravar</Button>
                         <Button type="button" variant="outline" onClick={() => { setEditando(false); setSigla(g.chave); setNome(g.nome); }}>Cancelar</Button>
                         <p className="w-full text-xs text-zinc-400">Coluna no organograma: {ROTULO_DO_GRUPO[grupo]}. Mudar a sigla atualiza carteira, contratos e propostas da gerência.</p>
                     </form>
@@ -68,7 +68,7 @@ export function EditorGerencia({ g, semCarteira, rodar }: { g: GerenciaParaEdita
                 {!editando && (
                     <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => setEditando(true)}><Pencil className="mr-1 h-3.5 w-3.5" /> Editar</Button>
-                        <Button variant="ghost" size="sm" onClick={() => setPedido({ tipo: 'visivel' })}>{g.visivel ? 'Ocultar' : 'Mostrar'}</Button>
+                        <Button variant="ghost" size="sm" disabled={ocupado} onClick={() => setPedido({ tipo: 'visivel' })}>{g.visivel ? 'Ocultar' : 'Mostrar'}</Button>
                     </div>
                 )}
             </div>
@@ -80,10 +80,10 @@ export function EditorGerencia({ g, semCarteira, rodar }: { g: GerenciaParaEdita
                             <li key={c.id} className="flex items-center justify-between gap-2 px-3 py-1">
                                 <span className={`truncate text-sm ${c.ativo ? 'text-zinc-200' : 'text-zinc-500 line-through'}`} title={c.nome}>{rotulo(c)}</span>
                                 <span className="flex shrink-0">
-                                    <Button variant="ghost" size="icon" aria-label={`${c.ativo ? 'Ocultar' : 'Mostrar'} ${rotulo(c)}`} onClick={() => setPedido({ tipo: 'ativo', cliente: c })}>
+                                    <Button variant="ghost" size="icon" disabled={ocupado} aria-label={`${c.ativo ? 'Ocultar' : 'Mostrar'} ${rotulo(c)}`} onClick={() => setPedido({ tipo: 'ativo', cliente: c })}>
                                         {c.ativo ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </Button>
-                                    <Button variant="ghost" size="icon" aria-label={`Tirar ${rotulo(c)} da carteira`} onClick={() => setPedido({ tipo: 'tirar', cliente: c })}>
+                                    <Button variant="ghost" size="icon" disabled={ocupado} aria-label={`Tirar ${rotulo(c)} da carteira`} onClick={() => setPedido({ tipo: 'tirar', cliente: c })}>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </span>
@@ -100,6 +100,7 @@ export function EditorGerencia({ g, semCarteira, rodar }: { g: GerenciaParaEdita
                     chave={(c) => c.id}
                     rotuloDe={rotulo}
                     aoEscolher={(c) => { setTexto(''); void rodar((k) => acoes.alterarCarteiraAction(k, g.chave, { adicionar: [c.id], remover: [] }), `${rotulo(c)} entrou na carteira.`); }}
+                    desabilitado={ocupado}
                     vazio="Nenhum cliente sem carteira com esse texto"
                 />
                 <p className="text-xs text-zinc-500">Cliente de outra carteira: mova pela aba Organograma.</p>

@@ -11,7 +11,7 @@ import type { Rodar } from './admin';
 const ROTULO_TABELA: Record<LinhaSemCliente['tabela'], string> = { contrato: 'Contrato', proposta: 'Proposta', cx: 'CX', projects: 'Projeto' };
 const semAcento = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-export function AConferir({ painel, rodar }: { painel: PainelCarteira; rodar: Rodar }) {
+export function AConferir({ painel, rodar, ocupado }: { painel: PainelCarteira; rodar: Rodar; ocupado: boolean }) {
     const [trazer, setTrazer] = useState<ForaDaCarteira | null>(null);
     return (
         <div className="space-y-8">
@@ -25,7 +25,7 @@ export function AConferir({ painel, rodar }: { painel: PainelCarteira; rodar: Ro
                             return (
                                 <li key={f.clienteId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
                                     <span className="text-zinc-200">{nome} — carteira {f.carteira}; dados em {f.gerenciasDosDados.join(', ')}</span>
-                                    <Button size="sm" aria-label={`Trazer os dados de ${nome} para a carteira`} onClick={() => setTrazer(f)}>Trazer os dados para a carteira</Button>
+                                    <Button size="sm" disabled={ocupado} aria-label={`Trazer os dados de ${nome} para a carteira`} onClick={() => setTrazer(f)}>Trazer os dados para a carteira</Button>
                                 </li>
                             );
                         })}
@@ -38,7 +38,7 @@ export function AConferir({ painel, rodar }: { painel: PainelCarteira; rodar: Ro
                 <p className="text-sm text-zinc-400">Linhas cujo texto não casou com nenhum cliente. Ligue a um cliente para que acompanhem a carteira.</p>
                 {painel.semCliente.length === 0 ? <p className="text-sm text-zinc-500">Todas as linhas têm cliente.</p> : (
                     <ul className="divide-y divide-zinc-800 rounded-md border border-zinc-800">
-                        {painel.semCliente.map((l) => <LinhaParaLigar key={`${l.tabela}:${l.id}`} linha={l} clientes={painel.todosClientes} rodar={rodar} />)}
+                        {painel.semCliente.map((l) => <LinhaParaLigar key={`${l.tabela}:${l.id}`} linha={l} clientes={painel.todosClientes} rodar={rodar} ocupado={ocupado} />)}
                     </ul>
                 )}
             </section>
@@ -55,7 +55,7 @@ export function AConferir({ painel, rodar }: { painel: PainelCarteira; rodar: Ro
     );
 }
 
-function LinhaParaLigar({ linha, clientes, rodar }: { linha: LinhaSemCliente; clientes: PainelCarteira['todosClientes']; rodar: Rodar }) {
+function LinhaParaLigar({ linha, clientes, rodar, ocupado }: { linha: LinhaSemCliente; clientes: PainelCarteira['todosClientes']; rodar: Rodar; ocupado: boolean }) {
     const [texto, setTexto] = useState('');
     const opcoes = clientes.filter((c) => !texto || semAcento(`${c.sigla ?? ''} ${c.nome}`).includes(semAcento(texto))).slice(0, 30);
     return (
@@ -70,17 +70,10 @@ function LinhaParaLigar({ linha, clientes, rodar }: { linha: LinhaSemCliente; cl
                 chave={(c) => c.id}
                 rotuloDe={(c) => (c.sigla ? `${c.sigla} · ${c.nome}` : c.nome)}
                 aoEscolher={(c) => void rodar((k) => acoes.ligarClienteAction(k, linha.tabela, linha.id, c.id), `${linha.texto} ligado a ${c.sigla ?? c.nome}.`)}
-                vazio="Nenhum cliente. Crie em 'Novo cliente' abaixo."
+                desabilitado={ocupado}
+                vazio="Nenhum cliente com esse texto. Use o botão de criar abaixo."
             />
-            <Button size="sm" variant="outline" className="md:col-start-2" onClick={() => void (async () => {
-                let novoId: string | null = null;
-                const ok = await rodar(async (k) => {
-                    const r = await acoes.criarClienteAction(k, { nome: linha.texto, sigla: null });
-                    if (r.ok) novoId = r.valor.id;
-                    return r;
-                }, `Cliente ${linha.texto} criado.`);
-                if (ok && novoId) await rodar((k) => acoes.ligarClienteAction(k, linha.tabela, linha.id, novoId!), `${linha.texto} ligado ao cliente novo.`);
-            })()}>Criar cliente "{linha.texto}" e ligar</Button>
+            <Button size="sm" variant="outline" className="md:col-start-2" disabled={ocupado} onClick={() => void rodar((k) => acoes.criarELigarClienteAction(k, linha.tabela, linha.id, { nome: linha.texto, sigla: null }), `Cliente ${linha.texto} criado e ligado.`)}>Criar cliente "{linha.texto}" e ligar</Button>
         </li>
     );
 }

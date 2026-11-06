@@ -1,12 +1,12 @@
 'use client';
 // Organograma de clientes no admin (spec 2026-11-06 §8.2): abas Editar | Organograma | A conferir.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Notice } from '@/components/ui/notice';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import * as acoes from '@/app/settings/carteiraActions';
 import type { PainelCarteira } from '@/app/settings/carteiraActions';
 import { lerChaveSettings } from '@/app/settings/chaveLocal';
@@ -24,6 +24,8 @@ export function OrganogramaClientesAdmin() {
     const [aviso, setAviso] = useState<string | null>(null);
     const [busca, setBusca] = useState('');
     const [criando, setCriando] = useState(false);
+    const [ocupado, setOcupado] = useState(false);
+    const ocupadoRef = useRef(false);
 
     const carregar = useCallback(async () => {
         const r = await acoes.carregarPainelCarteiraAction(lerChaveSettings());
@@ -34,13 +36,24 @@ export function OrganogramaClientesAdmin() {
     useEffect(() => { void carregar(); }, [carregar]);
 
     const rodar: Rodar = async (acao, sucesso) => {
+        if (ocupadoRef.current) return false;
+        ocupadoRef.current = true;
+        setOcupado(true);
         setErro(null);
         setAviso(null);
-        const r = await acao(lerChaveSettings());
-        if (r.ok) setAviso(sucesso);
-        else setErro(r.erro);
-        await carregar();
-        return r.ok;
+        try {
+            const r = await acao(lerChaveSettings());
+            if (r.ok) setAviso(sucesso);
+            else setErro(r.erro);
+            return r.ok;
+        } catch {
+            setErro('Não foi possível gravar. Tente de novo.');
+            return false;
+        } finally {
+            await carregar();
+            ocupadoRef.current = false;
+            setOcupado(false);
+        }
     };
 
     if (!painel) return erro ? <Notice tom="perigo">{erro}</Notice> : <Loader2 className="h-6 w-6 animate-spin text-zinc-400" />;
@@ -71,7 +84,7 @@ export function OrganogramaClientesAdmin() {
                         <Input type="search" aria-label="Buscar no organograma" placeholder="Buscar gerência, gerente ou cliente" value={busca} onChange={(e) => setBusca(e.target.value)} className="max-w-sm" />
                         <p className="text-sm text-zinc-400" aria-live="polite">{visiveis.length} de {painel.gerencias.length} gerência(s) · {painel.semCarteira.length} cliente(s) sem carteira</p>
                     </div>
-                    {visiveis.map((g) => <EditorGerencia key={`${g.chave}:${g.nome}:${g.visivel}`} g={g} semCarteira={painel.semCarteira} rodar={rodar} />)}
+                    {visiveis.map((g) => <EditorGerencia key={`${g.chave}:${g.nome}:${g.visivel}`} g={g} semCarteira={painel.semCarteira} rodar={rodar} ocupado={ocupado} />)}
                 </TabsContent>
                 <TabsContent value="organograma">
                     <div className="h-[75dvh] min-h-96">
@@ -79,15 +92,15 @@ export function OrganogramaClientesAdmin() {
                     </div>
                 </TabsContent>
                 <TabsContent value="conferir">
-                    <AConferir painel={painel} rodar={rodar} />
+                    <AConferir painel={painel} rodar={rodar} ocupado={ocupado} />
                 </TabsContent>
             </Tabs>
-            <NovaGerencia aberto={criando} aoFechar={() => setCriando(false)} rodar={rodar} />
+            <NovaGerencia aberto={criando} aoFechar={() => setCriando(false)} rodar={rodar} ocupado={ocupado} />
         </div>
     );
 }
 
-function NovaGerencia({ aberto, aoFechar, rodar }: { aberto: boolean; aoFechar: () => void; rodar: Rodar }) {
+function NovaGerencia({ aberto, aoFechar, rodar, ocupado }: { aberto: boolean; aoFechar: () => void; rodar: Rodar; ocupado: boolean }) {
     const [sigla, setSigla] = useState('');
     const [nome, setNome] = useState('');
     const fechar = () => { setSigla(''); setNome(''); aoFechar(); };
@@ -96,13 +109,13 @@ function NovaGerencia({ aberto, aoFechar, rodar }: { aberto: boolean; aoFechar: 
         <Dialog open={aberto} onOpenChange={(a) => { if (!a) fechar(); }}>
             <DialogContent className="border-zinc-800 bg-zinc-900 text-zinc-50">
                 <form className="space-y-4" onSubmit={async (e) => { e.preventDefault(); if (await rodar((k) => acoes.criarGerenciaAction(k, { sigla, nome }), 'Gerência criada. Agora ponha os clientes.')) fechar(); }}>
-                    <DialogHeader><DialogTitle>Nova gerência</DialogTitle></DialogHeader>
+                    <DialogHeader><DialogTitle>Nova gerência</DialogTitle><DialogDescription>A gerência entra no organograma na coluna da sigla.</DialogDescription></DialogHeader>
                     <label className="block text-sm">Sigla<Input value={sigla} onChange={(e) => setSigla(e.target.value)} required autoFocus /></label>
                     <label className="block text-sm">Nome do gerente<Input value={nome} onChange={(e) => setNome(e.target.value)} required /></label>
                     <p className="text-xs text-zinc-400">Coluna no organograma: {ROTULO_DO_GRUPO[grupo]} (vem da sigla: KAM1, GRC2, GRCC…).</p>
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={fechar}>Cancelar</Button>
-                        <Button type="submit">Criar gerência</Button>
+                        <Button type="submit" disabled={ocupado}>Criar gerência</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
 import { Loader2, User, Save, FileText, Copy, Handshake, Network, Building2, DollarSign, Upload } from 'lucide-react';
@@ -40,6 +40,14 @@ export function SettingsDashboard() {
     useEffect(() => {
         loadData();
     }, []);
+
+    // Ao sair do organograma de clientes a carteira pode ter mudado: recarrega os gerentes.
+    const secaoAnterior = useRef(section);
+    useEffect(() => {
+        if (secaoAnterior.current === 'organograma-clientes' && section !== 'organograma-clientes') void loadData();
+        secaoAnterior.current = section;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [section]);
 
     const selectedManager = managers.find(m => m.id === selectedId);
 

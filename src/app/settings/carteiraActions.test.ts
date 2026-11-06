@@ -19,6 +19,13 @@ describe('carteiraActions', () => {
         expect(await a.moverClienteNoOrganogramaAction('adm', 'c-smt', 'GRC3', 'GRC1')).toEqual({ ok: false, erro: 'Esse cliente mudou de carteira enquanto você olhava. A tela foi atualizada.' });
         expect(await a.moverClienteNoOrganogramaAction('adm', 'c-smt', 'GRC4', 'GRC4')).toEqual({ ok: true, valor: { movidos: 0 } });
     });
+    it('criarELigarCliente: cria, liga; chave errada recusa', async () => {
+        expect(await a.criarELigarClienteAction('errada', 'contrato', 'ct-smt', { nome: 'Novo', sigla: null })).toMatchObject({ ok: false });
+        const r = await a.criarELigarClienteAction('adm', 'contrato', 'ct-smt', { nome: 'Novo', sigla: null });
+        expect(r.ok).toBe(true);
+        const falha = await a.criarELigarClienteAction('adm', 'contrato', 'nao-existe', { nome: 'Outro', sigla: null });
+        if (!falha.ok) expect(falha.erro).toMatch(/Cliente criado, mas não foi possível ligar/);
+    });
     it('entrada inválida', async () => {
         expect(await a.moverClienteNoOrganogramaAction('adm', '', 'GRC3', 'GRC4')).toEqual({ ok: false, erro: 'Dados inválidos.' });
     });

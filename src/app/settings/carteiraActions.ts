@@ -96,3 +96,17 @@ export async function ligarClienteAction(chave: string, tabela: carteira.TabelaC
 export async function criarClienteAction(chave: string, dados: { nome: string; sigla: string | null }) {
     return rodar(chave, async () => carteira.criarCliente(z.object({ nome: z.string().max(200), sigla: z.string().max(40).nullable() }).parse(dados)));
 }
+
+// Cria e liga numa chamada só: se ligar falhar, o cliente já existe e a mensagem diz isso (evita duplicar no retry).
+export async function criarELigarClienteAction(chave: string, tabela: carteira.TabelaComCliente, linhaId: string, dados: { nome: string; sigla: string | null }) {
+    return rodar(chave, async () => {
+        const d = z.object({ tabela: z.enum(['contrato', 'proposta', 'cx', 'projects']), linhaId: id, nome: z.string().max(200), sigla: z.string().max(40).nullable() }).parse({ tabela, linhaId, ...dados });
+        const novo = await carteira.criarCliente({ nome: d.nome, sigla: d.sigla });
+        try {
+            await carteira.ligarCliente(d.tabela, d.linhaId, novo.id);
+        } catch (e) {
+            throw new ErroCarteira(`Cliente criado, mas não foi possível ligar: ${e instanceof Error ? e.message : 'erro desconhecido'}`);
+        }
+        return novo;
+    });
+}

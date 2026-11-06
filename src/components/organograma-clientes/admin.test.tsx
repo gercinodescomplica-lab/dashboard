@@ -7,7 +7,7 @@ import { montarOrganograma } from '@/lib/carteira/organograma-clientes';
 const a = vi.hoisted(() => ({
     carregarPainelCarteiraAction: vi.fn(), moverClienteNoOrganogramaAction: vi.fn(), alterarCarteiraAction: vi.fn(), criarGerenciaAction: vi.fn(),
     editarGerenciaAction: vi.fn(), definirGerenciaVisivelAction: vi.fn(), definirClienteAtivoAction: vi.fn(), alinharClienteAction: vi.fn(),
-    ligarClienteAction: vi.fn(), criarClienteAction: vi.fn(),
+    ligarClienteAction: vi.fn(), criarClienteAction: vi.fn(), criarELigarClienteAction: vi.fn(),
 }));
 vi.mock('@/app/settings/carteiraActions', () => a);
 vi.mock('@/app/settings/chaveLocal', () => ({ lerChaveSettings: () => 'adm' }));
@@ -55,5 +55,24 @@ describe('OrganogramaClientesAdmin', () => {
         await user.click(within(cartao).getByRole('button', { name: 'Ocultar' }));
         await user.click(screen.getByRole('button', { name: 'Ocultar gerência' }));
         expect(await screen.findByRole('alert')).toHaveTextContent('Tire os 1 clientes');
+    });
+    it('ação que lança mostra erro e recarrega', async () => {
+        a.definirGerenciaVisivelAction.mockRejectedValue(new Error('500'));
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        const cartao = await screen.findByRole('region', { name: 'Gerência GRC3' });
+        await user.click(within(cartao).getByRole('button', { name: 'Ocultar' }));
+        await user.click(screen.getByRole('button', { name: 'Ocultar gerência' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível gravar. Tente de novo.');
+        expect(a.carregarPainelCarteiraAction).toHaveBeenCalledTimes(2);
+    });
+    it('Criar cliente e ligar chama a ação única', async () => {
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        await user.click(await screen.findByRole('tab', { name: 'A conferir' }));
+        await user.click(screen.getByRole('button', { name: 'Criar cliente "ALESP" e ligar' }));
+        expect(a.criarELigarClienteAction).toHaveBeenCalledTimes(1);
+        expect(a.criarELigarClienteAction).toHaveBeenCalledWith('adm', 'contrato', 'ct-x', { nome: 'ALESP', sigla: null });
+        expect(a.criarClienteAction).not.toHaveBeenCalled();
     });
 });
