@@ -48,7 +48,10 @@ export async function updatePropostaAction(
 ): Promise<ActionResult> {
     try {
         const atual = await fetchPropostaById(id);
-        const clienteId = data.clienteId !== undefined ? data.clienteId : atual?.clienteId ?? null;
+        // undefined mantém o vínculo gravado; null/'' ("casar pelo texto") casa de novo pelo texto.
+        const clienteId = data.clienteId === undefined
+            ? atual?.clienteId ?? null
+            : data.clienteId || (await clienteDaLinha(data.cliente ?? atual?.cliente, data.managerId ?? atual?.managerId ?? null));
         await updateProposta(id, await comCarteira(data, clienteId));
         revalidatePath('/proposals');
         return { success: true };

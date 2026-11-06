@@ -4,8 +4,9 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { authenticate } from '@/lib/api-auth';
 import { db } from '@/db/index';
 import { managers, cx, visits, projects } from '@/db/schema';
-import { managerDaLinha } from '@/db/carteira';
-import { clienteDaLinha } from '@/lib/carteira/linha';
+import { listarCards, listarClientesComCarteira, roteadorDaCarteira } from '@/db/carteira';
+import { casarCliente } from '@/lib/carteira/casar-cliente';
+import { chaveDaCarteira } from '@/lib/carteira/gerencia';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
 
@@ -136,12 +137,14 @@ export async function PATCH(request: Request) {
 
     try {
         // Casamento com a carteira fora da transação (só leitura); um por item, na ordem do upsert.
-        const resolver = async (texto: string | null | undefined) => {
-            const clienteId = texto === undefined ? undefined : await clienteDaLinha(texto, managerId);
-            return { clienteId, destino: await managerDaLinha(clienteId, managerId) };
+        const [clientes, cards, rotear] = await Promise.all([listarClientesComCarteira(), listarCards(), roteadorDaCarteira()]);
+        const card = cards.find((c) => c.id === managerId);
+        const resolver = (texto: string | null | undefined) => {
+            const clienteId = texto === undefined ? undefined : casarCliente(texto, clientes, card ? chaveDaCarteira(card) : null);
+            return { clienteId, destino: rotear(clienteId, managerId) };
         };
-        const cxRes = await Promise.all((data.cx?.upsert ?? []).map((i) => resolver(i.cliente)));
-        const projRes = await Promise.all((data.projects?.upsert ?? []).map((i) => resolver(i.orgao)));
+        const cxRes = (data.cx?.upsert ?? []).map((i) => resolver(i.cliente));
+        const projRes = (data.projects?.upsert ?? []).map((i) => resolver(i.orgao));
 
         await db.transaction(async (tx) => {
 
