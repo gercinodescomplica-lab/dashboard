@@ -40,6 +40,24 @@ beforeEach(async () => {
 });
 
 describe('salvarLeadGrcc', () => {
+    it('mudar etapa fecha a espera: zera a data de envio da proposta automaticamente', async () => {
+        const { lead: l } = await q.salvarLeadGrcc(null, lead({ propostaEnviadaEm: '2026-08-01' }));
+        const r = await q.salvarLeadGrcc(l.id, lead({ propostaEnviadaEm: '2026-08-01', etapa: 'Reunião agendada' }));
+        expect(r.lead.propostaEnviadaEm).toBeNull();
+    });
+
+    it('reenviar a proposta na mesma edição que muda a etapa mantém a data nova', async () => {
+        const { lead: l } = await q.salvarLeadGrcc(null, lead({ propostaEnviadaEm: '2026-08-01' }));
+        const r = await q.salvarLeadGrcc(l.id, lead({ propostaEnviadaEm: '2026-10-01', etapa: 'Reunião agendada' }));
+        expect(r.lead.propostaEnviadaEm).toBe('2026-10-01');
+    });
+
+    it('editar sem mudar etapa/situação mantém a data de envio', async () => {
+        const { lead: l } = await q.salvarLeadGrcc(null, lead({ propostaEnviadaEm: '2026-08-01' }));
+        const r = await q.salvarLeadGrcc(l.id, lead({ propostaEnviadaEm: '2026-08-01', valor: 999 }));
+        expect(r.lead.propostaEnviadaEm).toBe('2026-08-01');
+    });
+
     it('cadastro: grava lead, evento "cadastro", projeto da Débora (maior ano) e versão +1', async () => {
         const { lead: l, mudou } = await q.salvarLeadGrcc(null, lead());
         expect(mudou).toBe(true);

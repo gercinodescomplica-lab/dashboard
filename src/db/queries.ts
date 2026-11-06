@@ -658,7 +658,7 @@ export async function savePlannerLastSyncedAt(epochMs: number): Promise<void> {
 
 import { diffLead } from '../lib/grcc/diff';
 import { dadosDoLead, montarPrevia } from '../lib/grcc/previa';
-import { projetoDoLead } from '../lib/grcc/pipeline';
+import { projetoDoLead, fecharEsperaDeProposta } from '../lib/grcc/pipeline';
 import { linhaDoTempoAndamento } from '../lib/grcc/organizar';
 import {
     CAMPOS_LISTA,
@@ -705,6 +705,7 @@ function linhaParaLead(r: typeof leadGrcc.$inferSelect): LeadGrcc {
         contatoTelefone: r.contatoTelefone,
         previsaoFechamento: r.previsaoFechamento,
         inicioFaturamento: r.inicioFaturamento,
+        propostaEnviadaEm: r.propostaEnviadaEm,
         duracaoMeses: r.duracaoMeses,
         visivelDashboard: r.visivelDashboard,
         criadoEm: r.criadoEm,
@@ -829,10 +830,11 @@ async function gravarLead(
     const [atualRow] = await tx.select().from(leadGrcc).where(and(eq(leadGrcc.id, id), isNull(leadGrcc.excluidoEm)));
     if (!atualRow) throw new ErroGrcc('Lead não encontrado (pode ter sido excluído).');
     const atual = linhaParaLead(atualRow);
-    const mudancas = diffLead(dadosDoLead(atual), dados);
+    const dadosAjustados = fecharEsperaDeProposta(dadosDoLead(atual), dados);
+    const mudancas = diffLead(dadosDoLead(atual), dadosAjustados);
     if (mudancas.length === 0) return { lead: atual, mudou: false };
 
-    const [r] = await tx.update(leadGrcc).set({ ...dados, atualizadoEm: agora }).where(eq(leadGrcc.id, id)).returning();
+    const [r] = await tx.update(leadGrcc).set({ ...dadosAjustados, atualizadoEm: agora }).where(eq(leadGrcc.id, id)).returning();
     const lead = linhaParaLead(r);
     await registrarEvento(tx, id, origem, mudancas, arquivo, agora);
     await sincronizarProjeto(tx, lead, gerente);
