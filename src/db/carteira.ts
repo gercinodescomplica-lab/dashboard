@@ -2,9 +2,10 @@
 // Carteira de clientes no banco (spec docs/superpowers/specs/2026-11-06-organograma-clientes-design.md).
 // Porte de aibertinho/src/modulos/gerencias/servidor/{organograma-clientes,servico,carteira,levar-cliente}.ts.
 // A gerência é a CHAVE da sigla do card ("GRC4"); o card que recebe os dados é `cardDaGerencia` (maior ano, visível).
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { db } from '@/db/index';
 import { carteiraCliente, cliente, contrato, cx, managers, movimentoCarteira, projects, proposta } from '@/db/schema';
+import { siglaComparavel, chaveDaGerencia } from '@/lib/integracao/chaves';
 import { cardDaGerencia, chaveDaCarteira, textoDaGerencia } from '@/lib/carteira/gerencia';
 import type { ClienteParaCasar } from '@/lib/carteira/casar-cliente';
 import { montarOrganograma, type ClienteDoOrganograma, type GerenciaDoOrganograma, type OrganogramaClientes } from '@/lib/carteira/organograma-clientes';
@@ -205,4 +206,137 @@ export async function alinharCliente(clienteId: string, por: string): Promise<{ 
         await tx.insert(movimentoCarteira).values({ clienteId, deGerencia: de[0], paraGerencia: atual, por, em: agora() });
     });
     return { movidos: 1 };
+}
+
+function slug(t: string): string {
+    return t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+const chaveDaSigla = (sigla: string) => chaveDaGerencia(sigla) ?? sigla.trim();
+
+export async function criarGerencia(d: { sigla: string; nome: string }): Promise<{ chave: string; id: string }> {
+    const chave = chaveDaSigla(d.sigla);
+    const nome = d.nome.trim();
+    if (!chave) throw new ErroCarteira('Informe a sigla.');
+    if (!nome) throw new ErroCarteira('Informe o nome.');
+    const cards = await listarCards();
+    if (cards.some((c) => chaveDaCarteira(c) === chave)) throw new ErroCarteira(`Já existe uma gerência com a sigla ${chave}.`);
+    const id = `${slug(chave)}-${slug(nome)}`;
+    if (cards.some((c) => c.id === id)) throw new ErroCarteira(`Já existe um gerente com o ID "${id}".`);
+    const year = cards.length ? Math.max(...cards.map((c) => c.year)) : new Date().getFullYear();
+    await db.insert(managers).values({ id, name: nome, role: chave, avatarUrl: '', year, meta: 0, contratado: 0, forecastFinal: 0, showInDashboard: true });
+    return { chave, id };
+}
+
+export async function editarGerencia(chave: string, d: { sigla: string; nome: string }): Promise<{ chave: string }> {
+    const nova = chaveDaSigla(d.sigla);
+    const nome = d.nome.trim();
+    if (!nova) throw new ErroCarteira('Informe a sigla.');
+    if (!nome) throw new ErroCarteira('Informe o nome.');
+    const cards = await listarCards();
+    const daGerencia = cards.filter((c) => chaveDaCarteira(c) === chave);
+    const card = cardDaGerencia(cards, chave);
+    if (!card) throw new ErroCarteira('Gerência não encontrada.');
+    if (nova !== chave && cards.some((c) => chaveDaCarteira(c) === nova)) throw new ErroCarteira(`Já existe uma gerência com a sigla ${nova}.`);
+    const ids = daGerencia.map((c) => c.id);
+    await db.transaction(async (tx) => {
+        await tx.update(managers).set({ name: nome }).where(eq(managers.id, card.id));
+        if (nova === chave) return;
+        await tx.update(managers).set({ role: nova }).where(inArray(managers.id, ids));
+        await tx.update(carteiraCliente).set({ gerencia: nova }).where(eq(carteiraCliente.gerencia, chave));
+        await tx.update(movimentoCarteira).set({ deGerencia: nova }).where(eq(movimentoCarteira.deGerencia, chave));
+        await tx.update(movimentoCarteira).set({ paraGerencia: nova }).where(eq(movimentoCarteira.paraGerencia, chave));
+        await tx.update(contrato).set({ gerencia: textoDaGerencia(nova) }).where(inArray(contrato.managerId, ids));
+        await tx.update(proposta).set({ gerencia: textoDaGerencia(nova) }).where(inArray(proposta.managerId, ids));
+    });
+    return { chave: nova };
+}
+
+export async function definirGerenciaVisivel(chave: string, visivel: boolean): Promise<void> {
+    const card = cardDaGerencia(await listarCards(), chave);
+    if (!card) throw new ErroCarteira('Gerência não encontrada.');
+    if (!visivel) {
+        const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(carteiraCliente).where(eq(carteiraCliente.gerencia, chave));
+        if (n > 0) throw new ErroCarteira(`Tire os ${n} clientes da carteira antes de desativar.`);
+    }
+    await db.update(managers).set({ showInDashboard: visivel }).where(eq(managers.id, card.id));
+}
+
+export async function definirClienteAtivo(clienteId: string, ativo: boolean): Promise<void> {
+    await db.update(cliente).set({ ativo }).where(eq(cliente.id, clienteId));
+}
+
+export async function criarCliente(d: { nome: string; sigla: string | null }): Promise<{ id: string }> {
+    const nome = d.nome.trim();
+    if (!nome) throw new ErroCarteira('Informe o nome.');
+    const sigla = d.sigla?.trim() || null;
+    if (sigla) {
+        const existentes = await db.select({ sigla: cliente.sigla }).from(cliente).where(isNotNull(cliente.sigla));
+        if (existentes.some((e) => siglaComparavel(e.sigla!) === siglaComparavel(sigla))) throw new ErroCarteira(`Já existe um cliente com a sigla ${sigla}.`);
+    }
+    const id = crypto.randomUUID();
+    await db.insert(cliente).values({ id, nome, sigla, createdAt: agora() });
+    return { id };
+}
+
+export interface ForaDaCarteira { clienteId: string; sigla: string | null; nome: string; carteira: string; gerenciasDosDados: string[] }
+
+export async function foraDaCarteira(): Promise<ForaDaCarteira[]> {
+    const comCarteira = (await listarClientesComCarteira()).filter((c) => c.gerencia !== null);
+    const fora: ForaDaCarteira[] = [];
+    for (const c of comCarteira) {
+        const dados = await gerenciasDosDados(c.id);
+        if (dados.some((g) => g !== c.gerencia)) fora.push({ clienteId: c.id, sigla: c.sigla, nome: c.nome, carteira: c.gerencia!, gerenciasDosDados: dados });
+    }
+    return fora.sort((a, b) => (a.sigla ?? a.nome).localeCompare(b.sigla ?? b.nome, 'pt-BR'));
+}
+
+export type TabelaComCliente = 'contrato' | 'proposta' | 'cx' | 'projects';
+export interface LinhaSemCliente { tabela: TabelaComCliente; id: string; texto: string; gerencia: string }
+
+export async function linhasSemCliente(): Promise<LinhaSemCliente[]> {
+    const chave = new Map((await listarCards()).map((c) => [c.id, chaveDaCarteira(c)]));
+    const g = (m: string | null) => (m ? chave.get(m) ?? m : '');
+    const ct = await db.select({ id: contrato.id, texto: contrato.cliente, m: contrato.managerId }).from(contrato).where(isNull(contrato.clienteId));
+    const pr = await db.select({ id: proposta.id, texto: proposta.cliente, m: proposta.managerId }).from(proposta).where(isNull(proposta.clienteId));
+    const c = await db.select({ id: cx.id, texto: cx.cliente, m: cx.managerId }).from(cx).where(isNull(cx.clienteId));
+    const pj = await db.select({ id: projects.id, texto: projects.orgao, m: projects.managerId }).from(projects).where(and(isNull(projects.clienteId), isNull(projects.leadGrccId)));
+    return [
+        ...ct.map((r) => ({ tabela: 'contrato' as const, id: r.id, texto: r.texto, gerencia: g(r.m) })),
+        ...pr.map((r) => ({ tabela: 'proposta' as const, id: r.id, texto: r.texto, gerencia: g(r.m) })),
+        ...c.map((r) => ({ tabela: 'cx' as const, id: String(r.id), texto: r.texto, gerencia: g(r.m) })),
+        ...pj.map((r) => ({ tabela: 'projects' as const, id: String(r.id), texto: r.texto ?? '', gerencia: g(r.m) })),
+    ];
+}
+
+export async function ligarCliente(tabela: TabelaComCliente, id: string, clienteId: string): Promise<void> {
+    if (tabela === 'contrato') await db.update(contrato).set({ clienteId }).where(eq(contrato.id, id));
+    else if (tabela === 'proposta') await db.update(proposta).set({ clienteId }).where(eq(proposta.id, id));
+    else if (tabela === 'cx') await db.update(cx).set({ clienteId }).where(eq(cx.id, Number(id)));
+    else await db.update(projects).set({ clienteId }).where(and(eq(projects.id, Number(id)), isNull(projects.leadGrccId)));
+}
+
+export interface GerenciaParaEditar {
+    chave: string;
+    cardId: string;
+    nome: string;
+    visivel: boolean;
+    clientes: Array<{ id: string; nome: string; sigla: string | null; ativo: boolean }>;
+}
+
+export async function gerenciasParaEditar(): Promise<GerenciaParaEditar[]> {
+    const [cards, clientes] = await Promise.all([listarCards(), listarClientesComCarteira()]);
+    return [...new Set(cards.map(chaveDaCarteira))].sort().map((chave) => {
+        const card = cardDaGerencia(cards, chave)!;
+        return {
+            chave,
+            cardId: card.id,
+            nome: card.name,
+            visivel: card.showInDashboard,
+            clientes: clientes
+                .filter((c) => c.gerencia === chave)
+                .map(({ id, nome, sigla, ativo }) => ({ id, nome, sigla, ativo }))
+                .sort((a, b) => (a.sigla ?? a.nome).localeCompare(b.sigla ?? b.nome, 'pt-BR')),
+        };
+    });
 }
