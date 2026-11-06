@@ -1,0 +1,59 @@
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { montarOrganograma } from '@/lib/carteira/organograma-clientes';
+
+const a = vi.hoisted(() => ({
+    carregarPainelCarteiraAction: vi.fn(), moverClienteNoOrganogramaAction: vi.fn(), alterarCarteiraAction: vi.fn(), criarGerenciaAction: vi.fn(),
+    editarGerenciaAction: vi.fn(), definirGerenciaVisivelAction: vi.fn(), definirClienteAtivoAction: vi.fn(), alinharClienteAction: vi.fn(),
+    ligarClienteAction: vi.fn(), criarClienteAction: vi.fn(),
+}));
+vi.mock('@/app/settings/carteiraActions', () => a);
+vi.mock('@/app/settings/chaveLocal', () => ({ lerChaveSettings: () => 'adm' }));
+
+import { OrganogramaClientesAdmin } from './admin';
+
+const painel = {
+    organograma: montarOrganograma([{ id: 'GRC3', nome: 'GRC3', sigla: 'GRC3', ativa: true, gerentes: ['Barone'], clientes: [{ id: 'c-smt', nome: 'Transportes', sigla: 'SMT', ultimoMovimento: null }] }], []),
+    gerencias: [{ chave: 'GRC3', cardId: 'grc3-barone', nome: 'Barone', visivel: true, clientes: [{ id: 'c-smt', nome: 'Transportes', sigla: 'SMT', ativo: true }] }],
+    semCarteira: [{ id: 'c-smc', nome: 'Cultura', sigla: 'SMC' }],
+    todosClientes: [],
+    fora: [{ clienteId: 'c-seme', sigla: 'SEME', nome: 'Esportes', carteira: 'GRC1', gerenciasDosDados: ['GRC4'] }],
+    semCliente: [{ tabela: 'contrato', id: 'ct-x', texto: 'ALESP', gerencia: 'GRC4' }],
+};
+
+beforeEach(() => {
+    a.carregarPainelCarteiraAction.mockResolvedValue({ ok: true, valor: painel });
+    for (const f of Object.values(a)) if (f !== a.carregarPainelCarteiraAction) f.mockResolvedValue({ ok: true, valor: null });
+});
+
+describe('OrganogramaClientesAdmin', () => {
+    it('Editar: põe cliente sem carteira com a chave e recarrega', async () => {
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        const cartao = await screen.findByRole('region', { name: 'Gerência GRC3' });
+        await user.click(within(cartao).getByRole('combobox', { name: 'Adicionar cliente sem carteira' }));
+        await user.click(await within(cartao).findByRole('option', { name: 'SMC · Cultura' }));
+        expect(a.alterarCarteiraAction).toHaveBeenCalledWith('adm', 'GRC3', { adicionar: ['c-smc'], remover: [] });
+        expect(a.carregarPainelCarteiraAction).toHaveBeenCalledTimes(2);
+    });
+    it('A conferir: trazer dados para a carteira', async () => {
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        await user.click(await screen.findByRole('tab', { name: 'A conferir' }));
+        await user.click(screen.getByRole('button', { name: 'Trazer os dados de SEME para a carteira' }));
+        await user.click(screen.getByRole('button', { name: 'Trazer' }));
+        expect(a.alinharClienteAction).toHaveBeenCalledWith('adm', 'c-seme');
+        expect(screen.getByText('ALESP')).toBeInTheDocument();
+    });
+    it('Ocultar gerência com erro mostra a mensagem', async () => {
+        a.definirGerenciaVisivelAction.mockResolvedValue({ ok: false, erro: 'Tire os 1 clientes da carteira antes de desativar.' });
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        const cartao = await screen.findByRole('region', { name: 'Gerência GRC3' });
+        await user.click(within(cartao).getByRole('button', { name: 'Ocultar' }));
+        await user.click(screen.getByRole('button', { name: 'Ocultar gerência' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('Tire os 1 clientes');
+    });
+});

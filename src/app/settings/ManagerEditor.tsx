@@ -14,19 +14,19 @@ import {
 import { PipelineEditor } from './PipelineEditor';
 import { CXEditor } from './CXEditor';
 import { VisitsEditor } from './VisitsEditor';
-import { ClientsEditor } from './ClientsEditor';
 import { ChurnEditor } from './ChurnEditor';
 import { sumPipelineContratado2026, calcEffectiveContratado, sumPipelineAberto, calcForecastProRata2026 } from '@/lib/calc';
 import { getCXByManager, getVisitsByManager, getChurnByManager } from '@/app/settings/fetchActions';
 
 interface Props {
+    onAbrirOrganogramaClientes?: () => void;
     manager: Manager;
     onChange: (m: Manager) => void;
     onSave: () => void;
     isSaving: boolean;
 }
 
-export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
+export function ManagerEditor({ manager, onChange, onSave, isSaving, onAbrirOrganogramaClientes }: Props) {
     const [loadingExtra, setLoadingExtra] = useState(true);
 
     useEffect(() => {
@@ -287,10 +287,13 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving }: Props) {
                 {/* ── Tab Clientes ── */}
                 <TabsContent value="clientes">
                     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 min-h-[400px]">
-                        <ClientsEditor
-                            items={manager.servedClients || []}
-                            onChange={(clients) => handleChange('servedClients', clients)}
-                        />
+                        <div className="space-y-3">
+                            <p className="text-sm text-zinc-400">A carteira é editada no organograma de clientes. Aqui ela só aparece.</p>
+                            {(manager.servedClients ?? []).length === 0
+                                ? <p className="text-sm text-zinc-500">Nenhum cliente na carteira.</p>
+                                : <ul className="space-y-1">{(manager.servedClients ?? []).map((c) => <li key={c} className="text-sm text-zinc-200">{c}</li>)}</ul>}
+                            {onAbrirOrganogramaClientes && <Button variant="outline" onClick={onAbrirOrganogramaClientes}>Mudar no organograma de clientes</Button>}
+                        </div>
                     </div>
                 </TabsContent>
 

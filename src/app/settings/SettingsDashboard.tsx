@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { fetchManagers } from '@/services/managers.service';
 import { Manager } from '@/types/manager';
-import { Loader2, User, Save, FileText, Copy, Handshake, Network, DollarSign, Upload } from 'lucide-react';
+import { Loader2, User, Save, FileText, Copy, Handshake, Network, Building2, DollarSign, Upload } from 'lucide-react';
 import { ManagerEditor } from './ManagerEditor';
 import { ContractsEditor } from './ContractsEditor';
 import { ProposalsEditor } from './ProposalsEditor';
 import { OrgChartEditor } from './OrgChartEditor';
+import { OrganogramaClientesAdmin } from '@/components/organograma-clientes/admin';
 import { FaturamentoEditor } from './FaturamentoEditor';
 import { PlannerUploadEditor } from './PlannerUploadEditor';
 import { saveManagerData, saveCXData, saveVisitsData, saveChurnData, cloneManager } from './actions';
@@ -18,7 +19,7 @@ import Link from 'next/link';
 export function SettingsDashboard() {
     const [managers, setManagers] = useState<Manager[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart' | 'faturamento' | 'planner-upload'>('managers');
+    const [section, setSection] = useState<'managers' | 'contracts' | 'proposals' | 'orgchart' | 'organograma-clientes' | 'faturamento' | 'planner-upload'>('managers');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -172,6 +173,18 @@ export function SettingsDashboard() {
                             </div>
                         </button>
                         <button
+                            onClick={() => setSection('organograma-clientes')}
+                            className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'organograma-clientes' ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
+                        >
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${section === 'organograma-clientes' ? 'bg-purple-500' : 'bg-zinc-800'}`}>
+                                <Building2 className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate text-sm">Organograma de clientes</p>
+                                <p className={`text-xs truncate ${section === 'organograma-clientes' ? 'text-purple-200' : 'text-zinc-500'}`}>Carteira de cada gerência</p>
+                            </div>
+                        </button>
+                        <button
                             onClick={() => setSection('faturamento')}
                             className={`w-full text-left p-3 rounded-xl flex items-center gap-3 transition-colors ${section === 'faturamento' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-800'}`}
                         >
@@ -232,6 +245,8 @@ export function SettingsDashboard() {
                     <ContractsEditor />
                 ) : section === 'proposals' ? (
                     <ProposalsEditor />
+                ) : section === 'organograma-clientes' ? (
+                    <OrganogramaClientesAdmin />
                 ) : section === 'orgchart' ? (
                     <OrgChartEditor />
                 ) : section === 'faturamento' ? (
@@ -245,6 +260,7 @@ export function SettingsDashboard() {
                         onChange={handleUpdateManager}
                         onSave={handleSave}
                         isSaving={isSaving}
+                        onAbrirOrganogramaClientes={() => setSection('organograma-clientes')}
                     />
                 ) : (
                     <div className="flex items-center justify-center h-full text-zinc-500">
