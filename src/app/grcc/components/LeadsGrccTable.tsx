@@ -5,7 +5,7 @@ import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, ChevronRig
 import { CATEGORIAS_GRCC, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CategoriaGrcc, type LeadGrcc, type TemperaturaLead } from '@/lib/grcc/tipos';
 import { pendenciasDoLead } from '@/lib/grcc/validacao';
 import { origemTemperatura, temperaturaDoLead } from '@/lib/grcc/pipeline';
-import { agruparPorCidade, alternarOrdem, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
+import { agruparPorCidade, alternarOrdem, type GrupoCidade, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
 import { chaveTexto } from '@/lib/grcc/normalizar';
 import { LARGURAS_EXPORTACAO, nomeArquivoExportacao, planilhaDosLeads } from '@/lib/grcc/exportar';
 import { brl, corCategoria, dataBr, haQuanto, ICONE_TEMPERATURA } from './formato';
@@ -21,7 +21,6 @@ const ROTULO_ORIGEM_TEMPERATURA: Record<ReturnType<typeof origemTemperatura>, st
     categoria: 'automática pela categoria',
 };
 
-const COLUNAS = 6;
 const CHAVE_ORDEM = 'grcc-ordem-tabela';
 
 const ROTULO_ORDEM: Record<ColunaOrdem, string> = {
@@ -40,6 +39,12 @@ function lerOrdemSalva(): Ordem {
     } catch {
         return ORDEM_PADRAO;
     }
+}
+
+function IconeTemp({ t, className, rotulo = false }: { t: keyof typeof ICONE_TEMPERATURA; className: string; rotulo?: boolean }) {
+    const Icone = ICONE_TEMPERATURA[t];
+    if (!Icone) return null;
+    return rotulo ? <Icone className={className} role="img" aria-label={t} /> : <Icone className={className} aria-hidden />;
 }
 
 function falta(pendencias: string[]): string {
@@ -159,12 +164,15 @@ export function LeadsGrccTable({
                 key={f}
                 type="button"
                 onClick={() => setFiltro(f)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                    ativo ? 'bg-indigo-600 text-white border-indigo-500' : `${claro ? 'bg-white' : 'bg-zinc-900'} ${claro ? 'text-zinc-600' : 'text-zinc-400'} ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-100'}`
+                aria-pressed={ativo}
+                className={`flex items-center gap-1.5 px-2.5 h-8 rounded-md text-xs font-medium whitespace-nowrap cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                    ativo
+                        ? claro ? 'bg-zinc-900 text-white' : 'bg-zinc-100 text-zinc-900'
+                        : claro ? 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900' : 'text-zinc-400 hover:bg-zinc-800 hover:text-zinc-100'
                 }`}
             >
-                {f === 'pendencias' && <AlertTriangle className={`w-3.5 h-3.5 ${claro ? 'text-amber-600' : 'text-amber-400'}`} />}
-                {rotulo} {n}
+                {f === 'pendencias' && <AlertTriangle className={`w-3.5 h-3.5 ${ativo ? '' : claro ? 'text-amber-600' : 'text-amber-400'}`} aria-hidden />}
+                {rotulo} <span className="tabular-nums opacity-60">{n}</span>
             </button>
         );
     };
@@ -179,13 +187,13 @@ export function LeadsGrccTable({
                 onClick={() => setTemp(t)}
                 aria-pressed={ativo}
                 title={t ? `Só leads ${t}s no pipeline` : 'Todas as temperaturas'}
-                className={`flex items-center gap-1 px-2.5 h-8 rounded-md text-xs font-semibold ${
+                className={`flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium whitespace-nowrap cursor-pointer transition-colors duration-150 ${
                     ativo ? (claro ? 'bg-white shadow-sm text-zinc-900' : 'bg-zinc-800 text-zinc-100') : `${claro ? 'text-zinc-600' : 'text-zinc-400'} ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-100'}`
                 }`}
             >
                 {t ? (
                     <>
-                        <span aria-hidden>{ICONE_TEMPERATURA[t]}</span> {ROTULO_TEMPERATURA[t]} <span className="opacity-60">{n}</span>
+                        <IconeTemp t={t} className="w-3.5 h-3.5" /> {ROTULO_TEMPERATURA[t]} <span className="tabular-nums opacity-60">{n}</span>
                     </>
                 ) : (
                     'Todas'
@@ -199,11 +207,11 @@ export function LeadsGrccTable({
             type="button"
             onClick={() => setVisao(v)}
             aria-pressed={visao === v}
-            className={`flex items-center gap-1.5 px-3 h-8 rounded-md text-xs font-semibold ${
+            className={`flex items-center gap-1.5 px-2.5 h-7 rounded text-xs font-medium whitespace-nowrap cursor-pointer transition-colors duration-150 ${
                 visao === v ? (claro ? 'bg-white shadow-sm text-zinc-900' : 'bg-zinc-800 text-zinc-100') : `${claro ? 'text-zinc-600' : 'text-zinc-400'} ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-100'}`
             }`}
         >
-            <Icone className="w-3.5 h-3.5" />
+            <Icone className="w-3.5 h-3.5" aria-hidden />
             {rotulo}
         </button>
     );
@@ -214,10 +222,10 @@ export function LeadsGrccTable({
             <tr
                 key={l.id}
                 onClick={() => onAbrir(l.id)}
-                className={`block md:table-row px-4 py-3 md:p-0 cursor-pointer ${claro ? 'hover:bg-zinc-50' : 'hover:bg-zinc-900/60'} transition-colors ${destacados.has(l.id) ? 'bg-indigo-500/10' : ''}`}
+                className={`block md:table-row px-4 py-3 md:p-0 cursor-pointer ${claro ? 'hover:bg-zinc-50' : 'hover:bg-zinc-900/60'} transition-colors duration-150 ${destacados.has(l.id) ? 'bg-indigo-500/10' : ''}`}
             >
-                <td className="block md:table-cell md:px-3 md:py-3 align-top md:overflow-hidden">
-                    <div className={`font-semibold ${claro ? 'text-zinc-900' : 'text-zinc-100'} truncate`} title={l.cliente}>
+                <td className="block md:table-cell md:px-3 md:py-2.5 align-top md:overflow-hidden">
+                    <div className={`font-medium ${claro ? 'text-zinc-900' : 'text-zinc-100'} truncate`} title={l.cliente}>
                         {l.cliente}
                     </div>
                     <div className="text-xs text-zinc-500 truncate">
@@ -235,7 +243,7 @@ export function LeadsGrccTable({
                         </div>
                     )}
                 </td>
-                <td className="block md:table-cell md:px-3 py-1 md:py-3 align-top md:overflow-hidden">
+                <td className="block md:table-cell md:px-3 py-1 md:py-2.5 align-top md:overflow-hidden">
                     <div className={`${claro ? 'text-zinc-700' : 'text-zinc-300'} truncate`} title={l.solicitacao}>
                         {l.solicitacao || '—'}
                     </div>
@@ -245,21 +253,21 @@ export function LeadsGrccTable({
                         </div>
                     )}
                 </td>
-                <td className="inline-block md:table-cell md:px-3 md:py-3 align-top mr-3 md:mr-0">
+                <td className="inline-block md:table-cell md:px-3 md:py-2.5 align-top mr-3 md:mr-0">
                     <span
-                        className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border whitespace-nowrap ${cores[l.categoria]}`}
+                        className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md border whitespace-nowrap ${cores[l.categoria]}`}
                         title={`No pipeline: ${temperaturaDoLead(l)} (${ROTULO_ORIGEM_TEMPERATURA[origemTemperatura(l)]})`}
                     >
                         {l.categoria}
-                        {ICONE_TEMPERATURA[temperaturaDoLead(l)] && <span aria-label={temperaturaDoLead(l)}>{ICONE_TEMPERATURA[temperaturaDoLead(l)]}</span>}
+                        <IconeTemp t={temperaturaDoLead(l)} className="w-3 h-3" rotulo />
                     </span>
                     {l.etapa && <div className="hidden md:block text-[11px] text-zinc-500 mt-1">{l.etapa}</div>}
                 </td>
-                <td className={`inline-block md:table-cell md:px-3 md:py-3 align-top md:text-right font-mono text-[13px] ${claro ? 'text-zinc-800' : 'text-zinc-200'} whitespace-nowrap mr-3 md:mr-0`}>
+                <td className={`inline-block md:table-cell md:px-3 md:py-2.5 align-top md:text-right tabular-nums ${claro ? 'text-zinc-800' : 'text-zinc-200'} whitespace-nowrap mr-3 md:mr-0`}>
                     {l.valor ? brl(l.valor) : '—'}
                 </td>
-                <td className={`inline-block md:table-cell md:px-3 md:py-3 align-top ${claro ? 'text-zinc-600' : 'text-zinc-400'} whitespace-nowrap mr-3 md:mr-0`}>{dataBr(l.previsaoFechamento)}</td>
-                <td className="hidden md:table-cell md:px-3 md:py-3 align-top text-zinc-500 text-xs whitespace-nowrap">{haQuanto(l.atualizadoEm)}</td>
+                <td className={`inline-block md:table-cell md:px-3 md:py-2.5 align-top ${claro ? 'text-zinc-600' : 'text-zinc-400'} whitespace-nowrap mr-3 md:mr-0`}>{dataBr(l.previsaoFechamento)}</td>
+                <td className="hidden md:table-cell md:px-3 md:py-2.5 align-top text-zinc-500 whitespace-nowrap">{haQuanto(l.atualizadoEm)}</td>
             </tr>
         );
     };
@@ -271,43 +279,98 @@ export function LeadsGrccTable({
             <th
                 scope="col"
                 aria-sort={ativa ? (ordem.direcao === 'asc' ? 'ascending' : 'descending') : 'none'}
-                className={`px-1.5 py-2 ${alinhar === 'right' ? 'text-right' : 'text-left'}`}
+                className={`px-3 h-10 align-middle font-medium whitespace-nowrap ${alinhar === 'right' ? 'text-right' : 'text-left'}`}
             >
                 <button
                     type="button"
                     onClick={() => mudarOrdem(alternarOrdem(ordem, coluna))}
                     title={`Ordenar por ${rotulo.toLowerCase()}`}
-                    className={`group inline-flex items-center gap-1 px-1.5 py-1 rounded-md uppercase tracking-wider transition-colors ${alinhar === 'right' ? 'flex-row-reverse' : ''} ${
-                        ativa
-                            ? claro ? 'text-indigo-700 bg-indigo-50' : 'text-indigo-300 bg-indigo-500/10'
-                            : claro ? 'hover:text-zinc-900 hover:bg-zinc-100' : 'hover:text-zinc-100 hover:bg-zinc-900'
+                    className={`group inline-flex items-center gap-1 uppercase tracking-wider cursor-pointer rounded-sm transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${alinhar === 'right' ? 'flex-row-reverse' : ''} ${
+                        ativa ? (claro ? 'text-zinc-900' : 'text-zinc-100') : claro ? 'hover:text-zinc-900' : 'hover:text-zinc-100'
                     }`}
                 >
                     {rotulo}
-                    <Icone className={`w-3.5 h-3.5 shrink-0 ${ativa ? '' : 'opacity-40 group-hover:opacity-100'}`} />
+                    <Icone className={`w-3 h-3 shrink-0 ${ativa ? '' : 'opacity-0 group-hover:opacity-60 group-focus-visible:opacity-60'}`} aria-hidden />
                 </button>
             </th>
         );
     };
 
+    /** Linha de cidade: cada coluna mostra o resumo do grupo, para fechada continuar lendo como tabela. */
+    const cabecaGrupo = (g: GrupoCidade, k: string, cabecalhoDeLinha: boolean) => {
+        const aberta = abertas.has(k);
+        const semCidade = g.chave === 'Sem cidade';
+        const ativos = g.leads.filter((l) => l.categoria !== 'Perda' && l.categoria !== 'Contratado');
+        const proxima = ativos.map((l) => l.previsaoFechamento).filter((d): d is string => !!d).sort()[0] ?? null;
+        const ultima = g.leads.reduce((m, l) => (l.atualizadoEm > m ? l.atualizadoEm : m), g.leads[0].atualizadoEm);
+        const funil = CATEGORIAS_GRCC.filter((c) => g.porCategoria[c]).map((c) => `${g.porCategoria[c]} ${c.toLowerCase()}`).join(' · ');
+        const Celula = cabecalhoDeLinha ? 'th' : 'td';
+        const fraco = claro ? 'text-zinc-600' : 'text-zinc-400';
+        return (
+            <tr
+                key={k}
+                onClick={() => alternarCidade(k)}
+                className={`block md:table-row cursor-pointer transition-colors duration-150 ${
+                    semCidade ? 'bg-amber-500/5 hover:bg-amber-500/10' : claro ? 'bg-zinc-50 hover:bg-zinc-100' : 'bg-zinc-900/50 hover:bg-zinc-900'
+                }`}
+            >
+                <Celula
+                    {...(cabecalhoDeLinha ? { scope: 'rowgroup', role: 'rowheader' } : {})}
+                    className="block md:table-cell text-left font-normal px-3 py-2.5 align-top md:overflow-hidden"
+                >
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            alternarCidade(k);
+                        }}
+                        aria-expanded={aberta}
+                        aria-label={`${aberta ? 'Fechar' : 'Abrir'} ${g.rotulo}`}
+                        className="flex items-start gap-1.5 text-left max-w-full cursor-pointer rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                    >
+                        {aberta ? <ChevronDown className="w-4 h-4 mt-0.5 shrink-0 text-zinc-500" aria-hidden /> : <ChevronRight className="w-4 h-4 mt-0.5 shrink-0 text-zinc-500" aria-hidden />}
+                        <span className="min-w-0">
+                            <span className={`block font-medium truncate ${semCidade ? (claro ? 'text-amber-700' : 'text-amber-300') : claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{g.rotulo}</span>
+                            <span className="block text-xs text-zinc-500 tabular-nums">
+                                {g.leads.length} {g.leads.length === 1 ? 'lead' : 'leads'}
+                            </span>
+                        </span>
+                    </button>
+                </Celula>
+                <td colSpan={2} className={`hidden md:table-cell px-3 py-2.5 align-top text-xs ${fraco} md:overflow-hidden`}>
+                    <div className="truncate tabular-nums leading-5" title={`Funil: ${funil}`}>
+                        {funil}
+                    </div>
+                </td>
+                <td className={`hidden md:table-cell px-3 py-2.5 align-top text-right tabular-nums whitespace-nowrap font-medium ${claro ? 'text-zinc-800' : 'text-zinc-200'}`}>
+                    {g.valorAtivo > 0 ? brl(g.valorAtivo) : '—'}
+                </td>
+                <td className={`hidden md:table-cell px-3 py-2.5 align-top whitespace-nowrap ${fraco}`} title="Próxima previsão de fechamento entre os leads em andamento">
+                    {dataBr(proxima)}
+                </td>
+                <td className="hidden md:table-cell px-3 py-2.5 align-top whitespace-nowrap text-zinc-500">{haQuanto(ultima)}</td>
+            </tr>
+        );
+    };
+
     return (
         <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <div role="group" aria-label="Filtrar por categoria" className={`flex flex-wrap items-center gap-1 pb-2 border-b ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
                 {chip('todos', 'Todos')}
                 {CATEGORIAS_GRCC.map((c) => chip(c, c))}
                 {chip('pendencias', 'Pendências')}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-                <div className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-lg p-0.5`}>
+                <div className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-md p-0.5`}>
                     {botaoVisao('lista', 'Lista', List)}
                     {botaoVisao('cidade', 'Por cidade', MapPin)}
                 </div>
                 <div
                     role="group"
                     aria-label="Filtrar por temperatura"
-                    className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-lg p-0.5`}
+                    className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-md p-0.5`}
                 >
-                    <span className={`px-2 text-[11px] font-semibold uppercase tracking-wider ${claro ? 'text-zinc-500' : 'text-zinc-500'}`}>Temperatura</span>
+                    <span className="px-2 text-[11px] font-medium uppercase tracking-wider text-zinc-500">Temperatura</span>
                     {botaoTemp(null)}
                     {TEMPERATURAS_LEAD.map((t) => botaoTemp(t))}
                 </div>
@@ -337,37 +400,38 @@ export function LeadsGrccTable({
                     onClick={baixarExcel}
                     disabled={baixando || visiveis.length === 0}
                     title={`Baixar os ${visiveis.length} leads deste filtro em Excel (.xlsx)`}
-                    className={`ml-auto flex items-center gap-1.5 px-3 h-9 rounded-lg text-xs font-semibold border disabled:opacity-50 ${claro ? 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'}`}
+                    className={`ml-auto flex items-center gap-1.5 px-3 h-9 rounded-md text-xs font-medium border cursor-pointer transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${claro ? 'bg-white border-zinc-200 text-zinc-700 hover:text-zinc-900' : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-zinc-100'}`}
                 >
                     {baixando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                     Baixar Excel ({visiveis.length})
                 </button>
-                <label className={`flex items-center gap-2 ${claro ? 'bg-white' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-lg px-3 h-9 w-full sm:w-80`}>
-                    <Search className="w-4 h-4 text-zinc-500" />
+                <label className={`flex items-center gap-2 ${claro ? 'bg-white' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-md px-3 h-9 w-full sm:w-80 focus-within:ring-2 focus-within:ring-indigo-500`}>
+                    <Search className="w-4 h-4 text-zinc-500 shrink-0" aria-hidden />
                     <input
                         value={busca}
                         onChange={(e) => setBusca(e.target.value)}
+                        aria-label="Buscar leads"
                         placeholder="Buscar cliente, solicitação, município ou andamento"
                         className={`bg-transparent outline-none text-sm ${claro ? 'text-zinc-800' : 'text-zinc-200'} w-full`}
                     />
                 </label>
             </div>
 
-            <div className={`border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-xl overflow-x-auto`}>
+            <div className={`border rounded-lg overflow-x-auto ${claro ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-950'}`}>
                 <table className="w-full text-sm block md:table md:table-fixed">
                     {/* Larguras fixas: as colunas curtas têm tamanho certo e o que sobra vai para Cliente/Solicitação (que truncam com "…"). */}
                     <colgroup className="hidden md:table-column-group">
                         <col />
                         <col />
-                        <col className="w-[148px]" />
-                        <col className="w-[128px]" />
-                        <col className="w-[104px]" />
-                        <col className="w-[120px]" />
+                        <col className="w-[160px]" />
+                        <col className="w-[136px]" />
+                        <col className="w-[108px]" />
+                        <col className="w-[112px]" />
                     </colgroup>
-                    <thead className={`hidden md:table-header-group ${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'text-zinc-600' : 'text-zinc-400'} text-[11px] uppercase tracking-wider`}>
+                    <thead className={`hidden md:table-header-group border-b text-[11px] uppercase tracking-wider ${claro ? 'bg-zinc-50 border-zinc-200 text-zinc-500' : 'bg-zinc-900 border-zinc-800 text-zinc-400'}`}>
                         <tr>
                             {cabecalho('cliente', 'Cliente')}
-                            {cabecalho('solicitacao', 'Solicitação · último andamento')}
+                            {cabecalho('solicitacao', 'Solicitação')}
                             {cabecalho('categoria', 'Categoria')}
                             {cabecalho('valor', 'Valor', 'right')}
                             {cabecalho('previsao', 'Previsão')}
@@ -381,24 +445,7 @@ export function LeadsGrccTable({
                                 const k = `lista:${c.chave}`;
                                 const aberta = abertas.has(k);
                                 return [
-                                    <tr key={k} className={`block md:table-row ${claro ? 'bg-zinc-100' : 'bg-zinc-900/70'}`}>
-                                        <td colSpan={COLUNAS} className="block md:table-cell px-4 py-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => alternarCidade(k)}
-                                                aria-expanded={aberta}
-                                                aria-label={`${aberta ? 'Fechar' : 'Abrir'} ${c.rotulo}`}
-                                                className="inline-flex align-middle mr-1 text-zinc-500 hover:text-zinc-300"
-                                            >
-                                                {aberta ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                            </button>
-                                            <span className={`font-semibold ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{c.rotulo}</span>
-                                            <span className="text-xs text-zinc-500 ml-2">
-                                                {c.leads.length} chamados
-                                                {c.valorAtivo > 0 && ` · ${brl(c.valorAtivo)} em aberto`}
-                                            </span>
-                                        </td>
-                                    </tr>,
+                                    cabecaGrupo(c, k, false),
                                     ...(aberta ? c.leads.map(linha) : []),
                                 ];
                             })}
@@ -406,31 +453,7 @@ export function LeadsGrccTable({
                     ) : (
                         grupos.map((g) => (
                             <tbody key={g.chave} className={`block md:table-row-group divide-y ${claro ? 'divide-zinc-200' : 'divide-zinc-800/60'} border-t ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
-                                <tr className={`block md:table-row ${g.chave === 'Sem cidade' ? 'bg-amber-500/5' : `${claro ? 'bg-zinc-100' : 'bg-zinc-900/70'}`}`}>
-                                    <th scope="rowgroup" role="rowheader" colSpan={COLUNAS} className="block md:table-cell text-left px-4 py-2 font-normal">
-                                        <button
-                                            type="button"
-                                            onClick={() => alternarCidade(g.chave)}
-                                            aria-expanded={abertas.has(g.chave)}
-                                            aria-label={`${abertas.has(g.chave) ? 'Fechar' : 'Abrir'} ${g.rotulo}`}
-                                            className="inline-flex align-middle mr-1 text-zinc-500 hover:text-zinc-300"
-                                        >
-                                            {abertas.has(g.chave) ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </button>
-                                        <span className={`font-semibold ${g.chave === 'Sem cidade' ? `${claro ? 'text-amber-700' : 'text-amber-300'}` : `${claro ? 'text-zinc-900' : 'text-zinc-100'}`}`}>{g.rotulo}</span>
-                                        <span className="text-xs text-zinc-500 ml-2">
-                                            {g.leads.length} {g.leads.length === 1 ? 'lead' : 'leads'}
-                                            {g.valorAtivo > 0 && ` · ${brl(g.valorAtivo)} em aberto`}
-                                        </span>
-                                        <span className="inline-flex flex-wrap gap-1 ml-2 align-middle">
-                                            {(Object.entries(g.porCategoria) as [CategoriaGrcc, number][]).map(([c, n]) => (
-                                                <span key={c} className={`text-[10px] px-1.5 py-0.5 rounded-full border ${cores[c]}`}>
-                                                    {c} {n}
-                                                </span>
-                                            ))}
-                                        </span>
-                                    </th>
-                                </tr>
+                                {cabecaGrupo(g, g.chave, true)}
                                 {abertas.has(g.chave) && g.leads.map(linha)}
                             </tbody>
                         ))

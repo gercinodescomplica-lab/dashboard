@@ -12,7 +12,7 @@ import { MovimentacoesRecentes } from './components/MovimentacoesRecentes';
 import { LeadPainel } from './components/LeadPainel';
 import { ImportarExcelDialog } from './components/ImportarExcelDialog';
 import { GuiaGrcc } from './components/GuiaGrcc';
-import { brl } from './components/formato';
+import { brl, haQuanto } from './components/formato';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { useTemaGrcc } from './tema';
 import { useChaveGrcc } from './KeyGateGrcc';
@@ -117,6 +117,7 @@ export function GrccApp() {
             pipeline: ativos.reduce((acc, l) => acc + l.valor, 0),
             pendencias,
             percentual: total ? Math.round(((total - pendencias) / total) * 100) : 100,
+            contratados: painel.leads.filter((l) => l.categoria === 'Contratado').length,
         };
     }, [painel]);
 
@@ -143,51 +144,52 @@ export function GrccApp() {
         );
     }
 
+    const botaoSecundario = `inline-flex items-center gap-1.5 h-9 px-3 rounded-md border text-sm font-medium cursor-pointer transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+        claro ? 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900' : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100'
+    }`;
+
     const leadAberto = typeof aberto === 'number' ? painel.leads.find((l) => l.id === aberto) ?? null : null;
 
     return (
         <div className={`min-h-screen ${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'text-zinc-900' : 'text-zinc-100'} transition-colors duration-200`}>
             <AppHeader claro={claro} onAlternarTema={alternar} />
-            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-6">
-                <section className={`flex flex-col gap-4 border ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'bg-zinc-50' : 'bg-zinc-900/40'} rounded-2xl p-5`}>
-                    <div className="flex flex-col lg:flex-row lg:items-start gap-4 justify-between">
+            <div className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-5">
+                <header className="flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row md:items-end gap-3 justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold">Leads da GRCC</h1>
-                            <p className={`text-sm ${claro ? 'text-zinc-600' : 'text-zinc-400'} mt-1`}>
-                                {resumo!.total} leads · <span className={`${claro ? 'text-zinc-800' : 'text-zinc-200'} font-semibold`}>{brl(resumo!.pipeline)}</span> em aberto no pipeline da Débora
-                            </p>
+                            <p className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">GRCC · Pipeline da Débora</p>
+                            <h1 className="text-xl font-semibold tracking-tight mt-0.5">Leads</h1>
                         </div>
                         <div className="flex flex-wrap items-center gap-2">
-                            <Button className={claro ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : undefined} onClick={() => setAberto('novo')}>
-                                <Plus className="w-4 h-4" /> Novo lead
-                            </Button>
-                            <button type="button" onClick={() => setImportando(true)} className={`text-sm text-zinc-500 ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-200'} inline-flex items-center gap-1 px-2 h-9`}>
-                                <Upload className="w-4 h-4" /> Importar planilha
+                            {resumo!.pendencias > 0 && (
+                                <button type="button" onClick={completarCadastro} title="Abre um lead por vez com o que falta destacado" className={botaoSecundario}>
+                                    <ListChecks className="w-4 h-4" aria-hidden /> Completar cadastros
+                                </button>
+                            )}
+                            <button type="button" onClick={() => setImportando(true)} className={botaoSecundario}>
+                                <Upload className="w-4 h-4" aria-hidden /> Importar planilha
                             </button>
+                            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white h-9 cursor-pointer" onClick={() => setAberto('novo')}>
+                                <Plus className="w-4 h-4" aria-hidden /> Novo lead
+                            </Button>
                         </div>
                     </div>
 
-                    <div className={`flex flex-col sm:flex-row sm:items-center gap-3 rounded-xl border ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'bg-white' : 'bg-zinc-950/60'} p-3`}>
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-baseline justify-between gap-2 text-sm">
-                                <span className={`${claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
-                                    Cadastros completos: <strong className={`${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{resumo!.total - resumo!.pendencias}</strong> de {resumo!.total}
-                                </span>
-                                <span className="text-xs text-zinc-500">{resumo!.percentual}%</span>
+                    <dl className={`grid grid-cols-2 lg:grid-cols-4 rounded-lg border lg:divide-x ${claro ? 'border-zinc-200 divide-zinc-200 bg-white' : 'border-zinc-800 divide-zinc-800 bg-zinc-900/40'}`}>
+                        {[
+                            { rotulo: 'Leads', valor: String(resumo!.total), nota: `${resumo!.contratados} contratados` },
+                            { rotulo: 'Pipeline em aberto', valor: brl(resumo!.pipeline), nota: 'exclui perdas' },
+                            { rotulo: 'Cadastros completos', valor: `${resumo!.percentual}%`, nota: `${resumo!.total - resumo!.pendencias} de ${resumo!.total}` },
+                            { rotulo: 'Última alteração', valor: painel.movimentacoes[0] ? haQuanto(painel.movimentacoes[0].quando) : '—', nota: painel.movimentacoes[0]?.cliente ?? '' },
+                        ].map((k) => (
+                            <div key={k.rotulo} className="px-4 py-3 min-w-0">
+                                <dt className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">{k.rotulo}</dt>
+                                <dd className={`text-lg font-semibold tabular-nums truncate ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>{k.valor}</dd>
+                                <dd className="text-xs text-zinc-500 truncate">{k.nota}</dd>
                             </div>
-                            <div className={`mt-2 h-2 rounded-full ${claro ? 'bg-zinc-200' : 'bg-zinc-800'} overflow-hidden`} role="progressbar" aria-valuenow={resumo!.percentual} aria-valuemin={0} aria-valuemax={100} aria-label="Cadastros completos">
-                                <div className="h-full bg-emerald-500 transition-all" style={{ width: `${resumo!.percentual}%` }} />
-                            </div>
-                        </div>
-                        {resumo!.pendencias > 0 ? (
-                            <Button className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold" onClick={completarCadastro}>
-                                <ListChecks className="w-4 h-4" /> Completar cadastro ({resumo!.pendencias})
-                            </Button>
-                        ) : (
-                            <span className={`text-sm ${claro ? 'text-emerald-600' : 'text-emerald-400'}`}>Tudo completo</span>
-                        )}
-                    </div>
-                </section>
+                        ))}
+                    </dl>
+                </header>
 
                 <GuiaGrcc />
 
@@ -195,10 +197,14 @@ export function GrccApp() {
                     <div className="min-w-0">
                         <LeadsGrccTable leads={painel.leads} onAbrir={(id) => setAberto(id)} />
                     </div>
-                    <aside className={`border ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'bg-zinc-50' : 'bg-zinc-900/40'} rounded-2xl p-4 h-fit min-w-0`}>
-                        <h2 className={`text-xs font-semibold uppercase tracking-wider ${claro ? 'text-zinc-600' : 'text-zinc-400'}`}>Últimas alterações</h2>
-                        <p className="text-[11px] text-zinc-500 mb-3">Clique para abrir o lead.</p>
-                        <MovimentacoesRecentes itens={painel.movimentacoes} onAbrir={(id) => setAberto(id)} claro={claro} />
+                    <aside aria-labelledby="titulo-alteracoes" className={`border rounded-lg h-fit min-w-0 ${claro ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-900/40'}`}>
+                        <div className={`px-4 py-3 border-b ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
+                            <h2 id="titulo-alteracoes" className={`text-sm font-semibold ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>Últimas alterações</h2>
+                            <p className="text-xs text-zinc-500">Clique para abrir o lead</p>
+                        </div>
+                        <div className="p-2">
+                            <MovimentacoesRecentes itens={painel.movimentacoes} onAbrir={(id) => setAberto(id)} claro={claro} />
+                        </div>
                     </aside>
                 </div>
             </div>
@@ -224,7 +230,7 @@ export function GrccApp() {
             />
 
             {aviso && (
-                <div role="status" className={`fixed bottom-6 right-6 ${claro ? 'bg-white' : 'bg-zinc-900'} border border-emerald-500/40 ${claro ? 'text-emerald-700' : 'text-emerald-300'} text-sm px-4 py-3 rounded-xl shadow-xl`}>
+                <div role="status" className={`fixed bottom-6 right-6 ${claro ? 'bg-white' : 'bg-zinc-900'} border border-emerald-500/40 ${claro ? 'text-emerald-700' : 'text-emerald-300'} text-sm px-4 py-3 rounded-lg shadow-lg`}>
                     {aviso}
                 </div>
             )}

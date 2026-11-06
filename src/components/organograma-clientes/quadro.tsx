@@ -128,13 +128,11 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                         onChange={(e) => setBusca(e.target.value)}
                     />
                 </div>
-                <p className={cn('text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')} aria-live="polite">
-                    {termo
-                        ? `${encontrados} cliente(s) encontrado(s).`
-                        : mover
-                          ? 'Para mudar um cliente de carteira, arraste-o ou use o botão … ao lado dele.'
-                          : 'Só leitura: quem muda clientes de carteira é o admin, em Configurações.'}
-                </p>
+                {(termo || mover) && (
+                    <p className={cn('text-sm', claro ? 'text-zinc-600' : 'text-zinc-400')} aria-live="polite">
+                        {termo ? `${encontrados} cliente(s) encontrado(s).` : 'Para mudar um cliente de carteira, arraste-o ou use o botão … ao lado dele.'}
+                    </p>
+                )}
             </div>
             {erro && <Notice tom="perigo">{erro}</Notice>}
             {feito && (
@@ -184,21 +182,24 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
                         ))}
                     </div>
 
-                    <section
-                        aria-label="Sem carteira"
-                        {...propsDoAlvo(alvoSem)}
-                        className={cn('mt-6 rounded-xl border p-3', claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-700 bg-zinc-800/40', alvoSem?.destacado && 'bg-indigo-500/10 ring-2 ring-indigo-500')}
-                    >
-                        <header className="mb-2 flex flex-wrap items-center gap-2">
-                            <h3 className={cn('text-sm font-semibold', claro ? 'text-zinc-900' : 'text-zinc-100')}>Sem carteira</h3>
-                            <span className={cn('text-xs font-semibold tabular-nums', claro ? 'text-zinc-600' : 'text-zinc-400')}>{achados.length}</span>
-                        </header>
-                        <ListaDeClientes vazia={termo ? 'Nenhum cliente sem carteira com essa busca.' : 'Todo cliente ativo tem carteira.'} claro={claro}>
-                            {achados.map((c) => (
-                                <ItemDoCliente key={c.id} cliente={c} de={null} mover={mover} claro={claro} />
-                            ))}
-                        </ListaDeClientes>
-                    </section>
+                    {/* Só pra quem move (admin): tela de leitura não mostra "sem carteira". Some também quando vazia; volta durante o arraste, único jeito de tirar cliente da carteira. */}
+                    {podeMover && (achados.length > 0 || arraste) && (
+                        <section
+                            aria-label="Sem carteira"
+                            {...propsDoAlvo(alvoSem)}
+                            className={cn('mt-6 rounded-xl border p-3', claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-700 bg-zinc-800/40', alvoSem?.destacado && 'bg-indigo-500/10 ring-2 ring-indigo-500')}
+                        >
+                            <header className="mb-2 flex flex-wrap items-center gap-2">
+                                <h3 className={cn('text-sm font-semibold', claro ? 'text-zinc-900' : 'text-zinc-100')}>Sem carteira</h3>
+                                <span className={cn('text-xs font-semibold tabular-nums', claro ? 'text-zinc-600' : 'text-zinc-400')}>{achados.length}</span>
+                            </header>
+                            <ListaDeClientes vazia={termo ? 'Nenhum cliente sem carteira com essa busca.' : 'Todo cliente ativo tem carteira.'} claro={claro}>
+                                {achados.map((c) => (
+                                    <ItemDoCliente key={c.id} cliente={c} de={null} mover={mover} claro={claro} />
+                                ))}
+                            </ListaDeClientes>
+                        </section>
+                    )}
 
                     <div className={cn('mt-8 flex flex-wrap items-center justify-between gap-4 rounded-md border p-3', claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-700 bg-zinc-800/40')}>
                         <ul className="flex flex-wrap items-center gap-4" aria-label="Legenda">

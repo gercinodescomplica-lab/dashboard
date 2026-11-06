@@ -24,6 +24,10 @@ describe('OrganogramaClientesView', () => {
         expect(within(cartao(/^Barone/)).getByText('SMT')).toBeInTheDocument();
         expect(screen.getByText('órgãos atendidos').parentElement).toHaveTextContent('2');
         expect(screen.getByText('KAM, contas-chave')).toBeInTheDocument();
+        expect(screen.queryByRole('region', { name: 'Sem carteira' })).not.toBeInTheDocument();
+    });
+    it('admin vê "Sem carteira"; leitura não', () => {
+        render(<OrganogramaClientesView dados={dados} podeMover moverAction={mover} />);
         expect(screen.getByRole('region', { name: 'Sem carteira' })).toHaveTextContent('SMC');
     });
     it('busca sem acento no quadro todo', async () => {

@@ -10,7 +10,7 @@ const PASSOS = [
     {
         Icone: ListChecks,
         titulo: 'Complete os cadastros',
-        texto: 'Clique em "Completar cadastro": abre um lead por vez, com o que falta destacado em amarelo. Pode pular e voltar depois.',
+        texto: 'Clique em "Completar cadastros": abre um lead por vez, com o que falta destacado em amarelo. Pode pular e voltar depois.',
     },
     {
         Icone: MessageSquarePlus,
@@ -55,19 +55,21 @@ export function GuiaGrcc() {
     }
 
     return (
-        <section aria-label="Como funciona" className="relative grid grid-cols-1 md:grid-cols-3 gap-3 rounded-2xl border border-indigo-500/30 bg-indigo-500/5 p-4 pr-10">
+        <section aria-label="Como funciona" className={`relative grid grid-cols-1 md:grid-cols-3 gap-4 rounded-lg border p-4 pr-10 ${claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-900/40'}`}>
             {PASSOS.map(({ Icone, titulo, texto }, i) => (
                 <div key={titulo} className="flex gap-3">
-                    <span className={`shrink-0 w-7 h-7 rounded-full bg-indigo-500/20 ${claro ? 'text-indigo-700' : 'text-indigo-300'} text-xs font-bold flex items-center justify-center`}>{i + 1}</span>
+                    <span className={`shrink-0 w-8 h-8 rounded-md border flex items-center justify-center ${claro ? 'border-zinc-200 bg-white text-zinc-700' : 'border-zinc-700 bg-zinc-900 text-zinc-300'}`}>
+                        <Icone className="w-4 h-4" aria-hidden />
+                    </span>
                     <div>
-                        <p className={`text-sm font-semibold ${claro ? 'text-zinc-900' : 'text-zinc-100'} flex items-center gap-1.5`}>
-                            <Icone className={`w-4 h-4 ${claro ? 'text-indigo-700' : 'text-indigo-300'}`} /> {titulo}
+                        <p className={`text-sm font-medium ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>
+                            <span className="text-zinc-500 tabular-nums">{i + 1}.</span> {titulo}
                         </p>
                         <p className={`text-xs ${claro ? 'text-zinc-600' : 'text-zinc-400'} mt-0.5`}>{texto}</p>
                     </div>
                 </div>
             ))}
-            <button type="button" onClick={() => alternar(true)} aria-label="Fechar guia" title="Entendi" className={`absolute top-3 right-3 p-1 text-zinc-500 ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-200'}`}>
+            <button type="button" onClick={() => alternar(true)} aria-label="Fechar guia" title="Entendi" className={`absolute top-2 right-2 p-1.5 rounded cursor-pointer text-zinc-500 ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-200'}`}>
                 <X className="w-4 h-4" />
             </button>
         </section>

@@ -1,5 +1,5 @@
 import { db } from './index';
-import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn, leadGrcc, leadGrccHistorico, dropdownOptions } from './schema';
+import { managers, projects, cx, visits, contrato, proposta, systemSettings, churn, leadGrcc, leadGrccHistorico, dropdownOptions, storeProducts } from './schema';
 import { eq, like, desc, or, inArray, and, isNull, sql } from 'drizzle-orm';
 import { Manager, CXItem, Visit, ChurnItem } from '../types/manager';
 import { clientesAtendidosPorGerencia } from '@/db/carteira';
@@ -122,6 +122,58 @@ export async function fetchCXByManager(managerId: string): Promise<CXItem[]> {
         manualEditAt: r.manualEditAt,
         clienteId: r.clienteId ?? null,
     }));
+}
+
+// Board de CX pra TODOS os gerentes juntos, com o nome do gerente já resolvido —
+// só os campos que as ferramentas de leitura do assistente de IA usam
+// (listar_bloqueios_cx / listar_itens_cx).
+export type CXBoardItem = CXItem & { managerId: string; managerName: string };
+
+export async function fetchAllCXItemsForBoard(): Promise<CXBoardItem[]> {
+    const rows = await db
+        .select({
+            id: cx.id,
+            managerId: cx.managerId,
+            managerName: managers.name,
+            cliente: cx.cliente,
+            titulo: cx.titulo,
+            problema: cx.problema,
+            solucaoProposta: cx.solucaoProposta,
+            status: cx.status,
+            criticidade: cx.criticidade,
+            tipo: cx.tipo,
+            categoria: cx.categoria,
+            prazoLimite: cx.prazoLimite,
+            externalBlockerLabel: cx.externalBlockerLabel,
+        })
+        .from(cx)
+        .innerJoin(managers, eq(cx.managerId, managers.id))
+        .orderBy(desc(cx.createdAt));
+
+    return rows.map((r) => ({
+        ...r,
+        status: r.status as CXItem['status'],
+        criticidade: (r.criticidade as CXItem['criticidade']) ?? 'baixa',
+        tipo: (r.tipo as CXItem['tipo']) ?? 'tarefa',
+    }));
+}
+
+export type StoreProductSummary = {
+    id: number;
+    name: string;
+    directorate: string;
+    status: string;
+    phase: string;
+    marketplace: boolean;
+    category: string;
+    responsavel: string | null;
+};
+
+// Catálogo "Store" (produtos/serviços da DRM) — usado pela tela /pipeline
+// (via getStoreProducts, que mapeia pra chaves curtas pra UI) e pelas
+// ferramentas de leitura da IA (nomes de campo legíveis).
+export async function fetchAllStoreProducts(): Promise<StoreProductSummary[]> {
+    return db.select().from(storeProducts);
 }
 
 /**

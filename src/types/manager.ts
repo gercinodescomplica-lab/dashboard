@@ -53,6 +53,12 @@ export interface CXItem {
   criticidade?: CXCriticidade;
   isVisible?: boolean;
   createdAt?: string;
+  // tipo/categoria/prazoLimite/externalBlockerLabel: usados pelas ferramentas de
+  // leitura do assistente de IA (listar_bloqueios_cx / listar_itens_cx).
+  tipo?: 'tarefa' | 'bloqueio';
+  categoria?: string | null;
+  prazoLimite?: string | null;
+  externalBlockerLabel?: string | null;
   // Vínculo com a tarefa do Planner que originou este item (null/undefined
   // para itens criados manualmente no Settings). Preservado no round-trip
   // editar→salvar para não quebrar a sincronização — ver saveCXData.

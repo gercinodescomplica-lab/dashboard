@@ -48,6 +48,30 @@ interface ModalState {
 
 const CLOSED_MODAL: ModalState = { open: false, title: '', subtitle: '', projects: [], total: 0, accentColor: 'text-indigo-400' };
 
+type CalcColorKey = 'herdados' | 'novos' | 'pipeline' | 'blue' | 'violet';
+
+const CALC_COLOR_STYLES: Record<CalcColorKey, { fill: string; text: string; textLight: string; badge: string; badgeLight: string }> = {
+    herdados: { fill: 'bg-zinc-500', text: 'text-zinc-300', textLight: 'text-zinc-600', badge: 'bg-zinc-600/30 text-zinc-300', badgeLight: 'bg-zinc-200 text-zinc-700' },
+    novos:    { fill: 'bg-emerald-500', text: 'text-emerald-400', textLight: 'text-emerald-600', badge: 'bg-emerald-500/15 text-emerald-400', badgeLight: 'bg-emerald-50 text-emerald-700' },
+    pipeline: { fill: 'bg-indigo-500', text: 'text-indigo-400', textLight: 'text-indigo-600', badge: 'bg-indigo-500/15 text-indigo-400', badgeLight: 'bg-indigo-50 text-indigo-700' },
+    blue:     { fill: 'bg-blue-500', text: 'text-blue-400', textLight: 'text-blue-600', badge: 'bg-blue-500/15 text-blue-400', badgeLight: 'bg-blue-50 text-blue-700' },
+    violet:   { fill: 'bg-violet-500', text: 'text-violet-400', textLight: 'text-violet-600', badge: 'bg-violet-500/15 text-violet-400', badgeLight: 'bg-violet-50 text-violet-700' },
+};
+
+interface CalcRow { label: string; raw: number; colorKey: CalcColorKey }
+
+interface CalcModalState {
+    open: boolean;
+    title: string;
+    subtitle: string;
+    formula: string;
+    equation?: { label: string; colorKey: CalcColorKey; active: boolean }[];
+    rows: CalcRow[];
+    total: number;
+}
+
+const CLOSED_CALC_MODAL: CalcModalState = { open: false, title: '', subtitle: '', formula: '', rows: [], total: 0 };
+
 const Q_DESCRIPTIONS: Record<QKey, { name: string; period: string }> = {
     q1: { name: '1º Trimestre', period: 'Jan – Mar' },
     q2: { name: '2º Trimestre', period: 'Abr – Jun' },
@@ -97,6 +121,7 @@ const TEMP_META: Record<Temp, { label: string; emoji: string; accent: string; ba
 
 export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, lightActive = false }: DRMOverviewProps) {
     const [modal, setModal] = useState<ModalState>(CLOSED_MODAL);
+    const [calcModal, setCalcModal] = useState<CalcModalState>(CLOSED_CALC_MODAL);
 
     // Tokens de cor do tema claro (clone dos prints). Escuro nunca muda — é só o valor literal de sempre.
     const T = {
@@ -246,6 +271,91 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
         return parts.join(' + ') || 'Valor Selecionado';
     })();
 
+    // ── Calc Explanation Modal Openers ──────────────────────────────────────
+    function openTierCalc(m: (typeof managersWithRank)[number]) {
+        setCalcModal({
+            open: true,
+            title: `${m.name} (${m.role}) — #${m.rank} na pirâmide`,
+            subtitle: `Meta 2026: ${formatCurrency(m.meta)} · Atingimento: ${formatPercentage(m.achievementPct)} (${m.perfStatus})`,
+            formula: 'A posição na pirâmide é a ordem decrescente do Total Selecionado entre os gerentes.',
+            equation: [
+                { label: 'Herdados', colorKey: 'herdados', active: activeMetrics.herdados },
+                { label: 'Concluídos', colorKey: 'novos', active: activeMetrics.novos },
+                { label: 'Pipeline', colorKey: 'pipeline', active: activeMetrics.pipeline },
+            ],
+            rows: [
+                { label: 'Contratos Herdados', raw: m.herdados, colorKey: 'herdados' },
+                { label: 'Novos Negócios Concluídos (pro-rata)', raw: m.novos, colorKey: 'novos' },
+                { label: 'Pipeline em Aberto', raw: m.pipelineVal, colorKey: 'pipeline' },
+            ],
+            total: m.totalSelected,
+        });
+    }
+
+    const KPI_CALC_CONFIG = {
+        herdados: {
+            title: '2. Contratos Herdados',
+            total: totalHerdados,
+            colorKey: 'herdados' as CalcColorKey,
+            formula: 'Soma de "Contratos Herdados" (ou Contratado, quando não há herdado específico) de cada gerente.',
+            getValue: (m: typeof activeManagers[number]) => m.contratosHerdados ?? m.contratado,
+        },
+        novosTCV: {
+            title: '3. Novos Negócios Concluídos (Valor Total)',
+            total: totalNovosNegociosTCV,
+            colorKey: 'novos' as CalcColorKey,
+            formula: 'Soma do valor total (TCV, sem pro-rata) de todos os projetos marcados como "contratado" no pipeline de cada gerente.',
+            getValue: (m: typeof activeManagers[number]) => sumNovosNegocios(m.pipeline),
+        },
+        novosProRata: {
+            title: '4. Novos Negócios Concluídos (Pro-rata 2026)',
+            total: totalNovosNegociosProRata,
+            colorKey: 'novos' as CalcColorKey,
+            formula: 'Soma do campo "Novos Negócios" (receita pro-rata reconhecida em 2026) de cada gerente.',
+            getValue: (m: typeof activeManagers[number]) => m.novosNegocios ?? 0,
+        },
+        contratado2026: {
+            title: '5. Contratado 2026',
+            total: totalContratado2026,
+            colorKey: 'blue' as CalcColorKey,
+            formula: 'Soma de "Contratado 2026" (ou Contratado, quando não definido) de cada gerente: Herdados + parcela pro-rata 2026 dos novos negócios.',
+            getValue: (m: typeof activeManagers[number]) => m.contratado2026 ?? m.contratado,
+        },
+        forecast: {
+            title: '6. Forecast Pro-rata 2026',
+            total: totalForecastProRata2026,
+            colorKey: 'violet' as CalcColorKey,
+            formula: 'Soma do Forecast Pro-rata 2026 de cada gerente: Contratado 2026 efetivo + pro-rata 2026 do pipeline em aberto (quente/morno/frio).',
+            getValue: (m: typeof activeManagers[number]) => m.forecastProRata2026 ?? calcForecastProRata2026(m.contratado, m.pipeline),
+        },
+    } as const;
+
+    function openKpiCalc(kind: keyof typeof KPI_CALC_CONFIG) {
+        const cfg = KPI_CALC_CONFIG[kind];
+        const rows: CalcRow[] = activeManagers
+            .map((m) => ({ label: `${m.name} (${m.role})`, raw: cfg.getValue(m), colorKey: cfg.colorKey }))
+            .sort((a, b) => b.raw - a.raw);
+        setCalcModal({
+            open: true,
+            title: cfg.title,
+            subtitle: `Total: ${formatCurrency(cfg.total)}`,
+            formula: cfg.formula,
+            rows,
+            total: cfg.total,
+        });
+    }
+
+    function openFaturamentoCalc() {
+        setCalcModal({
+            open: true,
+            title: '1. Faturamento 2025',
+            subtitle: formatCurrency(faturamento2025),
+            formula: 'Valor único definido manualmente — não é um somatório dos gerentes.',
+            rows: [],
+            total: faturamento2025,
+        });
+    }
+
     // ── Modal Openers ─────────────────────────────────────────────────────────
     function openQuarterModal(qKey: QKey, label: string, total: number) {
         const projects: ProjectWithMeta[] = [];
@@ -343,8 +453,9 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                                     <Tooltip key={m.id}>
                                         <TooltipTrigger asChild>
                                             <div
-                                                className="transition-all duration-300 flex items-center justify-center cursor-help group py-0 my-0"
+                                                className="transition-all duration-300 flex items-center justify-center cursor-pointer group py-0 my-0"
                                                 style={{ width: `${widthPct}%` }}
+                                                onClick={() => openTierCalc(m)}
                                             >
                                                 {/* Seamless tier bar without extra padding */}
                                                 <div className={`w-full h-8 relative flex items-center justify-between px-3 transition-all duration-200 border-x border-t overflow-hidden ${T.tierBorder} ${
@@ -447,54 +558,66 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                                 Informações Consolidadas
                             </h4>
 
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="1. Faturamento 2025"
-                                value={formatCurrency(faturamento2025)}
-                                accent="text-cyan-400"
-                                accentLight="text-cyan-600"
-                                tip="Faturamento total realizado no ano de 2025. Editável nas Configurações."
-                            />
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="2. Contratos Herdados"
-                                value={formatCurrency(totalHerdados)}
-                                accent="text-zinc-300"
-                                accentLight="text-zinc-700"
-                                tip="Base de contratos legados trazida de anos anteriores."
-                            />
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="3. Novos Negócios Concluídos (Valor Total)"
-                                value={formatCurrency(totalNovosNegociosTCV)}
-                                accent="text-emerald-400"
-                                accentLight="text-emerald-600"
-                                tip="Valor total acumulado de novos contratos fechados (TCV total sem pro-rata)."
-                            />
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="4. Novos Negócios Concluídos (Pro-rata 2026)"
-                                value={formatCurrency(totalNovosNegociosProRata)}
-                                accent="text-emerald-300"
-                                accentLight="text-emerald-500"
-                                tip="Receita pro-rata 2026 reconhecida dos novos contratos fechados no pipeline."
-                            />
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="5. Contratado 2026"
-                                value={formatCurrency(totalContratado2026)}
-                                accent="text-blue-400"
-                                accentLight="text-blue-600"
-                                tip="Herdados + parcela pro-rata 2026 dos novos negócios."
-                            />
-                            <KpiCardSide
-                                lightActive={lightActive}
-                                label="6. Forecast Pro-rata 2026"
-                                value={formatCurrency(totalForecastProRata2026)}
-                                accent="text-violet-400"
-                                accentLight="text-violet-600"
-                                tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline."
-                            />
+                            <div onClick={openFaturamentoCalc} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="1. Faturamento 2025"
+                                    value={formatCurrency(faturamento2025)}
+                                    accent="text-cyan-400"
+                                    accentLight="text-cyan-600"
+                                    tip="Faturamento total realizado no ano de 2025. Editável nas Configurações. Clique para detalhes."
+                                />
+                            </div>
+                            <div onClick={() => openKpiCalc('herdados')} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="2. Contratos Herdados"
+                                    value={formatCurrency(totalHerdados)}
+                                    accent="text-zinc-300"
+                                    accentLight="text-zinc-700"
+                                    tip="Base de contratos legados trazida de anos anteriores. Clique para ver por gerente."
+                                />
+                            </div>
+                            <div onClick={() => openKpiCalc('novosTCV')} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="3. Novos Negócios Concluídos (Valor Total)"
+                                    value={formatCurrency(totalNovosNegociosTCV)}
+                                    accent="text-emerald-400"
+                                    accentLight="text-emerald-600"
+                                    tip="Valor total acumulado de novos contratos fechados (TCV total sem pro-rata). Clique para ver por gerente."
+                                />
+                            </div>
+                            <div onClick={() => openKpiCalc('novosProRata')} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="4. Novos Negócios Concluídos (Pro-rata 2026)"
+                                    value={formatCurrency(totalNovosNegociosProRata)}
+                                    accent="text-emerald-300"
+                                    accentLight="text-emerald-500"
+                                    tip="Receita pro-rata 2026 reconhecida dos novos contratos fechados no pipeline. Clique para ver por gerente."
+                                />
+                            </div>
+                            <div onClick={() => openKpiCalc('contratado2026')} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="5. Contratado 2026"
+                                    value={formatCurrency(totalContratado2026)}
+                                    accent="text-blue-400"
+                                    accentLight="text-blue-600"
+                                    tip="Herdados + parcela pro-rata 2026 dos novos negócios. Clique para ver por gerente."
+                                />
+                            </div>
+                            <div onClick={() => openKpiCalc('forecast')} className="cursor-pointer transition-transform hover:scale-[1.01]">
+                                <KpiCardSide
+                                    lightActive={lightActive}
+                                    label="6. Forecast Pro-rata 2026"
+                                    value={formatCurrency(totalForecastProRata2026)}
+                                    accent="text-violet-400"
+                                    accentLight="text-violet-600"
+                                    tip="Projeção total de receita reconhecida em 2026 considerando todo o pipeline. Clique para ver por gerente."
+                                />
+                            </div>
                             <div
                                 onClick={() => setIsChurnModalOpen(true)}
                                 className="cursor-pointer transition-transform hover:scale-[1.01]"
@@ -690,6 +813,72 @@ export function DRMOverview({ managers, year, faturamento2025 = 630386397.11, li
                         <span className="text-xs text-zinc-500 uppercase tracking-widest">Total Churn DRM</span>
                         <span className="text-lg font-bold font-mono text-red-400">{formatCurrency(totalChurnVal)}</span>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* ── Calc Explanation Modal ─────────────────────────── */}
+            <Dialog open={calcModal.open} onOpenChange={(v) => !v && setCalcModal(CLOSED_CALC_MODAL)}>
+                <DialogContent className={`border max-w-xl max-h-[80vh] flex flex-col p-0 overflow-hidden ${T.modalBg}`}>
+                    <DialogHeader className={`px-6 pt-6 pb-4 border-b shrink-0 ${T.modalDivider}`}>
+                        <DialogTitle className="text-lg font-bold">{calcModal.title}</DialogTitle>
+                        <p className={`text-sm mt-0.5 ${T.subtext}`}>{calcModal.subtitle}</p>
+                    </DialogHeader>
+
+                    <div className="overflow-y-auto flex-1 px-6 py-4 flex flex-col gap-4">
+                        {calcModal.equation && (
+                            <div className="flex items-center flex-wrap gap-1.5 text-xs">
+                                {calcModal.equation.map((term, i) => {
+                                    const c = CALC_COLOR_STYLES[term.colorKey];
+                                    return (
+                                        <span key={term.label} className="flex items-center gap-1.5">
+                                            {i > 0 && <span className={T.subtext}>+</span>}
+                                            <span className={`px-2.5 py-1 rounded-full font-bold ${term.active ? (lightActive ? c.badgeLight : c.badge) : `line-through opacity-40 ${lightActive ? 'bg-zinc-100 text-zinc-500' : 'bg-zinc-800 text-zinc-500'}`}`}>
+                                                {term.label}
+                                            </span>
+                                        </span>
+                                    );
+                                })}
+                                <span className={T.subtext}>=</span>
+                                <span className={`px-2.5 py-1 rounded-full font-bold ${lightActive ? 'bg-amber-50 text-amber-700' : 'bg-amber-500/15 text-amber-400'}`}>Total Selecionado</span>
+                            </div>
+                        )}
+
+                        <div>
+                            <p className={`text-xs font-bold uppercase tracking-widest mb-1 ${T.kpiHeading}`}>Como é calculado</p>
+                            <p className={`text-sm leading-relaxed ${T.heading}`}>{calcModal.formula}</p>
+                        </div>
+
+                        {calcModal.rows.length > 0 && (
+                            <div>
+                                <p className={`text-xs font-bold uppercase tracking-widest mb-2 ${T.kpiHeading}`}>Composição — quem pesa mais</p>
+                                <div className="flex flex-col gap-1.5">
+                                    {calcModal.rows.map((r, i) => {
+                                        const c = CALC_COLOR_STYLES[r.colorKey];
+                                        const pct = calcModal.total > 0 ? (r.raw / calcModal.total) * 100 : 0;
+                                        return (
+                                            <div key={i} className={`relative border rounded-lg px-3 py-2 overflow-hidden ${T.modalItem}`}>
+                                                <div className={`absolute inset-y-0 left-0 opacity-20 ${c.fill}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                                                <div className="relative z-10 flex items-center justify-between gap-3 text-sm">
+                                                    <span className={T.modalItemTitle}>
+                                                        {r.label}
+                                                        <span className={`text-[11px] font-mono ml-1.5 ${T.modalItemSub}`}>{pct.toFixed(1)}%</span>
+                                                    </span>
+                                                    <span className={`font-mono font-bold shrink-0 ${lightActive ? c.textLight : c.text}`}>{formatCurrency(r.raw)}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {calcModal.rows.length > 0 && (
+                        <div className={`px-6 py-4 border-t shrink-0 flex justify-between items-center ${T.modalDivider}`}>
+                            <span className="text-xs text-zinc-500 uppercase tracking-widest">Total</span>
+                            <span className={`text-lg font-bold font-mono ${lightActive ? 'text-amber-700' : 'text-amber-400'}`}>{formatCurrency(calcModal.total)}</span>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
 

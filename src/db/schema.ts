@@ -81,6 +81,12 @@ export const cx = sqliteTable('cx', {
     manualEditAt: text('manual_edit_at'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
     clienteId: text('cliente_id').references(() => cliente.id, { onDelete: 'set null' }),
+    // Campos usados pelas ferramentas de leitura do assistente de IA (listar_bloqueios_cx /
+    // listar_itens_cx) para distinguir bloqueio de tarefa de acompanhamento comum.
+    tipo: text('tipo', { enum: ['tarefa', 'bloqueio'] }).notNull().default('tarefa'),
+    categoria: text('categoria'),
+    prazoLimite: text('prazo_limite'),
+    externalBlockerLabel: text('external_blocker_label'),
 });
 
 export const visits = sqliteTable('visits', {

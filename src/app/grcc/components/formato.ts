@@ -1,6 +1,7 @@
 import { ROTULO_CAMPO, ROTULO_TEMPERATURA, type CategoriaGrcc, type Mudanca, type TemperaturaLead } from '@/lib/grcc/tipos';
 import type { OpportunityTemperature } from '@/types/manager';
 import { formatCurrency } from '@/lib/format';
+import { CloudSun, Flame, Snowflake, type LucideIcon } from 'lucide-react';
 
 export function brl(n: number): string {
     return formatCurrency(n);
@@ -63,4 +64,4 @@ export const corTemperatura = (claro: boolean): Partial<Record<OpportunityTemper
     perdido: `bg-zinc-500/10 ${claro ? 'text-zinc-600' : 'text-zinc-400'} border-zinc-500/30`,
 });
 
-export const ICONE_TEMPERATURA: Partial<Record<OpportunityTemperature, string>> = { quente: '🔥', morno: '🌤️', frio: '❄️' };
+export const ICONE_TEMPERATURA: Partial<Record<OpportunityTemperature, LucideIcon>> = { quente: Flame, morno: CloudSun, frio: Snowflake };

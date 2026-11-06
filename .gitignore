@@ -48,3 +48,7 @@ next-env.d.ts
 CLAUDE.md
 CLAUDE.local.md
 .mcp.json
+
+# worktrees locais e saídas do Claude
+/.worktrees/
+/Claude outputs/

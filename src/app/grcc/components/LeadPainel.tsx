@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Eye, EyeOff, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Check, Eye, EyeOff, Info, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { CAMPOS_LEAD, LEAD_VAZIO, ROTULO_CAMPO, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CampoLista, type ContatoLead, type EventoHistorico, type LeadGrcc, type LeadGrccDados } from '@/lib/grcc/tipos';
@@ -41,7 +41,7 @@ function numeroDoTexto(t: string): number {
 function classeCampo(claro: boolean, falta?: boolean) {
     const tema = claro ? '[color-scheme:light] bg-white text-zinc-900' : '[color-scheme:dark] bg-zinc-950 text-zinc-100';
     const borda = falta ? 'border-amber-500/60' : claro ? 'border-zinc-200' : 'border-zinc-800';
-    return `w-full h-9 rounded-md border px-3 text-sm outline-none focus:border-indigo-500 disabled:opacity-50 ${tema} ${borda}`;
+    return `w-full h-9 rounded-md border px-3 text-sm outline-none transition-colors duration-150 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed ${tema} ${borda}`;
 }
 
 function Campo({
@@ -64,17 +64,22 @@ function Campo({
     const claro = useClaro();
     return (
         <div className="flex flex-col gap-1">
-            <label htmlFor={id} className={`text-xs font-semibold ${falta ? `${claro ? 'text-amber-700' : 'text-amber-300'}` : `${claro ? 'text-zinc-600' : 'text-zinc-400'}`}`}>
-                {rotulo}
-                {obrigatorio && ' *'}
-            </label>
+            <div className="flex items-center gap-1">
+                <label htmlFor={id} className={`text-xs font-medium ${falta ? (claro ? 'text-amber-700' : 'text-amber-300') : claro ? 'text-zinc-700' : 'text-zinc-300'}`}>
+                    {rotulo}
+                    {obrigatorio && <span className="text-zinc-400"> *</span>}
+                </label>
+                {dica && (
+                    <span title={dica} role="img" aria-label={`Ajuda: ${dica}`} className="text-zinc-400 hover:text-zinc-600 cursor-help">
+                        <Info className="w-3.5 h-3.5" aria-hidden />
+                    </span>
+                )}
+            </div>
             {children}
             {erro ? (
                 <p className={`text-xs ${claro ? 'text-red-600' : 'text-red-400'}`}>{erro}</p>
-            ) : falta ? (
-                <p className={`text-[11px] ${claro ? 'text-amber-600' : 'text-amber-400'}`}>Falta preencher para contar certo no pipeline.</p>
             ) : (
-                dica && <p className="text-[11px] text-zinc-500">{dica}</p>
+                falta && <p className={`text-[11px] ${claro ? 'text-amber-600' : 'text-amber-400'}`}>Falta preencher para contar certo no pipeline.</p>
             )}
         </div>
     );
@@ -83,7 +88,7 @@ function Campo({
 function Secao({ titulo, children }: { titulo: string; children: React.ReactNode }) {
     return (
         <section className="flex flex-col gap-3">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{titulo}</h3>
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">{titulo.replace(/^\d+ · /, '')}</h3>
             {children}
         </section>
     );
@@ -306,24 +311,24 @@ export function LeadPainel({
 
     return (
         <Dialog open={aberto} onOpenChange={(o) => !o && onFechar()}>
-            <DialogContent className={`sm:max-w-3xl max-h-[92vh] flex flex-col ${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'text-zinc-900' : 'text-zinc-100'} p-0 gap-0`}>
-                <DialogHeader className={`px-6 pt-6 pb-3 text-left border-b ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
+            <DialogContent className={`sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden ${claro ? 'bg-white' : 'bg-zinc-950'} ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'text-zinc-900' : 'text-zinc-100'} p-0 gap-0`}>
+                <DialogHeader className={`px-6 pt-5 text-left border-b gap-1.5 ${lead ? 'pb-0' : 'pb-4'} ${claro ? 'border-zinc-200' : 'border-zinc-800'}`}>
                     {faixa && <p className={`text-[11px] font-semibold uppercase tracking-wider ${claro ? 'text-indigo-600' : 'text-indigo-400'}`}>{faixa}</p>}
-                    <DialogTitle className={`${claro ? 'text-zinc-900' : 'text-zinc-100'} pr-6`}>{lead ? lead.cliente : 'Novo lead'}</DialogTitle>
-                    <DialogDescription className={`${claro ? 'text-zinc-600' : 'text-zinc-400'}`}>
+                    <DialogTitle className={`text-lg font-semibold tracking-tight ${claro ? 'text-zinc-900' : 'text-zinc-100'} pr-8`}>{lead ? lead.cliente : 'Novo lead'}</DialogTitle>
+                    <DialogDescription className={`text-sm ${claro ? 'text-zinc-600' : 'text-zinc-400'}`}>
                         Entra no pipeline da Débora como <strong className={`${claro ? 'text-zinc-800' : 'text-zinc-200'}`}>{temperatura}</strong> em{' '}
                         <strong className={`${claro ? 'text-zinc-800' : 'text-zinc-200'}`}>{trimestre === 'nao_mapeado' ? 'não mapeado' : trimestre.toUpperCase()}</strong>
                         {trimestre === 'nao_mapeado' && ' (preencha a previsão de fechamento para cair num trimestre)'}
                     </DialogDescription>
                     {falta.size > 0 && aba === 'dados' && (
-                        <p className={`text-xs ${claro ? 'text-amber-600' : 'text-amber-400'} flex flex-wrap items-center gap-1.5`}>
-                            <AlertTriangle className="w-3.5 h-3.5" /> {falta.size === 1 ? 'Falta 1 campo:' : `Faltam ${falta.size} campos:`}
+                        <p className={`text-xs ${claro ? 'text-amber-700' : 'text-amber-400'} flex flex-wrap items-center gap-1.5`}>
+                            <AlertTriangle className="w-3.5 h-3.5" aria-hidden /> {falta.size === 1 ? 'Falta 1 campo:' : `Faltam ${falta.size} campos:`}
                             {[...falta].map((c) => (
                                 <button
                                     key={c}
                                     type="button"
                                     onClick={() => irParaCampo(c)}
-                                    className={`px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 ${claro ? 'text-amber-700' : 'text-amber-300'}`}
+                                    className={`px-1.5 py-px rounded-md border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 cursor-pointer transition-colors duration-150 ${claro ? 'text-amber-700' : 'text-amber-300'}`}
                                 >
                                     {ROTULO_CAMPO[c]}
                                 </button>
@@ -331,7 +336,7 @@ export function LeadPainel({
                         </p>
                     )}
                     {lead && (
-                        <div className="flex gap-1 pt-2" role="tablist">
+                        <div className="flex gap-5 pt-2 -mb-px" role="tablist">
                             {(['dados', 'historico'] as const).map((a) => (
                                 <button
                                     key={a}
@@ -339,7 +344,11 @@ export function LeadPainel({
                                     role="tab"
                                     aria-selected={aba === a}
                                     onClick={() => setAba(a)}
-                                    className={`px-3 py-1.5 rounded-md text-sm ${aba === a ? `${claro ? 'bg-zinc-200' : 'bg-zinc-800'} ${claro ? 'text-zinc-900' : 'text-zinc-100'}` : `${claro ? 'text-zinc-600' : 'text-zinc-400'} ${claro ? 'hover:text-zinc-900' : 'hover:text-zinc-100'}`}`}
+                                    className={`py-2.5 text-sm font-medium border-b-2 cursor-pointer transition-colors duration-150 ${
+                                        aba === a
+                                            ? claro ? 'border-indigo-600 text-zinc-900' : 'border-indigo-400 text-zinc-100'
+                                            : `border-transparent ${claro ? 'text-zinc-500 hover:text-zinc-900' : 'text-zinc-400 hover:text-zinc-100'}`
+                                    }`}
                                 >
                                     {a === 'dados' ? 'Dados' : `Histórico completo (${historico.length})`}
                                 </button>
@@ -360,13 +369,19 @@ export function LeadPainel({
                             salvar();
                         }}
                     >
-                        <div className="px-6 py-4 flex flex-col gap-6 overflow-y-auto">
-                            <Secao titulo="1 · Andamento">
-                                <div className={`flex flex-col gap-2 rounded-xl border ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'bg-zinc-50' : 'bg-zinc-900/40'} p-3`}>
+                        <div className="flex-1 min-h-0 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
+                            <aside
+                                aria-label="Andamento do lead"
+                                className={`lg:order-2 lg:w-[360px] shrink-0 px-6 lg:px-5 py-5 flex flex-col gap-6 border-b lg:border-b-0 lg:border-l lg:overflow-y-auto ${
+                                    claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-900/40'
+                                }`}
+                            >
+                            <Secao titulo="Andamento">
+                                <div className="flex flex-col gap-3">
                                     <Campo id="f-andamento" rotulo="Registrar andamento" erro={erros.status} dica="Escreva o que aconteceu desde o último contato. O andamento anterior fica guardado — nada é apagado.">
                                         <textarea
                                             id="f-andamento"
-                                            rows={2}
+                                            rows={3}
                                             value={novoAndamento}
                                             onChange={(e) => setNovoAndamento(e.target.value)}
                                             placeholder="Ex.: Reunião com o secretário em 02/11, proposta em revisão"
@@ -374,7 +389,7 @@ export function LeadPainel({
                                         />
                                     </Campo>
                                     {andamentos.length > 0 ? (
-                                        <ol className={`flex flex-col gap-3 border-l ${claro ? 'border-zinc-200' : 'border-zinc-800'} ml-1 mt-1 max-h-72 overflow-y-auto pr-1`}>
+                                        <ol className={`flex flex-col gap-3 border-l ${claro ? 'border-zinc-200' : 'border-zinc-800'} ml-1 mt-1 max-h-72 lg:max-h-none overflow-y-auto lg:overflow-visible pr-1`}>
                                             {andamentos.map((a, i) => {
                                                 const botao = `inline-flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded transition-colors disabled:opacity-50 ${claro ? 'text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100' : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'}`;
                                                 return (
@@ -446,12 +461,42 @@ export function LeadPainel({
                                 </div>
                             </Secao>
 
-                            <Secao titulo="2 · Cliente e local">
+                            <Secao titulo="Visibilidade">
+                                <label
+                                    htmlFor="f-visivel"
+                                    className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors duration-150 ${
+                                        visivel
+                                            ? claro ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-950'
+                                            : claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-900/40'
+                                    }`}
+                                >
+                                    <input
+                                        id="f-visivel"
+                                        type="checkbox"
+                                        checked={visivel}
+                                        onChange={(e) => setVisivel(e.target.checked)}
+                                        className="mt-0.5 w-4 h-4 accent-indigo-600 cursor-pointer"
+                                    />
+                                    <span className="flex flex-col gap-0.5">
+                                        <span className={`text-sm font-medium flex items-center gap-1.5 ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>
+                                            {visivel ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />} Mostrar no dashboard
+                                        </span>
+                                        <span className="text-[11px] text-zinc-500">
+                                            {visivel
+                                                ? 'O lead aparece na aba Cidades (cards, mapa, tabela e detalhe).'
+                                                : 'O lead não aparece na aba Cidades. Continua aqui na GRCC e no pipeline da Débora.'}
+                                        </span>
+                                    </span>
+                                </label>
+                            </Secao>
+                            </aside>
+                            <div className={`flex-1 min-w-0 px-6 py-5 flex flex-col divide-y lg:overflow-y-auto ${claro ? 'divide-zinc-200' : 'divide-zinc-800'} [&>section]:py-6 [&>section:first-child]:pt-0 [&>section:last-child]:pb-0`}>
+                            <Secao titulo="Cliente e local">
                                 {lead === null && mesmoCliente.length > 0 && (
                                     <button
                                         type="button"
                                         onClick={() => puxarDe(mesmoCliente[0])}
-                                        className={`mb-3 text-sm rounded-lg border px-3 py-1.5 ${claro ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50' : 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'}`}
+                                        className={`self-start text-sm rounded-md border px-3 py-1.5 cursor-pointer ${claro ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50' : 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10'}`}
                                     >
                                         Puxar local e contatos de {mesmoCliente[0].cliente}
                                     </button>
@@ -517,7 +562,7 @@ export function LeadPainel({
                                 </Secao>
                             )}
 
-                            <Secao titulo="3 · Classificação">
+                            <Secao titulo="Classificação">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {select('categoria', 'Categoria', 'Fase do funil (Contratado e Perda definem a temperatura sozinhos).', true)}
                                     <Campo
@@ -554,7 +599,7 @@ export function LeadPainel({
                                 </div>
                             </Secao>
 
-                            <Secao titulo="4 · Valor e prazos">
+                            <Secao titulo="Valor e prazos">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <Campo id="f-valor" rotulo="Valor (R$)" erro={erros.valor} falta={falta.has('valor')} dica="Valor total estimado da proposta.">
                                         <input
@@ -563,7 +608,7 @@ export function LeadPainel({
                                             value={valorTexto}
                                             onChange={(e) => setValorTexto(e.target.value)}
                                             placeholder="0,00"
-                                            className={`${cls(falta.has('valor'))} font-mono`}
+                                            className={`${cls(falta.has('valor'))} tabular-nums`}
                                         />
                                     </Campo>
                                     <Campo id="f-previsao" rotulo="Previsão de fechamento" erro={erros.previsaoFechamento} falta={falta.has('previsaoFechamento')} dica="Define o trimestre (Q1–Q4) em que o valor aparece.">
@@ -610,8 +655,13 @@ export function LeadPainel({
                                 </div>
                             </Secao>
 
-                            <Secao titulo="5 · Contato no cliente">
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <Secao titulo="Contatos no cliente">
+                                <div aria-hidden className={`hidden sm:grid grid-cols-3 gap-3 -mb-1.5 text-xs font-medium ${claro ? 'text-zinc-700' : 'text-zinc-300'} ${dados.contatosExtras.length ? 'sm:grid-cols-[1fr_1fr_1fr_36px]' : ''}`}>
+                                    <span>Nome</span>
+                                    <span>E-mail</span>
+                                    <span>Telefone</span>
+                                </div>
+                                <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${dados.contatosExtras.length ? 'sm:grid-cols-[1fr_1fr_1fr_36px]' : ''}`}>
                                     <input aria-label="Nome do contato" placeholder="Nome" value={dados.contatoNome ?? ''} onChange={(e) => set('contatoNome', e.target.value || null)} className={cls()} />
                                     <div>
                                         <input aria-label="E-mail do contato" placeholder="E-mail" value={dados.contatoEmail ?? ''} onChange={(e) => set('contatoEmail', e.target.value || null)} className={cls()} />
@@ -624,7 +674,7 @@ export function LeadPainel({
                                     const mudar = (campo: keyof ContatoLead, valor: string) =>
                                         set('contatosExtras', dados.contatosExtras.map((x, j) => (j === i ? { ...x, [campo]: valor || null } : x)));
                                     return (
-                                        <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-3 mt-3">
+                                        <div key={i} className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_36px] gap-3">
                                             <input aria-label={`Nome do contato ${n}`} placeholder="Nome" value={c.nome ?? ''} onChange={(e) => mudar('nome', e.target.value)} className={cls()} />
                                             <input aria-label={`E-mail do contato ${n}`} placeholder="E-mail" value={c.email ?? ''} onChange={(e) => mudar('email', e.target.value)} className={cls()} />
                                             <input aria-label={`Telefone do contato ${n}`} placeholder="Telefone" value={c.telefone ?? ''} onChange={(e) => mudar('telefone', e.target.value)} className={cls()} />
@@ -632,7 +682,7 @@ export function LeadPainel({
                                                 type="button"
                                                 aria-label={`Remover contato ${n}`}
                                                 onClick={() => set('contatosExtras', dados.contatosExtras.filter((_, j) => j !== i))}
-                                                className={`self-center p-2 rounded-lg ${claro ? 'text-zinc-500 hover:text-red-600' : 'text-zinc-500 hover:text-red-400'}`}
+                                                className={`self-center p-2 rounded-md cursor-pointer transition-colors duration-150 ${claro ? 'text-zinc-500 hover:text-red-600 hover:bg-red-50' : 'text-zinc-500 hover:text-red-400 hover:bg-red-500/10'}`}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
@@ -643,43 +693,16 @@ export function LeadPainel({
                                 <button
                                     type="button"
                                     onClick={() => set('contatosExtras', [...dados.contatosExtras, { nome: null, email: null, telefone: null }])}
-                                    className={`mt-3 inline-flex items-center gap-1 text-sm ${claro ? 'text-indigo-600 hover:text-indigo-800' : 'text-indigo-400 hover:text-indigo-300'}`}
+                                    className={`self-start inline-flex items-center gap-1 text-sm font-medium cursor-pointer ${claro ? 'text-indigo-600 hover:text-indigo-800' : 'text-indigo-400 hover:text-indigo-300'}`}
                                 >
-                                    <Plus className="w-4 h-4" /> Adicionar contato
+                                    <Plus className="w-4 h-4" aria-hidden /> Adicionar contato
                                 </button>
                             </Secao>
 
-                            <Secao titulo="6 · Dashboard">
-                                <label
-                                    htmlFor="f-visivel"
-                                    className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors ${
-                                        visivel
-                                            ? claro ? 'border-indigo-200 bg-indigo-50/60' : 'border-indigo-500/30 bg-indigo-500/5'
-                                            : claro ? 'border-zinc-200 bg-zinc-50' : 'border-zinc-800 bg-zinc-900/40'
-                                    }`}
-                                >
-                                    <input
-                                        id="f-visivel"
-                                        type="checkbox"
-                                        checked={visivel}
-                                        onChange={(e) => setVisivel(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 accent-indigo-600 cursor-pointer"
-                                    />
-                                    <span className="flex flex-col gap-0.5">
-                                        <span className={`text-sm font-semibold flex items-center gap-1.5 ${claro ? 'text-zinc-900' : 'text-zinc-100'}`}>
-                                            {visivel ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />} Mostrar no dashboard
-                                        </span>
-                                        <span className="text-[11px] text-zinc-500">
-                                            {visivel
-                                                ? 'O lead aparece na aba Cidades (cards, mapa, tabela e detalhe).'
-                                                : 'O lead não aparece na aba Cidades. Continua aqui na GRCC e no pipeline da Débora.'}
-                                        </span>
-                                    </span>
-                                </label>
-                            </Secao>
+                            </div>
                         </div>
 
-                        <div className={`flex flex-wrap items-center justify-between gap-2 px-6 py-3 border-t ${claro ? 'border-zinc-200' : 'border-zinc-800'} ${claro ? 'bg-white' : 'bg-zinc-950'}`}>
+                        <div className={`flex flex-wrap items-center justify-between gap-2 px-6 py-3 border-t shrink-0 ${claro ? 'border-zinc-200 bg-white' : 'border-zinc-800 bg-zinc-950'}`}>
                             {erroGeral && <p className={`w-full text-sm ${claro ? 'text-red-600' : 'text-red-400'}`}>{erroGeral}</p>}
                             {lead ? (
                                 confirmandoExclusao ? (
@@ -693,7 +716,8 @@ export function LeadPainel({
                                         </Button>
                                     </div>
                                 ) : (
-                                    <Button type="button" variant="ghost" className={`${claro ? 'text-red-600' : 'text-red-400'} ${claro ? 'hover:bg-red-50' : ''}`} onClick={() => setConfirmandoExclusao(true)}>
+                                    <Button type="button" variant="ghost" className={`cursor-pointer ${claro ? 'text-red-600 hover:bg-red-50 hover:text-red-700' : 'text-red-400 hover:bg-red-500/10'}`} onClick={() => setConfirmandoExclusao(true)}>
+                                        <Trash2 className="w-4 h-4" aria-hidden />
                                         Excluir
                                     </Button>
                                 )
@@ -706,11 +730,11 @@ export function LeadPainel({
                                         Pular
                                     </Button>
                                 ) : (
-                                    <Button type="button" variant="ghost" className={`${claro ? 'hover:bg-zinc-100' : ''} ${claro ? 'hover:text-zinc-900' : ''}`} onClick={onFechar} disabled={salvando}>
+                                    <Button type="button" variant="outline" className={`cursor-pointer ${claro ? 'border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900' : 'border-zinc-800 bg-zinc-900 text-zinc-300 hover:bg-zinc-800'}`} onClick={onFechar} disabled={salvando}>
                                         Cancelar
                                     </Button>
                                 )}
-                                <Button type="submit" className={claro ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : undefined} disabled={salvando}>
+                                <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-24 cursor-pointer" disabled={salvando}>
                                     {salvando ? 'Salvando…' : onProximo ? 'Salvar e próximo' : 'Salvar'}
                                 </Button>
                             </div>
