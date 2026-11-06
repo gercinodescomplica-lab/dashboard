@@ -39,6 +39,7 @@ export const ALIASES_COLUNA: Record<keyof LeadGrccDados, string[]> = {
     contatoTelefone: ['contato telefone', 'telefone'],
     previsaoFechamento: ['previsao fechamento', 'previsao de fechamento', 'previsao'],
     inicioFaturamento: ['inicio faturamento', 'inicio do faturamento'],
+    propostaEnviadaEm: ['data envio proposta', 'data de envio da proposta', 'envio da proposta'],
     duracaoMeses: ['duracao meses', 'duracao', 'prazo meses'],
 };
 

@@ -40,6 +40,7 @@ export const schemaLead = z.object({
     contatoTelefone: textoOpcional,
     previsaoFechamento: dataOpcional,
     inicioFaturamento: dataOpcional,
+    propostaEnviadaEm: dataOpcional,
     duracaoMeses: z.number().int().min(1, 'Duração mínima de 1 mês.').max(120),
 });
 

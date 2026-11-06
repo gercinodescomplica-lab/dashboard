@@ -64,6 +64,14 @@ describe('validarLead — datas', () => {
         if (!r.ok) expect(r.erros).toEqual({ previsaoFechamento: 'Data inválida.', inicioFaturamento: 'Data inválida.' });
     });
     it('aceita data real', () => expect(validarLead({ ...ok, previsaoFechamento: '2028-02-29' }).ok).toBe(true));
+    it('aceita propostaEnviadaEm ausente/vazia/válida, recusa inválida', () => {
+        expect(validarLead({ ...ok, propostaEnviadaEm: null }).ok).toBe(true);
+        expect(validarLead({ ...ok, propostaEnviadaEm: '' } as never).ok).toBe(true);
+        expect(validarLead({ ...ok, propostaEnviadaEm: '2026-09-15' }).ok).toBe(true);
+        const r = validarLead({ ...ok, propostaEnviadaEm: '2026-02-31' });
+        expect(r.ok).toBe(false);
+        if (!r.ok) expect(r.erros.propostaEnviadaEm).toBe('Data inválida.');
+    });
 });
 
 describe('pendenciasDoLead', () => {

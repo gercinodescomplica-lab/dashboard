@@ -100,6 +100,7 @@ describe('lerLinhasPlanilha', () => {
             contatoTelefone: '(19) 0000-0000',
             previsaoFechamento: '2026-11-10',
             inicioFaturamento: null,
+            propostaEnviadaEm: null,
             duracaoMeses: 12,
         });
     });

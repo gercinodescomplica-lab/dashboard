@@ -41,6 +41,8 @@ export interface LeadGrccDados {
     contatoTelefone: string | null;
     previsaoFechamento: string | null;
     inicioFaturamento: string | null;
+    /** Data (YYYY-MM-DD) em que a proposta foi enviada ao cliente. Alimenta a temperatura automática (ver `temperaturaDoLead`). */
+    propostaEnviadaEm: string | null;
     duracaoMeses: number;
 }
 
@@ -72,6 +74,7 @@ export const CAMPOS_LEAD: (keyof LeadGrccDados)[] = [
     'contatoTelefone',
     'previsaoFechamento',
     'inicioFaturamento',
+    'propostaEnviadaEm',
     'duracaoMeses',
 ];
 
@@ -94,6 +97,7 @@ export const ROTULO_CAMPO: Record<keyof LeadGrccDados, string> = {
     contatoTelefone: 'Telefone',
     previsaoFechamento: 'Previsão de fechamento',
     inicioFaturamento: 'Início do faturamento',
+    propostaEnviadaEm: 'Data de envio da proposta',
     duracaoMeses: 'Duração (meses)',
 };
 
@@ -144,7 +148,7 @@ export interface EventoComercial {
 }
 
 /** Campos do histórico que contam a história comercial do lead (o resto é auditoria interna da GRCC). */
-export const CAMPOS_COMERCIAIS: (keyof LeadGrccDados)[] = ['status', 'categoria', 'temperatura', 'etapa', 'situacao', 'motivoPerda', 'valor', 'previsaoFechamento'];
+export const CAMPOS_COMERCIAIS: (keyof LeadGrccDados)[] = ['status', 'categoria', 'temperatura', 'etapa', 'situacao', 'motivoPerda', 'valor', 'previsaoFechamento', 'propostaEnviadaEm'];
 
 export interface Movimentacao extends EventoHistorico {
     cliente: string;
@@ -218,6 +222,7 @@ export const LEAD_VAZIO: LeadGrccDados = {
     contatoTelefone: null,
     previsaoFechamento: null,
     inicioFaturamento: null,
+    propostaEnviadaEm: null,
     duracaoMeses: 12,
 };
 
