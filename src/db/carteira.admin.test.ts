@@ -55,6 +55,14 @@ describe('a conferir', () => {
         await db.update(s.carteiraCliente).set({ gerencia: 'GRC1' }).where(eq(s.carteiraCliente.clienteId, 'c-smt'));
         expect(await c.foraDaCarteira()).toEqual([{ clienteId: 'c-smt', sigla: 'SMT', nome: 'Secretaria Municipal de Transportes', carteira: 'GRC1', gerenciasDosDados: ['GRC3'] }]);
     });
+    it('foraDaCarteira: vários clientes em lote, ordenados', async () => {
+        await db.update(s.carteiraCliente).set({ gerencia: 'GRC1' }).where(eq(s.carteiraCliente.clienteId, 'c-smt'));
+        await db.insert(s.contrato).values({ id: 'ct-sme', numeroContrato: '2/2025', cliente: 'SME', clienteId: 'c-sme', managerId: 'grc1-bruno' });
+        expect(await c.foraDaCarteira()).toEqual([
+            { clienteId: 'c-sme', sigla: 'SME', nome: 'Secretaria Municipal da Educação', carteira: 'KAM1', gerenciasDosDados: ['GRC1'] },
+            { clienteId: 'c-smt', sigla: 'SMT', nome: 'Secretaria Municipal de Transportes', carteira: 'GRC1', gerenciasDosDados: ['GRC3'] },
+        ]);
+    });
     it('linhasSemCliente e ligarCliente; projeto de lead GRCC fica de fora', async () => {
         await db.insert(s.contrato).values({ id: 'ct-x', numeroContrato: '9/2025', cliente: 'Câmara X', managerId: 'grc1-bruno' });
         const linhas = await c.linhasSemCliente();

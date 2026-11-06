@@ -257,7 +257,7 @@ export async function definirGerenciaVisivel(chave: string, visivel: boolean): P
     if (!card) throw new ErroCarteira('Gerência não encontrada.');
     if (!visivel) {
         const [{ n }] = await db.select({ n: sql<number>`count(*)` }).from(carteiraCliente).where(eq(carteiraCliente.gerencia, chave));
-        if (n > 0) throw new ErroCarteira(`Tire os ${n} clientes da carteira antes de desativar.`);
+        if (Number(n) > 0) throw new ErroCarteira(`Tire os ${Number(n)} clientes da carteira antes de desativar.`);
     }
     await db.update(managers).set({ showInDashboard: visivel }).where(eq(managers.id, card.id));
 }
@@ -282,11 +282,27 @@ export async function criarCliente(d: { nome: string; sigla: string | null }): P
 export interface ForaDaCarteira { clienteId: string; sigla: string | null; nome: string; carteira: string; gerenciasDosDados: string[] }
 
 export async function foraDaCarteira(): Promise<ForaDaCarteira[]> {
-    const comCarteira = (await listarClientesComCarteira()).filter((c) => c.gerencia !== null);
+    const [cards, clientes] = await Promise.all([listarCards(), listarClientesComCarteira()]);
+    const chave = new Map(cards.map((c) => [c.id, chaveDaCarteira(c)]));
+    const dados = new Map<string, Set<string>>();
+    const juntar = (linhas: Array<{ c: string | null; m: string | null }>) => {
+        for (const l of linhas) {
+            if (!l.c || !l.m) continue;
+            const set = dados.get(l.c) ?? new Set<string>();
+            set.add(chave.get(l.m) ?? l.m);
+            dados.set(l.c, set);
+        }
+    };
+    // Uma consulta por tabela (em vez de uma por cliente); mesma regra de gerenciasDosDados.
+    juntar(await db.select({ c: contrato.clienteId, m: contrato.managerId }).from(contrato).where(isNotNull(contrato.clienteId)));
+    juntar(await db.select({ c: proposta.clienteId, m: proposta.managerId }).from(proposta).where(isNotNull(proposta.clienteId)));
+    juntar(await db.select({ c: cx.clienteId, m: cx.managerId }).from(cx).where(isNotNull(cx.clienteId)));
+    juntar(await db.select({ c: projects.clienteId, m: projects.managerId }).from(projects).where(and(isNotNull(projects.clienteId), isNull(projects.leadGrccId))));
     const fora: ForaDaCarteira[] = [];
-    for (const c of comCarteira) {
-        const dados = await gerenciasDosDados(c.id);
-        if (dados.some((g) => g !== c.gerencia)) fora.push({ clienteId: c.id, sigla: c.sigla, nome: c.nome, carteira: c.gerencia!, gerenciasDosDados: dados });
+    for (const c of clientes) {
+        if (c.gerencia === null) continue;
+        const gs = [...(dados.get(c.id) ?? [])].sort();
+        if (gs.some((g) => g !== c.gerencia)) fora.push({ clienteId: c.id, sigla: c.sigla, nome: c.nome, carteira: c.gerencia, gerenciasDosDados: gs });
     }
     return fora.sort((a, b) => (a.sigla ?? a.nome).localeCompare(b.sigla ?? b.nome, 'pt-BR'));
 }
