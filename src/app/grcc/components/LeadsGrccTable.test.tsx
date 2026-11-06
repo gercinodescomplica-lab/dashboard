@@ -64,4 +64,34 @@ describe('LeadsGrccTable', () => {
         await user.click(screen.getByText('Prefeitura de Indaiatuba'));
         expect(onAbrir).toHaveBeenCalledWith(1);
     });
+
+    it('"Por cliente" agrupa chamados repetidos do mesmo cliente', async () => {
+        const user = userEvent.setup();
+        const repetidos = [
+            mk(10, { cliente: 'Prefeitura de Limeira', solicitacao: 'Consultoria' }),
+            mk(11, { cliente: 'Prefeitura de Limeira', solicitacao: 'Nuvem' }),
+            mk(12, { cliente: 'ALESP', solicitacao: 'Chatbot' }),
+        ];
+        render(<LeadsGrccTable leads={repetidos} onAbrir={() => {}} />);
+        await user.click(screen.getByRole('button', { name: 'Por cliente' }));
+        expect(screen.getAllByRole('rowheader').map((g) => g.textContent)).toEqual([
+            expect.stringMatching(/^ALESP.*1 lead/),
+            expect.stringMatching(/^Prefeitura de Limeira.*2 leads/),
+        ]);
+    });
+
+    it('tooltip da temperatura distingue automática pela proposta da automática pela categoria', () => {
+        render(
+            <LeadsGrccTable
+                leads={[
+                    mk(20, { cliente: 'A', categoria: 'Novo' }),
+                    mk(21, { cliente: 'B', categoria: 'Novo', propostaEnviadaEm: '2026-01-01' }),
+                ]}
+                onAbrir={() => {}}
+            />
+        );
+        const tooltip = (cliente: string) => screen.getByText(cliente).closest('tr')!.querySelector('[title^="No pipeline"]')!.getAttribute('title');
+        expect(tooltip('A')).toMatch(/automática pela categoria/);
+        expect(tooltip('B')).toMatch(/automática pela data de envio da proposta/);
+    });
 });

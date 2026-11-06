@@ -1,18 +1,25 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Download, EyeOff, List, Loader2, MapPin, Search } from 'lucide-react';
+import { AlertTriangle, ArrowDown, ArrowUp, ArrowUpDown, Building2, Download, EyeOff, List, Loader2, MapPin, Search } from 'lucide-react';
 import { CATEGORIAS_GRCC, ROTULO_TEMPERATURA, TEMPERATURAS_LEAD, type CategoriaGrcc, type LeadGrcc, type TemperaturaLead } from '@/lib/grcc/tipos';
 import { pendenciasDoLead } from '@/lib/grcc/validacao';
-import { temperaturaDoLead } from '@/lib/grcc/pipeline';
-import { agruparPorCidade, alternarOrdem, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
+import { origemTemperatura, temperaturaDoLead } from '@/lib/grcc/pipeline';
+import { agruparPorCidade, agruparPorCliente, alternarOrdem, COLUNAS_ORDEM, ORDEM_PADRAO, ordemValida, ordenarLeads, type ColunaOrdem, type Ordem } from '@/lib/grcc/organizar';
 import { chaveTexto } from '@/lib/grcc/normalizar';
 import { LARGURAS_EXPORTACAO, nomeArquivoExportacao, planilhaDosLeads } from '@/lib/grcc/exportar';
 import { brl, corCategoria, dataBr, haQuanto, ICONE_TEMPERATURA } from './formato';
 import { useClaro } from '../tema';
 
 type Filtro = 'todos' | 'pendencias' | CategoriaGrcc;
-type Visao = 'lista' | 'cidade';
+type Visao = 'lista' | 'cidade' | 'cliente';
+
+const ROTULO_ORIGEM_TEMPERATURA: Record<ReturnType<typeof origemTemperatura>, string> = {
+    fixa: 'fixa pela categoria',
+    manual: 'escolhida no cadastro',
+    proposta: 'automática pela data de envio da proposta',
+    categoria: 'automática pela categoria',
+};
 
 const COLUNAS = 6;
 const CHAVE_ORDEM = 'grcc-ordem-tabela';
@@ -106,7 +113,10 @@ export function LeadsGrccTable({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [leads, filtro, temp, busca, pend, ordem]);
 
-    const grupos = useMemo(() => (visao === 'cidade' ? agruparPorCidade(visiveis) : []), [visao, visiveis]);
+    const grupos = useMemo(
+        () => (visao === 'cidade' ? agruparPorCidade(visiveis) : visao === 'cliente' ? agruparPorCliente(visiveis) : []),
+        [visao, visiveis]
+    );
 
     // Baixa exatamente o que a tabela mostra (filtros, busca e ordem). Lib carregada só no clique.
     const [baixando, setBaixando] = useState(false);
@@ -227,7 +237,7 @@ export function LeadsGrccTable({
                 <td className="inline-block md:table-cell md:px-3 md:py-3 align-top mr-3 md:mr-0">
                     <span
                         className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full border whitespace-nowrap ${cores[l.categoria]}`}
-                        title={`No pipeline: ${temperaturaDoLead(l)}${l.temperatura ? ' (escolhida no cadastro)' : ' (automática pela categoria)'}`}
+                        title={`No pipeline: ${temperaturaDoLead(l)} (${ROTULO_ORIGEM_TEMPERATURA[origemTemperatura(l)]})`}
                     >
                         {l.categoria}
                         {ICONE_TEMPERATURA[temperaturaDoLead(l)] && <span aria-label={temperaturaDoLead(l)}>{ICONE_TEMPERATURA[temperaturaDoLead(l)]}</span>}
@@ -280,6 +290,7 @@ export function LeadsGrccTable({
                 <div className={`flex items-center gap-1 ${claro ? 'bg-zinc-100' : 'bg-zinc-900'} border ${claro ? 'border-zinc-200' : 'border-zinc-800'} rounded-lg p-0.5`}>
                     {botaoVisao('lista', 'Lista', List)}
                     {botaoVisao('cidade', 'Por cidade', MapPin)}
+                    {botaoVisao('cliente', 'Por cliente', Building2)}
                 </div>
                 <div
                     role="group"

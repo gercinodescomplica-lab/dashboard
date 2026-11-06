@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { agruparPorCidade, alternarOrdem, correcoesDeAndamento, eventosComerciais, linhaDoTempoAndamento, ordemValida, ordenarLeads, proximoPendente } from './organizar';
+import { agruparPorCidade, agruparPorCliente, alternarOrdem, correcoesDeAndamento, eventosComerciais, linhaDoTempoAndamento, ordemValida, ordenarLeads, proximoPendente } from './organizar';
 import { LEAD_VAZIO, type EventoHistorico, type LeadGrcc } from './tipos';
 
 const ev = (id: number, quando: string, mudancas: EventoHistorico['mudancas'], origem: EventoHistorico['origem'] = 'edicao'): EventoHistorico => ({
@@ -168,5 +168,26 @@ describe('correção de andamento', () => {
         const r = eventosComerciais([...base, ajuste(3, '2026-10-01T10:00:00Z', 2, 'Reunião 03/09')]);
         expect(r.map((e) => e.id)).toEqual([2, 1]);
         expect(r[0].mudancas).toEqual([{ campo: 'status', de: 'Propsta enviada', para: 'Reunião 03/09' }]);
+    });
+});
+
+describe('agruparPorCliente', () => {
+    const leads = [
+        lead(1, { cliente: 'Prefeitura de Limeira', categoria: 'No cliente', valor: 100 }),
+        lead(2, { cliente: 'ALESP', valor: 50 }),
+        lead(3, { cliente: '  prefeitura de limeira  ', categoria: 'Perda', valor: 30 }),
+    ];
+
+    it('agrupa ignorando acento/caixa/espaço e ordena por nome', () => {
+        const grupos = agruparPorCliente(leads);
+        expect(grupos.map((g) => g.rotulo)).toEqual(['ALESP', 'Prefeitura de Limeira']);
+        const limeira = grupos.find((g) => g.rotulo === 'Prefeitura de Limeira')!;
+        expect(limeira.leads.map((l) => l.id)).toEqual([1, 3]);
+    });
+
+    it('soma o valor ativo (sem Perda) e conta por categoria', () => {
+        const limeira = agruparPorCliente(leads).find((g) => g.rotulo === 'Prefeitura de Limeira')!;
+        expect(limeira.valorAtivo).toBe(100);
+        expect(limeira.porCategoria).toEqual({ 'No cliente': 1, Perda: 1 });
     });
 });

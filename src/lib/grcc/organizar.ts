@@ -1,5 +1,6 @@
 import { CAMPOS_COMERCIAIS, CATEGORIAS_GRCC, type CategoriaGrcc, type EventoComercial, type EventoHistorico, type LeadGrcc } from './tipos';
 import { pendenciasDoLead } from './validacao';
+import { chaveTexto } from './normalizar';
 
 export interface RegistroAndamento {
     /** Id do evento que GRAVOU o andamento (é ele que se corrige/remove). */
@@ -120,6 +121,30 @@ export function agruparPorCidade(leads: LeadGrcc[]): GrupoCidade[] {
         if (b.chave === SEM_CIDADE) return 1;
         return a.uf.localeCompare(b.uf) || a.municipio.localeCompare(b.municipio, 'pt-BR');
     });
+}
+
+export interface GrupoCliente {
+    chave: string;
+    rotulo: string;
+    leads: LeadGrcc[];
+    valorAtivo: number;
+    porCategoria: Partial<Record<CategoriaGrcc, number>>;
+}
+
+export function agruparPorCliente(leads: LeadGrcc[]): GrupoCliente[] {
+    const grupos = new Map<string, GrupoCliente>();
+    for (const l of leads) {
+        const chave = chaveTexto(l.cliente);
+        let g = grupos.get(chave);
+        if (!g) {
+            g = { chave, rotulo: l.cliente.trim(), leads: [], valorAtivo: 0, porCategoria: {} };
+            grupos.set(chave, g);
+        }
+        g.leads.push(l);
+        if (l.categoria !== 'Perda') g.valorAtivo += l.valor;
+        g.porCategoria[l.categoria] = (g.porCategoria[l.categoria] ?? 0) + 1;
+    }
+    return [...grupos.values()].sort((a, b) => a.rotulo.localeCompare(b.rotulo, 'pt-BR'));
 }
 
 export type ColunaOrdem = 'cliente' | 'solicitacao' | 'categoria' | 'valor' | 'previsao' | 'atualizado';
