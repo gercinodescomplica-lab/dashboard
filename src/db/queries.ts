@@ -233,6 +233,7 @@ export type ContratoRow = {
     nomeGerente: string | null;
     objeto: string | null;
     managerId: string | null;
+    clienteId: string | null;
     createdAt: string;
     updatedAt: string;
     managerName: string | null;
@@ -259,6 +260,7 @@ export async function fetchAllContratos(search?: string): Promise<ContratoRow[]>
             nomeGerente: contrato.nomeGerente,
             objeto: contrato.objeto,
             managerId: contrato.managerId,
+            clienteId: contrato.clienteId,
             createdAt: contrato.createdAt,
             updatedAt: contrato.updatedAt,
             managerName: managers.name,
@@ -304,6 +306,7 @@ export async function fetchContratoById(id: string): Promise<ContratoRow | undef
             nomeGerente: contrato.nomeGerente,
             objeto: contrato.objeto,
             managerId: contrato.managerId,
+            clienteId: contrato.clienteId,
             createdAt: contrato.createdAt,
             updatedAt: contrato.updatedAt,
             managerName: managers.name,
@@ -335,6 +338,7 @@ export async function fetchContratoByNumero(numero: string): Promise<ContratoRow
             nomeGerente: contrato.nomeGerente,
             objeto: contrato.objeto,
             managerId: contrato.managerId,
+            clienteId: contrato.clienteId,
             createdAt: contrato.createdAt,
             updatedAt: contrato.updatedAt,
             managerName: managers.name,
@@ -456,6 +460,7 @@ export type PropostaRow = {
     dataFechamento: string | null;
     gerencia: string | null;
     managerId: string | null;
+    clienteId: string | null;
     status: string | null;
     observacao: string | null;
     createdAt: string;
@@ -480,6 +485,7 @@ export async function fetchAllPropostas(search?: string): Promise<PropostaRow[]>
             dataFechamento: proposta.dataFechamento,
             gerencia: proposta.gerencia,
             managerId: proposta.managerId,
+            clienteId: proposta.clienteId,
             status: proposta.status,
             observacao: proposta.observacao,
             createdAt: proposta.createdAt,
@@ -523,6 +529,7 @@ export async function fetchPropostaByNumero(numero: string): Promise<PropostaRow
             dataFechamento: proposta.dataFechamento,
             gerencia: proposta.gerencia,
             managerId: proposta.managerId,
+            clienteId: proposta.clienteId,
             status: proposta.status,
             observacao: proposta.observacao,
             createdAt: proposta.createdAt,
@@ -532,6 +539,36 @@ export async function fetchPropostaByNumero(numero: string): Promise<PropostaRow
         .from(proposta)
         .leftJoin(managers, eq(proposta.managerId, managers.id))
         .where(eq(proposta.numeroProposta, numero));
+    return rows[0];
+}
+
+export async function fetchPropostaById(id: string): Promise<PropostaRow | undefined> {
+    const rows = await db
+        .select({
+            id: proposta.id,
+            numeroProposta: proposta.numeroProposta,
+            nomeOportunidade: proposta.nomeOportunidade,
+            proprietario: proposta.proprietario,
+            cliente: proposta.cliente,
+            fase: proposta.fase,
+            valor: proposta.valor,
+            receitaEsperada: proposta.receitaEsperada,
+            probabilidade: proposta.probabilidade,
+            duracao: proposta.duracao,
+            dataCriacao: proposta.dataCriacao,
+            dataFechamento: proposta.dataFechamento,
+            gerencia: proposta.gerencia,
+            managerId: proposta.managerId,
+            clienteId: proposta.clienteId,
+            status: proposta.status,
+            observacao: proposta.observacao,
+            createdAt: proposta.createdAt,
+            updatedAt: proposta.updatedAt,
+            managerName: managers.name,
+        })
+        .from(proposta)
+        .leftJoin(managers, eq(proposta.managerId, managers.id))
+        .where(eq(proposta.id, id));
     return rows[0];
 }
 

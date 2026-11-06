@@ -6,12 +6,21 @@ import {
     updateProposta,
     deleteProposta,
     fetchAllPropostas,
+    fetchPropostaById,
     fetchManagersList,
     PropostaRow,
 } from '@/db/queries';
 import { proposta } from '@/db/schema';
+import { gerenciaPelaCarteira } from '@/db/carteira';
+import { clienteDaLinha } from '@/lib/carteira/linha';
 
 export type ActionResult = { success: true } | { success: false; error: string };
+
+/** Com cliente em carteira, gerência e gerente vêm dela, por cima do formulário. */
+async function comCarteira<T extends Partial<typeof proposta.$inferInsert>>(data: T, clienteId: string | null): Promise<T> {
+    const g = await gerenciaPelaCarteira(clienteId);
+    return g ? { ...data, clienteId, managerId: g.managerId, gerencia: g.gerencia } : { ...data, clienteId };
+}
 
 export async function searchPropostasAction(search: string): Promise<PropostaRow[]> {
     return fetchAllPropostas(search || undefined);
@@ -21,8 +30,9 @@ export async function createPropostaAction(
     data: typeof proposta.$inferInsert
 ): Promise<ActionResult> {
     try {
+        const clienteId = data.clienteId ?? (await clienteDaLinha(data.cliente, data.managerId ?? null));
         await createProposta({
-            ...data,
+            ...(await comCarteira(data, clienteId)),
             id: data.id || crypto.randomUUID(),
         });
         revalidatePath('/proposals');
@@ -37,7 +47,9 @@ export async function updatePropostaAction(
     data: Partial<typeof proposta.$inferInsert>
 ): Promise<ActionResult> {
     try {
-        await updateProposta(id, data);
+        const atual = await fetchPropostaById(id);
+        const clienteId = data.clienteId !== undefined ? data.clienteId : atual?.clienteId ?? null;
+        await updateProposta(id, await comCarteira(data, clienteId));
         revalidatePath('/proposals');
         return { success: true };
     } catch (err: any) {

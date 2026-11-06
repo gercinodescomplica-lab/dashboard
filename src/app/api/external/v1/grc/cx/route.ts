@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticate } from '@/lib/api-auth';
 import { createCXItem, fetchManagerById } from '@/db/queries';
+import { managerDaLinha } from '@/db/carteira';
+import { clienteDaLinha } from '@/lib/carteira/linha';
 
 const CreateCXSchema = z.object({
     managerId: z.string().min(1),
@@ -55,8 +57,11 @@ export async function POST(request: Request) {
     }
 
     try {
+        const clienteId = await clienteDaLinha(cliente, managerId);
+        const destino = await managerDaLinha(clienteId, managerId);
         const item = await createCXItem({
-            managerId,
+            managerId: destino,
+            clienteId,
             cliente,
             titulo,
             problema,

@@ -372,3 +372,8 @@ export async function gerenciasParaEditar(): Promise<GerenciaParaEditar[]> {
         };
     });
 }
+
+/** Clientes ativos para o seletor dos formulários de contrato e proposta. */
+export async function clientesParaEscolha(): Promise<Array<{ id: string; nome: string; sigla: string | null }>> {
+    return db.select({ id: cliente.id, nome: cliente.nome, sigla: cliente.sigla }).from(cliente).where(eq(cliente.ativo, true)).orderBy(cliente.nome);
+}

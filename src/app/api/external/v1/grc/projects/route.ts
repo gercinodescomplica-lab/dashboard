@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authenticate } from '@/lib/api-auth';
 import { createProject, fetchManagerById } from '@/db/queries';
+import { managerDaLinha } from '@/db/carteira';
+import { clienteDaLinha } from '@/lib/carteira/linha';
 
 const CreateProjectSchema = z.object({
     managerId: z.string().min(1),
@@ -55,8 +57,11 @@ export async function POST(request: Request) {
     }
 
     try {
+        const clienteId = await clienteDaLinha(orgao, managerId);
+        const destino = await managerDaLinha(clienteId, managerId);
         const project = await createProject({
-            managerId,
+            managerId: destino,
+            clienteId,
             quarter,
             orgao: orgao ?? null,
             name,

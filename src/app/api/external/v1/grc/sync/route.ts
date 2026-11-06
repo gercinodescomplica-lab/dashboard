@@ -4,6 +4,8 @@ import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { authenticate } from '@/lib/api-auth';
 import { db } from '@/db/index';
 import { managers, cx, visits, projects } from '@/db/schema';
+import { managerDaLinha } from '@/db/carteira';
+import { clienteDaLinha } from '@/lib/carteira/linha';
 
 // ── Schemas ────────────────────────────────────────────────────────────────
 
@@ -133,6 +135,14 @@ export async function PATCH(request: Request) {
     };
 
     try {
+        // Casamento com a carteira fora da transação (só leitura); um por item, na ordem do upsert.
+        const resolver = async (texto: string | null | undefined) => {
+            const clienteId = texto === undefined ? undefined : await clienteDaLinha(texto, managerId);
+            return { clienteId, destino: await managerDaLinha(clienteId, managerId) };
+        };
+        const cxRes = await Promise.all((data.cx?.upsert ?? []).map((i) => resolver(i.cliente)));
+        const projRes = await Promise.all((data.projects?.upsert ?? []).map((i) => resolver(i.orgao)));
+
         await db.transaction(async (tx) => {
 
             // ── CX ──────────────────────────────────────────────────────────
@@ -146,12 +156,14 @@ export async function PATCH(request: Request) {
                 summary.cx.deleted = deleted.length;
             }
 
-            for (const item of data.cx?.upsert ?? []) {
+            for (const [n, item] of (data.cx?.upsert ?? []).entries()) {
+                const { clienteId, destino } = cxRes[n];
                 if (item.id) {
                     const updated = await tx
                         .update(cx)
                         .set(strip({
                             cliente: item.cliente,
+                            clienteId,
                             titulo: item.titulo,
                             problema: item.problema,
                             solucaoProposta: item.solucaoProposta,
@@ -164,7 +176,8 @@ export async function PATCH(request: Request) {
                     if (updated.length) summary.cx.updated++;
                 } else {
                     await tx.insert(cx).values({
-                        managerId,
+                        managerId: destino,
+                        clienteId,
                         cliente: item.cliente!,
                         titulo: item.titulo!,
                         problema: item.problema!,
@@ -226,13 +239,15 @@ export async function PATCH(request: Request) {
                 summary.projects.deleted = deleted.length;
             }
 
-            for (const item of data.projects?.upsert ?? []) {
+            for (const [n, item] of (data.projects?.upsert ?? []).entries()) {
+                const { clienteId, destino } = projRes[n];
                 if (item.id) {
                     const updated = await tx
                         .update(projects)
                         .set(strip({
                             quarter: item.quarter,
                             orgao: item.orgao,
+                            clienteId,
                             name: item.name,
                             value: item.value,
                             temperature: item.temperature,
@@ -243,7 +258,8 @@ export async function PATCH(request: Request) {
                     if (updated.length) summary.projects.updated++;
                 } else {
                     await tx.insert(projects).values({
-                        managerId,
+                        managerId: destino,
+                        clienteId,
                         quarter: item.quarter!,
                         orgao: item.orgao ?? null,
                         name: item.name!,

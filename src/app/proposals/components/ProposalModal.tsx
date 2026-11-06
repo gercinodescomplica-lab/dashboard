@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { PropostaRow } from '@/db/queries';
 import { createPropostaAction, updatePropostaAction } from '../actions';
+import { listarClientesAction } from '@/app/contracts/actions';
 
 interface ProposalModalProps {
     open: boolean;
@@ -66,6 +67,10 @@ export function ProposalModal({
     const selectCls = getSelectCls(lightActive);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
+    const [clientes, setClientes] = useState<{ id: string; nome: string; sigla: string | null }[]>([]);
+    useEffect(() => {
+        listarClientesAction().then(setClientes).catch(() => setClientes([]));
+    }, []);
 
     const [form, setForm] = useState({
         id: '',
@@ -73,6 +78,7 @@ export function ProposalModal({
         nomeOportunidade: '',
         proprietario: '',
         cliente: '',
+        clienteId: '',
         fase: '',
         valor: '',
         receitaEsperada: '',
@@ -94,6 +100,7 @@ export function ProposalModal({
                 nomeOportunidade: proposta.nomeOportunidade,
                 proprietario: proposta.proprietario ?? '',
                 cliente: proposta.cliente,
+                clienteId: proposta.clienteId ?? '',
                 fase: proposta.fase ?? '',
                 valor: proposta.valor?.toString() ?? '',
                 receitaEsperada: proposta.receitaEsperada?.toString() ?? '',
@@ -116,6 +123,7 @@ export function ProposalModal({
                 nomeOportunidade: '',
                 proprietario: '',
                 cliente: '',
+                clienteId: '',
                 fase: 'Elaboração de proposta',
                 valor: '',
                 receitaEsperada: '',
@@ -133,6 +141,11 @@ export function ProposalModal({
     }, [mode, proposta, open]);
 
     if (!open) return null;
+
+    function escolherCliente(id: string) {
+        const c = clientes.find((x) => x.id === id);
+        setForm((prev) => ({ ...prev, clienteId: id, cliente: prev.cliente || c?.sigla || '' }));
+    }
 
     function set(field: string, value: string) {
         setForm((prev) => ({ ...prev, [field]: value }));
@@ -152,6 +165,7 @@ export function ProposalModal({
             nomeOportunidade: form.nomeOportunidade.trim(),
             proprietario: form.proprietario.trim() || null,
             cliente: form.cliente.trim(),
+            clienteId: form.clienteId || null,
             fase: form.fase || null,
             valor: form.valor ? parseFloat(form.valor) : null,
             receitaEsperada: form.receitaEsperada ? parseFloat(form.receitaEsperada) : null,
@@ -250,6 +264,19 @@ export function ProposalModal({
                         </div>
 
                         <div className="col-span-2">
+                            <div className="mb-3"><FormField label="Cliente da carteira" lightActive={lightActive}>
+                                <select
+                                    id="field-clienteId"
+                                    className={selectCls}
+                                    value={form.clienteId}
+                                    onChange={(e) => escolherCliente(e.target.value)}
+                                >
+                                    <option value="">— casar pelo texto —</option>
+                                    {clientes.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.sigla ? `${c.sigla} · ${c.nome}` : c.nome}</option>
+                                    ))}
+                                </select>
+                            </FormField></div>
                             <FormField label="Cliente" required lightActive={lightActive}>
                                 <input
                                     id="field-cliente"
@@ -274,6 +301,7 @@ export function ProposalModal({
                                     <option key={g} value={g}>{g}</option>
                                 ))}
                             </select>
+                            <p className="text-xs text-zinc-500">Com cliente na carteira, a gerência e o gerente são os da carteira.</p>
                         </FormField>
                         <FormField label="Gerente (Manager)" lightActive={lightActive}>
                             <select

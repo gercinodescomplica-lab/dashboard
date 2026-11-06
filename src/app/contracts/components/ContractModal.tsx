@@ -3,7 +3,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { X, Loader2, AlertCircle } from 'lucide-react';
 import { ContratoRow } from '@/db/queries';
-import { createContratoAction, updateContratoAction } from '../actions';
+import { createContratoAction, updateContratoAction, listarClientesAction } from '../actions';
 
 interface ContractModalProps {
     open: boolean;
@@ -65,12 +65,17 @@ export function ContractModal({
     const selectCls = getSelectCls(lightActive);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
+    const [clientes, setClientes] = useState<{ id: string; nome: string; sigla: string | null }[]>([]);
+    useEffect(() => {
+        listarClientesAction().then(setClientes).catch(() => setClientes([]));
+    }, []);
 
     const [form, setForm] = useState({
         id: '',
         numeroContrato: '',
         protheus: '',
         cliente: '',
+        clienteId: '',
         desde: '',
         dtInicioVigencia: '',
         dtFimVigencia: '',
@@ -95,6 +100,7 @@ export function ContractModal({
                 numeroContrato: contrato.numeroContrato,
                 protheus: contrato.protheus ?? '',
                 cliente: contrato.cliente,
+                clienteId: contrato.clienteId ?? '',
                 desde: contrato.desde ?? '',
                 dtInicioVigencia: contrato.dtInicioVigencia ?? '',
                 dtFimVigencia: contrato.dtFimVigencia ?? '',
@@ -116,6 +122,7 @@ export function ContractModal({
                 numeroContrato: '',
                 protheus: '',
                 cliente: '',
+                clienteId: '',
                 desde: '',
                 dtInicioVigencia: '',
                 dtFimVigencia: '',
@@ -137,6 +144,11 @@ export function ContractModal({
 
     if (!open) return null;
 
+    function escolherCliente(id: string) {
+        const c = clientes.find((x) => x.id === id);
+        setForm((prev) => ({ ...prev, clienteId: id, cliente: prev.cliente || c?.sigla || '' }));
+    }
+
     function set(field: string, value: string | boolean) {
         setForm((prev) => ({ ...prev, [field]: value }));
     }
@@ -150,6 +162,7 @@ export function ContractModal({
             numeroContrato: form.numeroContrato.trim(),
             protheus: form.protheus.trim() || null,
             cliente: form.cliente.trim(),
+            clienteId: form.clienteId || null,
             desde: form.desde || null,
             dtInicioVigencia: form.dtInicioVigencia || null,
             dtFimVigencia: form.dtFimVigencia || null,
@@ -239,6 +252,19 @@ export function ContractModal({
                         </FormField>
 
                         {/* Row 2 */}
+                        <div className="col-span-2"><FormField label="Cliente da carteira" lightActive={lightActive}>
+                            <select
+                                id="field-clienteId"
+                                className={selectCls}
+                                value={form.clienteId}
+                                onChange={(e) => escolherCliente(e.target.value)}
+                            >
+                                <option value="">— casar pelo texto —</option>
+                                {clientes.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.sigla ? `${c.sigla} · ${c.nome}` : c.nome}</option>
+                                ))}
+                            </select>
+                        </FormField></div>
                         <FormField label="Cliente" required lightActive={lightActive}>
                             <input
                                 id="field-cliente"
@@ -272,6 +298,7 @@ export function ContractModal({
                                     <option key={g} value={g}>{g}</option>
                                 ))}
                             </select>
+                            <p className="text-xs text-zinc-500">Com cliente na carteira, a gerência e o gerente são os da carteira.</p>
                         </FormField>
                         <FormField label="Gerente (Manager)" lightActive={lightActive}>
                             <select
