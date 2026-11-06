@@ -66,6 +66,18 @@ describe('OrganogramaClientesView', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent('mudou de carteira');
         expect(aoMudar).toHaveBeenCalled();
     });
+    it('moverAction que lança: mostra erro, avisa a tela e não oferece Desfazer', async () => {
+        const user = userEvent.setup();
+        aoMudar.mockClear();
+        const lanca = async () => { throw new Error('rede'); };
+        render(<OrganogramaClientesView dados={dados} podeMover moverAction={lanca} aoMudar={aoMudar} />);
+        await user.click(screen.getByRole('button', { name: 'Mover SMT' }));
+        await user.click(await screen.findByRole('menuitem', { name: /GRC4/ }));
+        await user.click(screen.getByRole('button', { name: 'Mover' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível mover. Tente de novo.');
+        expect(aoMudar).toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: 'Desfazer' })).not.toBeInTheDocument();
+    });
     it('arrastar de "Sem carteira" para um cartão pede a confirmação', () => {
         render(<OrganogramaClientesView dados={dados} podeMover moverAction={mover} aoMudar={aoMudar} />);
         const dataTransfer = { setData: vi.fn(), effectAllowed: '', dropEffect: '' };

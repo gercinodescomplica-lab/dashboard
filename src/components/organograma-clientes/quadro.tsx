@@ -53,14 +53,20 @@ export function OrganogramaClientesView({ dados, podeMover, moverAction, aoMudar
     const rotuloCliente = (c: ClienteDoOrganograma) => c.sigla ?? c.nome;
 
     async function gravar(m: Movimento, depois: (ok: boolean) => void) {
-        if (!moverAction) return;
+        if (!moverAction || ocupado) return;
         setErro(null);
         setOcupado(true);
-        const r = await moverAction(m.cliente.id, m.de, m.para);
-        if (!r.ok) setErro(r.erro);
-        depois(r.ok);
-        setOcupado(false);
-        aoMudar?.();
+        try {
+            const r = await moverAction(m.cliente.id, m.de, m.para);
+            if (!r.ok) setErro(r.erro);
+            depois(r.ok);
+        } catch {
+            setErro('Não foi possível mover. Tente de novo.');
+            depois(false);
+        } finally {
+            setOcupado(false);
+            aoMudar?.();
+        }
     }
 
     const mover: Mover | undefined =

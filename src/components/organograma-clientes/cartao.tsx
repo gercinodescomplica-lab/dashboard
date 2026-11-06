@@ -35,8 +35,7 @@ export interface Mover {
 function dicaDoCliente(c: ClienteDoOrganograma): string {
     const base = c.sigla ? `${c.sigla}: ${c.nome}` : c.nome;
     if (!c.ultimoMovimento) return base;
-    const quem = c.ultimoMovimento.por ? ` por ${c.ultimoMovimento.por}` : '';
-    return `${base}\nÚltima mudança de carteira${quem} em ${new Date(c.ultimoMovimento.em).toLocaleDateString('pt-BR')}`;
+    return `${base}\nÚltima mudança de carteira em${new Date(c.ultimoMovimento.em).toLocaleDateString('pt-BR')}`;
 }
 
 export function ItemDoCliente({ cliente, de, mover }: { cliente: ClienteDoOrganograma; de: string | null; mover?: Mover }) {
