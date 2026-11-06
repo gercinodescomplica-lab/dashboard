@@ -286,6 +286,8 @@ export async function conferirEdicaoDoCard(m: { id: string; role: string; showIn
     const atual = cards.find((c) => c.id === m.id);
     if (!atual) return;
     const chave = chaveDaCarteira(atual);
+    // fetchGerenteGrcc compara role = 'GRCC' exato: outra grafia mantém a chave, mas quebra a /grcc.
+    if (chave === 'GRCC' && m.role !== atual.role) throw new ErroCarteira('A sigla da GRCC não pode mudar: a página /grcc depende dela.');
     if (chaveDaCarteira(m) !== chave) throw new ErroCarteira('Para mudar a sigla, use Organograma de clientes.');
     if (atual.showInDashboard && m.showInDashboard === false && cardDaGerencia(cards, chave)?.id === m.id) await exigirCarteiraVazia(chave);
 }

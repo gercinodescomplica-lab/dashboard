@@ -8,12 +8,18 @@ import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 import { chaveSettingsValida } from '@/lib/settings/chave';
 import { conferirEdicaoDoCard, listarCards, listarClientesComCarteira, roteadorDaCarteira } from '@/db/carteira';
-import { casarCliente } from '@/lib/carteira/casar-cliente';
+import { casarCliente, type ClienteParaCasar } from '@/lib/carteira/casar-cliente';
 import { chaveDaCarteira } from '@/lib/carteira/gerencia';
 import { ErroCarteira } from '@/lib/carteira/tipos';
 
 function exigirChave(chave: string) {
     if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
+}
+
+/** Cliente da linha vinda do editor: sem cliente casa pelo texto; cliente apagado (juntado) nunca chega ao insert. */
+function clienteDaLinha(clienteId: string | null | undefined, texto: string | null | undefined, clientes: ClienteParaCasar[], chaveDoCard: string | null): string | null {
+    const vigente = clienteId && clientes.some((c) => c.id === clienteId) ? clienteId : null;
+    return vigente ?? casarCliente(texto, clientes, chaveDoCard);
 }
 
 export async function verifySettingsKey(key: string) {
@@ -42,8 +48,7 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
         const chaveDoCard = card ? chaveDaCarteira(card) : null;
         const linhas: { item: CXItem; destino: string }[] = [];
         for (const original of items) {
-            // Linha criada no editor não traz cliente: casa pelo texto, como o sync da API.
-            const item = { ...original, clienteId: original.clienteId ?? casarCliente(original.cliente, clientes, chaveDoCard) };
+            const item = { ...original, clienteId: clienteDaLinha(original.clienteId, original.cliente, clientes, chaveDoCard) };
             const destino = rotear(item.clienteId, managerId);
             if (destino !== managerId) {
                 const jaLa = await db.select({ id: cx.id }).from(cx).where(and(eq(cx.managerId, destino),
@@ -53,11 +58,11 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
             linhas.push({ item, destino });
         }
 
-        // Delete all existing CX for this manager, then reinsert
-        await db.delete(cx).where(eq(cx.managerId, managerId));
-
-        if (linhas.length > 0) {
-            await db.insert(cx).values(
+        // Delete all existing CX for this manager, then reinsert. Na mesma transação: falhou, nada se perde.
+        await db.transaction(async (tx) => {
+            await tx.delete(cx).where(eq(cx.managerId, managerId));
+            if (linhas.length === 0) return;
+            await tx.insert(cx).values(
                 linhas.map(({ item, destino }) => {
                     // Preserva o externalId como veio (nunca editável na UI) —
                     // é o que faz o próximo sync do Planner reconhecer esta
@@ -91,7 +96,7 @@ export async function saveCXData(chave: string, managerId: string, items: CXItem
                     };
                 })
             );
-        }
+        });
         return { success: true };
     } catch (err) {
         console.error('Failed to save CX:', err);
@@ -215,8 +220,7 @@ export async function saveManagerData(chave: string, m: Manager): Promise<{ succ
         const [rotear, clientes] = await Promise.all([roteadorDaCarteira(), listarClientesComCarteira()]);
         const chaveDoCard = chaveDaCarteira(m);
         for (const p of allProjectsToInsert) {
-            // Linha criada no editor não traz cliente: casa pelo texto, como o sync da API.
-            p.clienteId ??= casarCliente(p.orgao, clientes, chaveDoCard);
+            p.clienteId = clienteDaLinha(p.clienteId, p.orgao, clientes, chaveDoCard);
             const destino = rotear(p.clienteId, m.id);
             if (destino === m.id) continue;
             const [igual] = await db.select({ id: projects.id }).from(projects)
@@ -227,10 +231,11 @@ export async function saveManagerData(chave: string, m: Manager): Promise<{ succ
 
         // 3. Delete existing MANUAL projects to replace them. Projetos com leadGrccId são
         //    gerados pela /grcc (dono = cadastro de leads) e nunca são apagados/regravados aqui.
-        await db.delete(projects).where(and(eq(projects.managerId, m.id), isNull(projects.leadGrccId)));
-        if (aGravar.length > 0) {
-            await db.insert(projects).values(aGravar);
-        }
+        //    Na mesma transação: falhou, nada se perde.
+        await db.transaction(async (tx) => {
+            await tx.delete(projects).where(and(eq(projects.managerId, m.id), isNull(projects.leadGrccId)));
+            if (aGravar.length > 0) await tx.insert(projects).values(aGravar);
+        });
 
         return { success: true };
     } catch (err) {

@@ -12,7 +12,9 @@ import { OrganogramaClientesAdmin } from '@/components/organograma-clientes/admi
 import { FaturamentoEditor } from './FaturamentoEditor';
 import { PlannerUploadEditor } from './PlannerUploadEditor';
 import { saveManagerData, saveCXData, saveVisitsData, saveChurnData, cloneManager } from './actions';
+import { getCXByManager } from './fetchActions';
 import { lerChaveSettings } from './chaveLocal';
+import { mesclarCX, mesclarPipeline } from '@/lib/carteira/mesclar-editor';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
@@ -24,6 +26,9 @@ export function SettingsDashboard() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [saveError, setSaveError] = useState('');
+    const [atualizando, setAtualizando] = useState(false);
+    // Cards com edição do admin ainda não salva.
+    const sujos = useRef(new Set<string>());
     const [isCloning, setIsCloning] = useState(false);
     const [cloneStatus, setCloneStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [cloneError, setCloneError] = useState<string>('');
@@ -32,6 +37,7 @@ export function SettingsDashboard() {
         setIsLoading(true);
         const data = await fetchManagers();
         setManagers(data);
+        sujos.current.clear();
         if (data.length > 0 && !selectedId) {
             setSelectedId(data[0].id);
         }
@@ -42,19 +48,37 @@ export function SettingsDashboard() {
         loadData();
     }, []);
 
-    // Ao sair do organograma de clientes a carteira pode ter mudado: atualiza só servedClients, sem perder edição não salva.
-    const atualizarClientesAtendidos = async () => {
+    // Salvar apaga e regrava o card: o estado precisa ter o que a carteira trouxe, ou a linha se perde.
+    // Card limpo pega o banco; card com edição não salva mescla. fetchManagers não traz cx, visitas nem churn.
+    const atualizarGerentes = async (): Promise<boolean> => {
+        setAtualizando(true);
         try {
-            const atendidos = new Map((await fetchManagers()).map((m) => [m.id, m.servedClients]));
-            setManagers(prev => prev.map(m => atendidos.has(m.id) ? { ...m, servedClients: atendidos.get(m.id) } : m));
+            const [frescos, cxs] = await Promise.all([
+                fetchManagers(),
+                Promise.all(managers.filter(m => m.cx).map(async m => [m.id, await getCXByManager(m.id)] as const)),
+            ]);
+            const cxDe = new Map(cxs);
+            setManagers(prev => frescos.map(f => {
+                const a = prev.find(m => m.id === f.id);
+                if (!a) return f;
+                const cx = cxDe.get(f.id);
+                if (!sujos.current.has(f.id)) return { ...f, cx: cx ?? a.cx, visits: a.visits, churn: a.churn };
+                return { ...a, role: f.role, name: f.name, showInDashboard: f.showInDashboard, servedClients: f.servedClients, pipeline: mesclarPipeline(a.pipeline, f.pipeline), cx: mesclarCX(a.cx, cx) };
+            }));
+            return true;
         } catch (e) {
-            console.error('Falha ao atualizar os clientes atendidos:', e);
+            console.error('Falha ao atualizar os gerentes:', e);
+            setSaveError('Não foi possível atualizar os gerentes. Recarregue a página antes de salvar.');
+            setSaveStatus('error');
+            return false;
+        } finally {
+            setAtualizando(false);
         }
     };
 
     const secaoAnterior = useRef(section);
     useEffect(() => {
-        if (secaoAnterior.current === 'organograma-clientes' && section !== 'organograma-clientes') void atualizarClientesAtendidos();
+        if (secaoAnterior.current === 'organograma-clientes' && section !== 'organograma-clientes') void atualizarGerentes();
         secaoAnterior.current = section;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [section]);
@@ -62,6 +86,7 @@ export function SettingsDashboard() {
     const selectedManager = managers.find(m => m.id === selectedId);
 
     const handleUpdateManager = (updatedManager: Manager) => {
+        sujos.current.add(updatedManager.id);
         setManagers(prev => prev.map(m => m.id === updatedManager.id ? updatedManager : m));
     };
 
@@ -90,10 +115,13 @@ export function SettingsDashboard() {
         setIsSaving(true);
         setSaveStatus('idle');
         setSaveError('');
+        // Sai antes de gravar: edição feita durante o salvamento marca de novo.
+        sujos.current.delete(selectedManager.id);
         try {
             // Primeiro o gerente: recusado, nada mais é gravado.
             const gerente = await saveManagerData(lerChaveSettings(), selectedManager);
             if (!gerente.success) {
+                sujos.current.add(selectedManager.id);
                 setSaveError(gerente.erro);
                 setSaveStatus('error');
                 return;
@@ -103,9 +131,12 @@ export function SettingsDashboard() {
                 saveVisitsData(lerChaveSettings(), selectedManager.id, selectedManager.visits || []),
                 saveChurnData(lerChaveSettings(), selectedManager.id, selectedManager.churn || []),
             ]);
+            // Regravar troca os ids de CX e pode rotear linha para outro card: o estado volta a refletir o banco.
+            if (!(await atualizarGerentes())) return;
             setSaveStatus('success');
             setTimeout(() => setSaveStatus('idle'), 3000);
         } catch (e) {
+            sujos.current.add(selectedManager.id);
             setSaveStatus('error');
         } finally {
             setIsSaving(false);
@@ -283,8 +314,9 @@ export function SettingsDashboard() {
                         key={selectedManager.id}
                         manager={selectedManager}
                         onChange={handleUpdateManager}
+                        onExtrasCarregados={(extras) => setManagers(prev => prev.map(m => m.id === selectedManager.id ? { ...m, ...extras } : m))}
                         onSave={handleSave}
-                        isSaving={isSaving}
+                        isSaving={isSaving || atualizando}
                         onAbrirOrganogramaClientes={() => setSection('organograma-clientes')}
                     />
                 ) : (

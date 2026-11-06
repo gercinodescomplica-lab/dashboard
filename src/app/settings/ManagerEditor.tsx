@@ -22,11 +22,13 @@ interface Props {
     onAbrirOrganogramaClientes?: () => void;
     manager: Manager;
     onChange: (m: Manager) => void;
+    /** Carga dos extras ao abrir: não é edição do admin. */
+    onExtrasCarregados: (extras: Pick<Manager, 'cx' | 'visits' | 'churn'>) => void;
     onSave: () => void;
     isSaving: boolean;
 }
 
-export function ManagerEditor({ manager, onChange, onSave, isSaving, onAbrirOrganogramaClientes }: Props) {
+export function ManagerEditor({ manager, onChange, onExtrasCarregados, onSave, isSaving, onAbrirOrganogramaClientes }: Props) {
     const [loadingExtra, setLoadingExtra] = useState(true);
 
     useEffect(() => {
@@ -41,7 +43,7 @@ export function ManagerEditor({ manager, onChange, onSave, isSaving, onAbrirOrga
             getVisitsByManager(manager.id),
             getChurnByManager(manager.id),
         ]).then(([cx, v, ch]) => {
-            onChange({ ...manager, cx, visits: v, churn: ch });
+            onExtrasCarregados({ cx, visits: v, churn: ch });
             setLoadingExtra(false);
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
