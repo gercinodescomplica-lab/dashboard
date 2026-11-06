@@ -15,6 +15,33 @@ export const managers = sqliteTable('managers', {
     showInDashboard: integer('show_in_dashboard', { mode: 'boolean' }).notNull().default(true),
 });
 
+// Carteira de clientes (spec 2026-11-06-organograma-clientes-design.md §3). A gerência é a CHAVE da sigla
+// do card (`GRC4`), não o id do card, que muda a cada ano.
+export const cliente = sqliteTable('cliente', {
+    id: text('id').primaryKey(),
+    nome: text('nome').notNull(),
+    sigla: text('sigla'),
+    // false = oculto no organograma (continua na carteira; os dados seguem a gerência).
+    ativo: integer('ativo', { mode: 'boolean' }).notNull().default(true),
+    createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+});
+
+export const carteiraCliente = sqliteTable('carteira_cliente', {
+    clienteId: text('cliente_id').primaryKey().references(() => cliente.id, { onDelete: 'cascade' }),
+    gerencia: text('gerencia').notNull(),
+    movidoEm: text('movido_em').notNull(),
+    movidoPor: text('movido_por'),
+});
+
+export const movimentoCarteira = sqliteTable('movimento_carteira', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    clienteId: text('cliente_id').notNull().references(() => cliente.id, { onDelete: 'cascade' }),
+    deGerencia: text('de_gerencia'),
+    paraGerencia: text('para_gerencia'),
+    por: text('por'),
+    em: text('em').notNull(),
+});
+
 export const projects = sqliteTable('projects', {
     id: integer('id').primaryKey({ autoIncrement: true }),
     managerId: text('manager_id').notNull().references(() => managers.id, { onDelete: 'cascade' }),
@@ -30,6 +57,7 @@ export const projects = sqliteTable('projects', {
     history: text('history'),
     // Projeto gerado a partir de um lead da GRCC (dono = /grcc). Nulo = projeto manual.
     leadGrccId: integer('lead_grcc_id').unique(),
+    clienteId: text('cliente_id').references(() => cliente.id, { onDelete: 'set null' }),
 });
 
 export const cx = sqliteTable('cx', {
@@ -52,6 +80,7 @@ export const cx = sqliteTable('cx', {
     // quando detecta que um item sincronizado foi alterado antes de salvar).
     manualEditAt: text('manual_edit_at'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
+    clienteId: text('cliente_id').references(() => cliente.id, { onDelete: 'set null' }),
 });
 
 export const visits = sqliteTable('visits', {
@@ -103,6 +132,7 @@ export const contrato = sqliteTable('contrato', {
     managerId: text('manager_id').references(() => managers.id, { onDelete: 'set null' }),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+    clienteId: text('cliente_id').references(() => cliente.id, { onDelete: 'set null' }),
 });
 
 export const orgChart = sqliteTable('org_chart', {
@@ -130,6 +160,7 @@ export const proposta = sqliteTable('proposta', {
     observacao: text('observacao'),
     createdAt: text('created_at').notNull().$defaultFn(() => new Date().toISOString()),
     updatedAt: text('updated_at').notNull().$defaultFn(() => new Date().toISOString()),
+    clienteId: text('cliente_id').references(() => cliente.id, { onDelete: 'set null' }),
 });
 
 export const systemSettings = sqliteTable('system_settings', {
