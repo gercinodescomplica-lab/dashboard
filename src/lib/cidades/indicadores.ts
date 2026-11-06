@@ -1,4 +1,4 @@
-import { extractLeadDate } from '@/lib/grcc/normalizar';
+import { chaveTexto, extractLeadDate } from '@/lib/grcc/normalizar';
 import type { LeadCidade } from '@/types/cidades';
 
 /**
@@ -25,6 +25,23 @@ function municipioValido(l: LeadCidade): boolean {
 
 export function chaveCidade(l: LeadCidade): string {
     return `${l.municipio.trim().toLowerCase()}_${(l.uf || '').toLowerCase()}`;
+}
+
+export interface GrupoClienteCidade {
+    chave: string;
+    rotulo: string;
+    leads: LeadCidade[];
+}
+
+export function agruparPorCliente(leads: LeadCidade[]): GrupoClienteCidade[] {
+    const m = new Map<string, GrupoClienteCidade>();
+    for (const l of leads) {
+        const chave = chaveTexto(l.cliente);
+        const g = m.get(chave) ?? { chave, rotulo: l.cliente.trim(), leads: [] };
+        g.leads.push(l);
+        m.set(chave, g);
+    }
+    return [...m.values()];
 }
 
 const porValor = (a: LeadCidade, b: LeadCidade) => b.valor - a.valor || a.cliente.localeCompare(b.cliente);

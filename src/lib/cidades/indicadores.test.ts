@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { contarCidades, leadsDoIndicador, mesDoLead, somaValor } from './indicadores';
+import { agruparPorCliente, contarCidades, leadsDoIndicador, mesDoLead, somaValor } from './indicadores';
 import type { LeadCidade } from '@/types/cidades';
 
 const l = (id: number, p: Partial<LeadCidade>): LeadCidade => ({
@@ -40,5 +40,14 @@ describe('leadsDoIndicador', () => {
         expect(leadsDoIndicador(leads, 'total', agora)).toHaveLength(5);
         expect(somaValor(leadsDoIndicador(leads, 'prox90', agora))).toBe(400);
         expect(mesDoLead(leads[4])).toBeNull();
+    });
+});
+
+describe('agruparPorCliente', () => {
+    it('agrupa por cliente normalizado, em ordem de chegada', () => {
+        const ls = [l(1, { cliente: 'Prefeitura de Limeira' }), l(2, { cliente: 'ALESP' }), l(3, { cliente: 'PREFEITURA DE LIMEIRA' })];
+        const grupos = agruparPorCliente(ls);
+        expect(grupos.map((g) => g.rotulo)).toEqual(['Prefeitura de Limeira', 'ALESP']);
+        expect(grupos[0].leads.map((x) => x.id)).toEqual([1, 3]);
     });
 });

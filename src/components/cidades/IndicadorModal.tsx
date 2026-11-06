@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { brl, corCategoria, dataBr } from '@/app/grcc/components/formato';
 import { CATEGORIAS_GRCC, type CategoriaGrcc } from '@/lib/grcc/tipos';
 import { chaveTexto } from '@/lib/grcc/normalizar';
-import { chaveCidade, somaValor } from '@/lib/cidades/indicadores';
+import { agruparPorCliente, chaveCidade, somaValor } from '@/lib/cidades/indicadores';
 import type { LeadCidade } from '@/types/cidades';
 
 export interface DetalheIndicador {
@@ -15,6 +15,8 @@ export interface DetalheIndicador {
     leads: LeadCidade[];
     /** Agrupa a lista por município (card "Cidades atendidas"). */
     porCidade?: boolean;
+    /** Agrupa a lista por cliente (evita "Limeira" repetido quando há vários chamados). */
+    porCliente?: boolean;
 }
 
 function categoriaGrcc(c: string): CategoriaGrcc | null {
@@ -51,15 +53,18 @@ export function IndicadorModal({
     }, [detalhe, busca]);
 
     const grupos = useMemo(() => {
-        if (!detalhe?.porCidade) return null;
-        const m = new Map<string, { rotulo: string; leads: LeadCidade[] }>();
-        for (const l of visiveis) {
-            const k = chaveCidade(l);
-            const g = m.get(k) ?? { rotulo: `${l.municipio.trim()} · ${l.uf || '—'}`, leads: [] };
-            g.leads.push(l);
-            m.set(k, g);
+        if (detalhe?.porCidade) {
+            const m = new Map<string, { rotulo: string; leads: LeadCidade[] }>();
+            for (const l of visiveis) {
+                const k = chaveCidade(l);
+                const g = m.get(k) ?? { rotulo: `${l.municipio.trim()} · ${l.uf || '—'}`, leads: [] };
+                g.leads.push(l);
+                m.set(k, g);
+            }
+            return [...m.values()];
         }
-        return [...m.values()];
+        if (detalhe?.porCliente) return agruparPorCliente(visiveis);
+        return null;
     }, [detalhe, visiveis]);
 
     const t = {

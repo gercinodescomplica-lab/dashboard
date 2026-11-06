@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { fetchCidadesLeads } from '@/services/cidades.service';
 import { LeadDetalheLeitura } from './LeadDetalheLeitura';
 import { IndicadorModal, type DetalheIndicador } from './IndicadorModal';
-import { contarCidades, ehPerda, leadsDoIndicador, somaValor, type Indicador } from '@/lib/cidades/indicadores';
+import { agruparPorCliente, contarCidades, ehPerda, leadsDoIndicador, somaValor, type Indicador } from '@/lib/cidades/indicadores';
 import { dataHoraBr } from '@/app/grcc/components/formato';
 import { useVersaoGrcc } from '@/hooks/useVersaoGrcc';
 import { extractLeadDate } from '@/lib/grcc/normalizar';
@@ -434,7 +434,7 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             prox90: ['Próximos 90 dias', 'Leads ativos com fechamento previsto do início deste mês até daqui a 90 dias.'],
         };
         const [titulo, descricao] = textos[indicador];
-        return { titulo, descricao, leads: lista, porCidade: indicador === 'cidades' };
+        return { titulo, descricao, leads: lista, porCidade: indicador === 'cidades', porCliente: indicador !== 'cidades' };
     }, [indicador, leads, monthlyClosingChart, summary.ticketMedio]);
 
     const abrirLeadDoIndicador = (id: number) => {
@@ -467,6 +467,8 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
             return true;
         });
     }, [leads, selectedUf, selectedCategoria, searchQuery]);
+
+    const gruposTabela = useMemo(() => agruparPorCliente(filteredLeads), [filteredLeads]);
 
     const availableUfs = useMemo(() => {
         const ufs = new Set(leads.map((l) => l.uf).filter(Boolean));
@@ -1209,46 +1211,57 @@ export function CidadesView({ lightActive = false }: { lightActive?: boolean } =
                             </thead>
                             <tbody className={`divide-y text-xs ${T.tbodyDivide}`}>
                                 {filteredLeads.length > 0 ? (
-                                    filteredLeads.map((lead) => (
-                                        <tr key={lead.id} onClick={() => setLeadAbertoId(lead.id)} className={`cursor-pointer transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
-                                            <td className="p-3 text-center">
-                                                <span className="inline-block font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]">
-                                                    {lead.uf || 'N/A'}
-                                                </span>
-                                            </td>
-                                            <td className="p-3 max-w-[260px]">
-                                                <p className={`font-bold truncate ${T.rowName}`}>{lead.cliente}</p>
-                                                <p className={`text-[11px] line-clamp-1 mt-0.5 ${T.subtext}`}>{lead.solicitacao}</p>
-                                            </td>
-                                            <td className="p-3">
-                                                {lead.contato_nome ? (
-                                                    <div>
-                                                        <p className={`font-semibold ${T.rowText}`}>{lead.contato_nome}</p>
-                                                        <p className={`text-[10px] ${T.subtext}`}>{lead.contato_email || lead.contato_telefone || ''}</p>
-                                                    </div>
-                                                ) : (
-                                                    <span className={T.mutedIcon}>-</span>
-                                                )}
-                                            </td>
-                                            <td className={`p-3 font-medium ${T.rowText}`}>{lead.municipio || '-'}</td>
-                                            <td className="p-3">
-                                                <span className={`inline-block font-semibold px-2.5 py-1 rounded-full text-[10px] ${T.pillMuted}`}>
-                                                    {lead.categoria}
-                                                </span>
-                                            </td>
-                                            <td className="p-3 max-w-[200px]">
-                                                <p className={`line-clamp-2 ${T.rowText}`}>{lead.status || '-'}</p>
-                                            </td>
-                                            <td className={`p-3 font-mono ${T.subtext}`}>
-                                                {(() => {
-                                                    const d = extractLeadDate(lead);
-                                                    return d ? d.toLocaleDateString('pt-BR') : '-';
-                                                })()}
-                                            </td>
-                                            <td className="p-3 text-right font-mono font-bold text-emerald-500">
-                                                {formatCurrency(lead.valor)}
-                                            </td>
-                                        </tr>
+                                    gruposTabela.map((g) => (
+                                        <React.Fragment key={g.chave}>
+                                            {g.leads.length > 1 && (
+                                                <tr>
+                                                    <td colSpan={8} className={`px-3 py-1.5 text-[11px] font-semibold ${lightActive ? 'bg-zinc-50 text-zinc-600' : 'bg-zinc-900/60 text-zinc-400'}`}>
+                                                        {g.rotulo} · {g.leads.length} chamados
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            {g.leads.map((lead) => (
+                                                <tr key={lead.id} onClick={() => setLeadAbertoId(lead.id)} className={`cursor-pointer transition-colors ${T.rowHover} ${destacados.has(lead.id) ? 'bg-indigo-500/10' : ''}`}>
+                                                    <td className="p-3 text-center">
+                                                        <span className="inline-block font-bold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 text-[10px]">
+                                                            {lead.uf || 'N/A'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 max-w-[260px]">
+                                                        <p className={`font-bold truncate ${T.rowName}`}>{lead.cliente}</p>
+                                                        <p className={`text-[11px] line-clamp-1 mt-0.5 ${T.subtext}`}>{lead.solicitacao}</p>
+                                                    </td>
+                                                    <td className="p-3">
+                                                        {lead.contato_nome ? (
+                                                            <div>
+                                                                <p className={`font-semibold ${T.rowText}`}>{lead.contato_nome}</p>
+                                                                <p className={`text-[10px] ${T.subtext}`}>{lead.contato_email || lead.contato_telefone || ''}</p>
+                                                            </div>
+                                                        ) : (
+                                                            <span className={T.mutedIcon}>-</span>
+                                                        )}
+                                                    </td>
+                                                    <td className={`p-3 font-medium ${T.rowText}`}>{lead.municipio || '-'}</td>
+                                                    <td className="p-3">
+                                                        <span className={`inline-block font-semibold px-2.5 py-1 rounded-full text-[10px] ${T.pillMuted}`}>
+                                                            {lead.categoria}
+                                                        </span>
+                                                    </td>
+                                                    <td className="p-3 max-w-[200px]">
+                                                        <p className={`line-clamp-2 ${T.rowText}`}>{lead.status || '-'}</p>
+                                                    </td>
+                                                    <td className={`p-3 font-mono ${T.subtext}`}>
+                                                        {(() => {
+                                                            const d = extractLeadDate(lead);
+                                                            return d ? d.toLocaleDateString('pt-BR') : '-';
+                                                        })()}
+                                                    </td>
+                                                    <td className="p-3 text-right font-mono font-bold text-emerald-500">
+                                                        {formatCurrency(lead.valor)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </React.Fragment>
                                     ))
                                 ) : (
                                     <tr>
