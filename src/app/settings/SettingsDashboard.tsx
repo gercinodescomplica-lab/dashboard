@@ -11,6 +11,7 @@ import { OrgChartEditor } from './OrgChartEditor';
 import { FaturamentoEditor } from './FaturamentoEditor';
 import { PlannerUploadEditor } from './PlannerUploadEditor';
 import { saveManagerData, saveCXData, saveVisitsData, saveChurnData, cloneManager } from './actions';
+import { lerChaveSettings } from './chaveLocal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import Link from 'next/link';
 
@@ -52,7 +53,7 @@ export function SettingsDashboard() {
         setCloneStatus('idle');
         setCloneError('');
         try {
-            const result = await cloneManager(sourceId, newName.trim());
+            const result = await cloneManager(lerChaveSettings(), sourceId, newName.trim());
             setCloneStatus('success');
             await loadData();
             setSelectedId(result.newId);
@@ -71,10 +72,10 @@ export function SettingsDashboard() {
         setSaveStatus('idle');
         try {
             await Promise.all([
-                saveManagerData(selectedManager),
-                saveCXData(selectedManager.id, selectedManager.cx || []),
-                saveVisitsData(selectedManager.id, selectedManager.visits || []),
-                saveChurnData(selectedManager.id, selectedManager.churn || []),
+                saveManagerData(lerChaveSettings(), selectedManager),
+                saveCXData(lerChaveSettings(), selectedManager.id, selectedManager.cx || []),
+                saveVisitsData(lerChaveSettings(), selectedManager.id, selectedManager.visits || []),
+                saveChurnData(lerChaveSettings(), selectedManager.id, selectedManager.churn || []),
             ]);
             setSaveStatus('success');
             setTimeout(() => setSaveStatus('idle'), 3000);

@@ -18,6 +18,7 @@ import {
     type OrgSubdirector,
 } from '@/types/orgChart';
 import { fetchOrgChart, saveOrgChart } from './orgChartActions';
+import { lerChaveSettings } from './chaveLocal';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 function uid(prefix: string) {
@@ -326,7 +327,7 @@ export function OrgChartEditor() {
         setIsSaving(true);
         setStatus('idle');
         try {
-            await saveOrgChart(data);
+            await saveOrgChart(lerChaveSettings(), data);
             setStatus('success');
             setTimeout(() => setStatus('idle'), 3000);
         } catch {

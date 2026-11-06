@@ -9,6 +9,7 @@ const { saveManagerData, cloneManager } = await import('./actions');
 const { eq, isNull, isNotNull } = await import('drizzle-orm');
 
 beforeAll(async () => {
+    process.env.SETTINGS_KEY = 'adm';
     await applyMigrations();
     await db.insert(s.managers).values({ id: 'grcc-debora', name: 'Débora', role: 'GRCC', year: 2026, avatarUrl: '', meta: 0, contratado: 0, forecastFinal: 0 });
     await q.salvarLeadGrcc(null, { ...LEAD_VAZIO, cliente: 'ALESP', solicitacao: 'Chatbot', categoria: 'No cliente', valor: 10, previsaoFechamento: '2026-08-01' });
@@ -26,7 +27,7 @@ describe('projetos gerados pela GRCC', () => {
         const [deb] = (await q.fetchAllManagersFromDB()).filter((m) => m.id === 'grcc-debora');
         deb.pipeline.q3.projects[0] = { ...deb.pipeline.q3.projects[0], value: 999999 }; // tentativa de editar gerado
         deb.pipeline.q1.projects[0] = { ...deb.pipeline.q1.projects[0], value: 7 };
-        await saveManagerData(deb);
+        await saveManagerData('adm', deb);
 
         const gerados = await db.select().from(s.projects).where(isNotNull(s.projects.leadGrccId));
         expect(gerados).toHaveLength(1);
@@ -36,7 +37,7 @@ describe('projetos gerados pela GRCC', () => {
     });
 
     it('cloneManager copia gerados como manuais (sem leadGrccId)', async () => {
-        const { newId } = await cloneManager('grcc-debora', 'Clone');
+        const { newId } = await cloneManager('adm', 'grcc-debora', 'Clone');
         const doClone = await db.select().from(s.projects).where(eq(s.projects.managerId, newId));
         expect(doClone).toHaveLength(2);
         expect(doClone.every((p) => p.leadGrccId === null)).toBe(true);

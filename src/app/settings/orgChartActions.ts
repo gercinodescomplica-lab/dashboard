@@ -4,9 +4,14 @@ import { db } from '@/db/index';
 import { orgChart } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { DEFAULT_ORG_CHART } from '@/lib/orgChartDefault';
+import { chaveSettingsValida } from '@/lib/settings/chave';
 import type { OrgChartData } from '@/types/orgChart';
 
 const ROW_ID = 1;
+
+function exigirChave(chave: string) {
+    if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
+}
 
 export async function fetchOrgChart(): Promise<OrgChartData> {
     try {
@@ -19,7 +24,8 @@ export async function fetchOrgChart(): Promise<OrgChartData> {
     }
 }
 
-export async function saveOrgChart(data: OrgChartData): Promise<{ success: true }> {
+export async function saveOrgChart(chave: string, data: OrgChartData): Promise<{ success: true }> {
+    exigirChave(chave);
     try {
         const json = JSON.stringify(data);
         const updatedAt = new Date().toISOString();

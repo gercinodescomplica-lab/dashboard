@@ -8,12 +8,17 @@ import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
 import { chaveSettingsValida } from '@/lib/settings/chave';
 
+function exigirChave(chave: string) {
+    if (!chaveSettingsValida(chave)) throw new Error('Chave de administrador inválida.');
+}
+
 export async function verifySettingsKey(key: string) {
     return chaveSettingsValida(key);
 }
 
 
-export async function saveCXData(managerId: string, items: CXItem[]) {
+export async function saveCXData(chave: string, managerId: string, items: CXItem[]) {
+    exigirChave(chave);
     try {
         // Lê o estado atual ANTES de apagar, só para comparar e decidir quais
         // itens vindos do Planner (têm externalId) foram de fato alterados à
@@ -71,7 +76,8 @@ export async function saveCXData(managerId: string, items: CXItem[]) {
     }
 }
 
-export async function saveVisitsData(managerId: string, items: Visit[]) {
+export async function saveVisitsData(chave: string, managerId: string, items: Visit[]) {
+    exigirChave(chave);
     try {
         await db.delete(visits).where(eq(visits.managerId, managerId));
 
@@ -95,7 +101,8 @@ export async function saveVisitsData(managerId: string, items: Visit[]) {
     }
 }
 
-export async function saveChurnData(managerId: string, items: ChurnItem[]) {
+export async function saveChurnData(chave: string, managerId: string, items: ChurnItem[]) {
+    exigirChave(chave);
     try {
         await db.delete(churn).where(eq(churn.managerId, managerId));
 
@@ -118,7 +125,8 @@ export async function saveChurnData(managerId: string, items: ChurnItem[]) {
     }
 }
 
-export async function saveManagerData(m: Manager) {
+export async function saveManagerData(chave: string, m: Manager) {
+    exigirChave(chave);
     try {
         const fv = calculateForecastFinal(m.contratado, m.pipeline);
 
@@ -203,7 +211,8 @@ function slugify(name: string): string {
         .replace(/[^a-z0-9-]/g, '');
 }
 
-export async function cloneManager(sourceId: string, newName: string): Promise<{ success: true; newId: string }> {
+export async function cloneManager(chave: string, sourceId: string, newName: string): Promise<{ success: true; newId: string }> {
+    exigirChave(chave);
     try {
         const [source] = await db.select().from(managers).where(eq(managers.id, sourceId));
         if (!source) throw new Error('Gerente de origem não encontrado.');
@@ -281,7 +290,8 @@ export async function getFaturamento2025Action() {
     return getFaturamento2025();
 }
 
-export async function saveFaturamento2025Action(value: number) {
+export async function saveFaturamento2025Action(chave: string, value: number) {
+    exigirChave(chave);
     const { saveFaturamento2025 } = await import('@/db/queries');
     await saveFaturamento2025(value);
     return { success: true };

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Loader2, DollarSign, Save, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getFaturamento2025Action, saveFaturamento2025Action } from './actions';
+import { lerChaveSettings } from './chaveLocal';
 import { formatCurrency } from '@/lib/format';
 
 export function FaturamentoEditor() {
@@ -50,7 +51,7 @@ export function FaturamentoEditor() {
             if (isNaN(valToSave)) {
                 throw new Error('Por favor, informe um valor numérico válido.');
             }
-            await saveFaturamento2025Action(valToSave);
+            await saveFaturamento2025Action(lerChaveSettings(), valToSave);
             setNumericValue(valToSave);
             setStatus('success');
             setTimeout(() => setStatus('idle'), 3000);
