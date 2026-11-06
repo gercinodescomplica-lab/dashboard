@@ -67,6 +67,7 @@ describe('a conferir', () => {
         await db.insert(s.contrato).values({ id: 'ct-x', numeroContrato: '9/2025', cliente: 'Câmara X', managerId: 'grc1-bruno' });
         const linhas = await c.linhasSemCliente();
         expect(linhas).toEqual([{ tabela: 'contrato', id: 'ct-x', texto: 'Câmara X', gerencia: 'GRC1' }]);
+        await expect(c.ligarCliente('contrato', 'nao-existe', 'c-smc')).rejects.toThrow('Linha não encontrada.');
         await c.ligarCliente('contrato', 'ct-x', 'c-smc');
         expect(await c.linhasSemCliente()).toEqual([]);
     });

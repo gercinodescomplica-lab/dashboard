@@ -342,10 +342,12 @@ export async function linhasSemCliente(): Promise<LinhaSemCliente[]> {
 }
 
 export async function ligarCliente(tabela: TabelaComCliente, id: string, clienteId: string): Promise<void> {
-    if (tabela === 'contrato') await db.update(contrato).set({ clienteId }).where(eq(contrato.id, id));
-    else if (tabela === 'proposta') await db.update(proposta).set({ clienteId }).where(eq(proposta.id, id));
-    else if (tabela === 'cx') await db.update(cx).set({ clienteId }).where(eq(cx.id, Number(id)));
-    else await db.update(projects).set({ clienteId }).where(and(eq(projects.id, Number(id)), isNull(projects.leadGrccId)));
+    const feitas =
+        tabela === 'contrato' ? await db.update(contrato).set({ clienteId }).where(eq(contrato.id, id)).returning({ id: contrato.id })
+        : tabela === 'proposta' ? await db.update(proposta).set({ clienteId }).where(eq(proposta.id, id)).returning({ id: proposta.id })
+        : tabela === 'cx' ? await db.update(cx).set({ clienteId }).where(eq(cx.id, Number(id))).returning({ id: cx.id })
+        : await db.update(projects).set({ clienteId }).where(and(eq(projects.id, Number(id)), isNull(projects.leadGrccId))).returning({ id: projects.id });
+    if (feitas.length === 0) throw new ErroCarteira('Linha não encontrada.');
 }
 
 export interface GerenciaParaEditar {

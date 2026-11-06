@@ -24,7 +24,7 @@ describe('carteiraActions', () => {
         const r = await a.criarELigarClienteAction('adm', 'contrato', 'ct-smt', { nome: 'Novo', sigla: null });
         expect(r.ok).toBe(true);
         const falha = await a.criarELigarClienteAction('adm', 'contrato', 'nao-existe', { nome: 'Outro', sigla: null });
-        if (!falha.ok) expect(falha.erro).toMatch(/Cliente criado, mas não foi possível ligar/);
+        expect(falha).toEqual({ ok: false, erro: expect.stringContaining('Cliente criado, mas não foi possível ligar') });
     });
     it('entrada inválida', async () => {
         expect(await a.moverClienteNoOrganogramaAction('adm', '', 'GRC3', 'GRC4')).toEqual({ ok: false, erro: 'Dados inválidos.' });

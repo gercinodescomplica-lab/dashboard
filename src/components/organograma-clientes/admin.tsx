@@ -28,9 +28,13 @@ export function OrganogramaClientesAdmin() {
     const ocupadoRef = useRef(false);
 
     const carregar = useCallback(async () => {
-        const r = await acoes.carregarPainelCarteiraAction(lerChaveSettings());
-        if (r.ok) setPainel(r.valor);
-        else setErro(r.erro);
+        try {
+            const r = await acoes.carregarPainelCarteiraAction(lerChaveSettings());
+            if (r.ok) setPainel(r.valor);
+            else setErro(r.erro);
+        } catch {
+            setErro('Não foi possível carregar o organograma de clientes.');
+        }
     }, []);
 
     useEffect(() => { void carregar(); }, [carregar]);
@@ -50,9 +54,9 @@ export function OrganogramaClientesAdmin() {
             setErro('Não foi possível gravar. Tente de novo.');
             return false;
         } finally {
-            await carregar();
             ocupadoRef.current = false;
             setOcupado(false);
+            await carregar();
         }
     };
 

@@ -75,4 +75,14 @@ describe('OrganogramaClientesAdmin', () => {
         expect(a.criarELigarClienteAction).toHaveBeenCalledWith('adm', 'contrato', 'ct-x', { nome: 'ALESP', sigla: null });
         expect(a.criarClienteAction).not.toHaveBeenCalled();
     });
+    it('recarga que falha mostra erro e libera os botões', async () => {
+        const user = userEvent.setup();
+        render(<OrganogramaClientesAdmin />);
+        const cartao = await screen.findByRole('region', { name: 'Gerência GRC3' });
+        a.carregarPainelCarteiraAction.mockRejectedValueOnce(new Error('500'));
+        await user.click(within(cartao).getByRole('button', { name: 'Ocultar' }));
+        await user.click(screen.getByRole('button', { name: 'Ocultar gerência' }));
+        expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível carregar o organograma de clientes.');
+        expect(within(screen.getByRole('region', { name: 'Gerência GRC3' })).getByRole('button', { name: 'Ocultar' })).toBeEnabled();
+    });
 });
