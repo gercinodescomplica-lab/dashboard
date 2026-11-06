@@ -40,7 +40,15 @@ describe('semearCarteira', () => {
         expect(ouv.sigla).toBeNull();
     });
     it('liga as linhas, cria cliente sem carteira para o que não casou, ignora lead GRCC e não move nada', async () => {
+        const foto = async () => JSON.stringify([
+            (await db.select().from(s.contrato)).map((c) => [c.id, c.managerId, c.gerencia]).sort(),
+            (await db.select().from(s.proposta)).map((c) => [c.id, c.managerId, c.gerencia]).sort(),
+            (await db.select().from(s.projects)).map((c) => [c.id, c.managerId]).sort(),
+        ]);
+        const antes = await foto();
         const r = await semearCarteira();
+        expect(await foto()).toBe(antes);
+        expect(await db.select().from(s.movimentoCarteira)).toHaveLength(0);
         const contratos = await db.select().from(s.contrato);
         expect(contratos.every((c) => c.clienteId)).toBe(true);
         expect(contratos.find((c) => c.id === 'c2')!.managerId).toBe('grc4-beatriz'); // não move
@@ -56,6 +64,14 @@ describe('semearCarteira', () => {
         await semearCarteira();
         const segunda = await semearCarteira();
         expect(segunda.clientesCriados).toBe(0);
+        expect(segunda.ligados).toEqual({ contrato: 0, proposta: 0, cx: 0, projects: 0 });
+        expect(await db.select().from(s.cliente)).toHaveLength(7);
+    });
+    it('texto lixo ("-") não vira cliente nem é ligado', async () => {
+        await db.insert(s.contrato).values({ id: 'c4', numeroContrato: '4', cliente: '-', managerId: 'grc1-bruno', gerencia: 'GRC-1' });
+        const r = await semearCarteira();
+        expect((await db.select().from(s.contrato).where(eq(s.contrato.id, 'c4')))[0].clienteId).toBeNull();
+        expect(r.criadosSemCarteira).not.toContain('-');
         expect(await db.select().from(s.cliente)).toHaveLength(7);
     });
 });

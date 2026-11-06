@@ -1,11 +1,18 @@
 // scripts/carteira/seed-carteira.ts
-// Uso: npx tsx scripts/carteira/seed-carteira.ts   (usa TURSO_DATABASE_URL do .env/.env.development)
-// Rode primeiro numa CÓPIA local; produção só com ordem explícita do usuário.
+// Uso local:  npx tsx scripts/carteira/seed-carteira.ts          (banco file: local)
+// Uso remoto: npx tsx scripts/carteira/seed-carteira.ts --prod   (só com ordem explícita do usuário)
+// Rode primeiro numa CÓPIA local.
 import { config } from 'dotenv';
 import { existsSync } from 'fs';
 
 config({ path: '.env' });
 if ((process.env.NODE_ENV ?? 'development') !== 'production' && existsSync('.env.development')) config({ path: '.env.development', override: true });
+
+const url = process.env.TURSO_DATABASE_URL ?? '';
+if (!url.startsWith('file:') && !process.argv.includes('--prod')) {
+    console.error(`Banco remoto (${url}): rode com --prod para confirmar que é para gravar em ${url}.`);
+    process.exit(1);
+}
 
 async function main() {
     console.log(`→ carga da carteira em ${process.env.TURSO_DATABASE_URL}`);

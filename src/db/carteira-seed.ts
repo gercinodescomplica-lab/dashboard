@@ -40,7 +40,7 @@ export async function semearCarteira(): Promise<RelatorioCarga> {
     // 1. served_clients → cliente + carteira (card visível primeiro: ele ganha a duplicata).
     for (const card of cards) {
         let itens: string[] = [];
-        try { itens = card.servedClients ? JSON.parse(card.servedClients) : []; } catch { itens = []; }
+        try { const j = card.servedClients ? JSON.parse(card.servedClients) : []; itens = Array.isArray(j) ? j.filter((i): i is string => typeof i === 'string') : []; } catch { itens = []; }
         const chave = chaveDaCarteira(card);
         for (const item of itens) {
             const { nome, sigla } = clienteDoServedClient(item);
@@ -61,7 +61,7 @@ export async function semearCarteira(): Promise<RelatorioCarga> {
     // 2–3. cliente_id nas linhas manuais sem cliente; o que não casa vira cliente sem carteira.
     const chaveDoCard = new Map(cards.map((c) => [c.id, chaveDaCarteira(c)]));
     async function ligar(texto: string | null, managerId: string | null): Promise<string | null> {
-        if (!texto?.trim()) return null;
+        if (!texto?.trim() || siglaComparavel(texto) === '') return null;
         const clientes = await listarClientesComCarteira();
         const achado = casarCliente(texto, clientes, managerId ? chaveDoCard.get(managerId) : null);
         if (achado) return achado;
