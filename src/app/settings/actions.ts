@@ -6,15 +6,10 @@ import { Manager, CXItem, Visit, ChurnItem } from '@/types/manager';
 import { eq, and, isNull } from 'drizzle-orm';
 import { calculateForecastFinal } from '@/lib/calc';
 import { fetchCXByManager, fetchVisitsByManager } from '@/db/queries';
+import { chaveSettingsValida } from '@/lib/settings/chave';
 
-// Replace with a safer server-side check-1
 export async function verifySettingsKey(key: string) {
-    if (!key || typeof key !== 'string') return false;
-    const trimmed = key.trim();
-    const correctKey = process.env.SETTINGS_KEY || 'prodam2026';
-    const diretoriaKey = process.env.DIRETORIA_KEY;
-    const directorateKey = process.env.DIRECTORATE_KEY;
-    return trimmed === correctKey || (!!diretoriaKey && trimmed === diretoriaKey) || (!!directorateKey && trimmed === directorateKey);
+    return chaveSettingsValida(key);
 }
 
 
