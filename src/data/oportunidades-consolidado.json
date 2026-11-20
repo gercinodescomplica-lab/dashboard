@@ -1,6 +1,6 @@
 {
   "levantamento": "Oportunidades não avançadas ou pendentes por falha interna",
-  "data_consolidacao": "2026-09-10",
+  "data_consolidacao": "2026-11-19",
   "gerentes": [
     {
       "gerente_id": "KAM1",
@@ -44,23 +44,12 @@
           "orgao": "SME",
           "produto_tema": "Licenças Microsoft",
           "tinha_proposta_formal": null,
-          "valor_indicado": null,
+          "valor_indicado": 30000000,
           "envolvidos": [],
           "area_bloqueadora": null,
           "status": "em_risco",
           "causa_raiz": "concorrencia_licitacao",
-          "descricao": "SME está preparando licitação própria para licenças Microsoft."
-        },
-        {
-          "orgao": "SME",
-          "produto_tema": "Wi-Fi e Backup",
-          "tinha_proposta_formal": true,
-          "valor_indicado": null,
-          "envolvidos": [],
-          "area_bloqueadora": null,
-          "status": "em_negociacao",
-          "causa_raiz": "precificacao",
-          "descricao": "SME considerou o preço alto. Já houve revisão de escopo e cronograma de instalação, e as propostas foram reenviadas."
+          "descricao": "SME está preparando licitação própria para licenças Microsoft. Prodam também está em processo de licitação. Precisa ser assinado até 31/12."
         }
       ]
     },
@@ -242,7 +231,7 @@
           "area_bloqueadora": null,
           "status": "pendente",
           "causa_raiz": "precificacao",
-          "descricao": "Falta precificação do sistema de FFI (DDS) para a CGM, pois a solução não passou em RD."
+          "descricao": "Aguardando precificação: falta precificação do sistema de FFI (DDS) para a CGM."
         }
       ]
     },
@@ -255,23 +244,23 @@
           "orgao": "SMUL",
           "produto_tema": "Virtualização Arlequim",
           "tinha_proposta_formal": null,
-          "valor_indicado": null,
+          "valor_indicado": 4500000,
           "envolvidos": [],
           "area_bloqueadora": "DIT",
-          "status": "nao_avancou",
+          "status": "perdida",
           "causa_raiz": "falta_produto",
-          "descricao": "DIT informou que não seguirá com o Arlequim; produto semelhante só estará disponível em dezembro."
+          "descricao": "Secretaria declinou após testes, considerou que a solução não atendia as necessidades."
         },
         {
           "orgao": "SMADS",
           "produto_tema": "Virtualização Arlequim",
           "tinha_proposta_formal": null,
-          "valor_indicado": null,
+          "valor_indicado": 4000000,
           "envolvidos": [],
-          "area_bloqueadora": "DIT",
-          "status": "nao_avancou",
-          "causa_raiz": "falta_produto",
-          "descricao": "DIT informou que não seguirá com o Arlequim; produto semelhante só estará disponível em dezembro."
+          "area_bloqueadora": null,
+          "status": "em_negociacao",
+          "causa_raiz": "aguardando_cliente",
+          "descricao": "Aguardando cliente: solução em fase de teste pela secretaria."
         }
       ]
     }
